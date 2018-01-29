@@ -16,7 +16,9 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
     training_pmids,training_forward_sentences,training_reverse_sentences, entity_1_text, entity_2_text = load_data.load_pubtator_abstract_sentences(
         pubtator_file,entity_1,entity_2)
 
-
+    print(entity_1_text.intersection(entity_2_text))
+    print(entity_1_text)
+    print(entity_2_text)
     total_training_forward_sentences = {}
     total_training_reverse_sentences = {}
 
@@ -32,6 +34,14 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
         total_training_forward_sentences,total_training_reverse_sentences,distant_interactions,
         reverse_distant_interactions, entity_1_text, entity_2_text, symmetric)
 
+    print(len(training_instances))
+    count = 0
+    for t in training_instances:
+        if t.get_label() == 1:
+            count +=1
+
+    print(len(training_instances[0].features))
+    print(len(training_instances[1].features))
 def main():
     ''' Main method, mode determines whether program runs training, testing, or prediction'''
     mode = sys.argv[1]  # what option

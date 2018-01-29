@@ -1,9 +1,25 @@
 import itertools
 
+def list_correction(checklist,entity_a_text,entity_b_text):
+    for i in range(len(checklist)):
+        word = checklist[i]
+        if len(entity_a_text) < len(entity_b_text):
+            if word in entity_a_text:
+                checklist[i] = 'ENTITY_A'
+            elif word in entity_b_text:
+                checklist[i] = 'ENTITY_B'
+        else:
+            if word in entity_b_text:
+                checklist[i] = 'ENTITY_B'
+            elif word in entity_a_text:
+                checklist = 'ENTITY_A'
+
+    return checklist
 class Instance(object):
 
     def __init__(self,sentence,label):
         self.sentence = sentence
+        self.label = label
         self.between_words = []
         self.build_words_between_features()
         self.dependency_elements = sentence.dep_parse
@@ -11,6 +27,13 @@ class Instance(object):
         self.dependency_words = []
         self.features = []
         self.build_dep_path_and_words()
+
+    def set_label(self,label):
+        '''Sets the label of the candidate sentence (positive/negative)'''
+        self.label = label
+
+    def get_label(self):
+        return self.label
 
     def build_dep_path_and_words(self):
         previous_word = 'START_ENTITY'
@@ -82,31 +105,18 @@ class Instance(object):
 
     def fix_word_lists(self,entity_a_text,entity_b_text):
         #fix dependency_word_list
-        for i in range(len(self.dependency_words)):
-            word = self.dependency_words[i]
-            if len(entity_a_text) < len(entity_b_text):
-                if word in entity_a_text:
-                    self.dependency_words[i] = 'Entity_A'
-                elif word in entity_b_text:
-                    self.dependency_words[i] = 'Entity_B'
-            else:
-                if word in entity_b_text:
-                    self.dependency_words[i] = 'Entity_B'
-                elif word in entity_a_text:
-                    self.dependency_words[i] = 'Entity_A'
 
-        for i in range(len(self.between_words)):
-            word = self.between_words[i]
-            if len(entity_a_text) < len(entity_b_text):
-                if word in entity_a_text:
-                    self.between_words[i] = 'Entity_A'
-                elif word in entity_b_text:
-                    self.between_words[i] = 'Entity_B'
-            else:
-                if word in entity_b_text:
-                    self.between_words[i] = 'Entity_B'
-                elif word in entity_a_text:
-                    self.between_words[i] = 'Entity_A'
+        self.dependency_words = list_correction(self.dependency_words,entity_a_text,entity_b_text)
+        self.between_words = list_correction(self.between_words,entity_a_text,entity_b_text)
+
+        new_elements = []
+        for element in self.dependency_elements:
+            elements = element.split('|')
+            elements_corrected = list_correction(elements,entity_a_text,entity_b_text)
+            new_elements.append('|'.join(elements_corrected))
+        self.dependency_elements = new_elements
+
+
 
 
     def build_features(self, dep_dictionary, dep_word_dictionary, dep_type_word_element_dictionary, between_word_dictionary):
