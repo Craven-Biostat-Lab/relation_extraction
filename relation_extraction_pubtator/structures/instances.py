@@ -9,6 +9,7 @@ class Instance(object):
         self.dependency_elements = sentence.dep_parse
         self.dependency_path =  ''
         self.dependency_words = []
+        self.features = []
         self.build_dep_path_and_words()
 
     def build_dep_path_and_words(self):
@@ -106,5 +107,33 @@ class Instance(object):
                     self.between_words[i] = 'Entity_B'
                 elif word in entity_a_text:
                     self.between_words[i] = 'Entity_A'
+
+
+    def build_features(self, dep_dictionary, dep_word_dictionary, dep_type_word_element_dictionary, between_word_dictionary):
+        dep_word_features = [0] * len(dep_word_dictionary)
+        dep_features = [0] * len(dep_dictionary)
+        dep_type_word_element_features = [0] * len(dep_type_word_element_dictionary)
+        between_features = [0] * len(between_word_dictionary)
+
+        dep_path_feature_words = set(dep_word_dictionary.keys())
+        intersection_set = dep_path_feature_words.intersection(set(self.dependency_words))
+        for i in intersection_set:
+            dep_word_features[dep_word_dictionary[i]] = 1
+
+        dep_type_word_element_feature_words = set(dep_type_word_element_dictionary.keys())
+        intersection_set = dep_type_word_element_feature_words.intersection(set(self.dependency_elements))
+        for i in intersection_set:
+            dep_type_word_element_features[dep_type_word_element_dictionary[i]] = 1
+
+        between_feature_words = set(between_word_dictionary.keys())
+        between_intersection_set = between_feature_words.intersection(set(self.between_words))
+        for i in between_intersection_set:
+            between_features[between_word_dictionary[i]] = 1
+
+        dep_path_string = self.dependency_path
+        if dep_path_string in dep_dictionary:
+            dep_features[dep_dictionary[dep_path_string]] = 1
+
+        self.features = dep_features + dep_word_features + dep_type_word_element_features + between_features
 
 

@@ -1,5 +1,35 @@
+import collections
+import itertools
+import cPickle as pickle
+
 from structures.sentences import Sentence
 from structures.instances import Instance
+
+def build_dataset(words, occur_count = None):
+    """Process raw inputs into a dataset."""
+    num_total_words = len(set(words))
+    discard_count = 0
+    if occur_count is not None:
+        for c in collections.Counter(words):
+            if collections.Counter(words)[c] < occur_count:
+                discard_count +=1
+
+    num_words = num_total_words - discard_count
+
+    count = []
+    count.extend(collections.Counter(words).most_common(num_words))
+    dictionary = dict()
+    for word, _ in count:
+        dictionary[word] = len(dictionary)
+    data = list()
+    for word in words:
+        if word in dictionary:
+            index = dictionary[word]
+            data.append(index)
+    reversed_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
+    return data, count, dictionary, reversed_dictionary
+
+
 
 def build_instances_training(
         training_forward_sentences,training_reverse_sentences,distant_interactions,
@@ -17,23 +47,92 @@ def build_instances_training(
         if reverse_key in training_reverse_sentences:
             forward_train_instance = Instance(training_forward_sentences[key],0)
             forward_train_instance.fix_word_lists(entity_a_text,entity_b_text)
-            print(forward_train_instance.between_words)
             reverse_train_instance = Instance(training_reverse_sentences[reverse_key],0)
             reverse_train_instance.fix_word_lists(entity_a_text, entity_b_text)
-            print(reverse_train_instance.between_words)
+
+            entity_combo = (forward_train_instance.sentence.entity_1_norm.split('(')[0],
+                             forward_train_instance.sentence.entity_2_norm.split('(')[0])
 
 
+            if symmetric is False:
+                # check if check returned true because of reverse
+                if entity_combo in distant_interactions:
+                    path_word_vocabulary += forward_train_instance.dependency_words
+                    words_between_entities_vocabulary += forward_train_instance.between_words
+                    dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
+                    dep_type_vocabulary.append(forward_train_instance.dependency_path)
+                    forward_train_instance.set_label(1)
+                    candidate_instances.append(forward_train_instance)
+                elif entity_combo in reverse_distant_interactions:
+                    path_word_vocabulary += reverse_train_instance.dependency_words
+                    words_between_entities_vocabulary += reverse_train_instance.between_words
+                    dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
+                    dep_type_vocabulary.append(reverse_train_instance.dependency_path)
+                    reverse_train_instance.set_label(1)
+                    candidate_instances.append(reverse_train_instance)
+                else:
+                    path_word_vocabulary += forward_train_instance.dependency_words
+                    path_word_vocabulary += reverse_train_instance.dependency_words
+                    words_between_entities_vocabulary += forward_train_instance.between_words
+                    words_between_entities_vocabulary += reverse_train_instance.between_words
+                    dep_type_vocabulary.append(forward_train_instance.dependency_path)
+                    dep_type_vocabulary.append(reverse_train_instance.dependency_path)
+                    dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
+                    dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
+                    candidate_instances.append(forward_train_instance)
+                    candidate_instances.append(reverse_train_instance)
 
 
+            # if symmetric is true
+            else:
+                if entity_combo in distant_interactions or entity_combo in reverse_distant_interactions:
+
+                    forward_train_instance.set_label(1)
+                    reverse_train_instance.set_label(1)
+                else:
+                    pass
+                dep_type_vocabulary_set = set(dep_type_vocabulary)
+                forward_dep_type_path = forward_train_instance.dependency_path
+                reverse_dep_type_path = reverse_train_instance.dependency_path
+
+                if forward_dep_type_path in dep_type_vocabulary_set:
+                    dep_type_vocabulary.append(forward_dep_type_path)
+                    path_word_vocabulary += forward_train_instance.dependency_words
+                    dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
+                    words_between_entities_vocabulary += forward_train_instance.between_words
+                    candidate_instances.append(forward_train_instance)
+                elif reverse_dep_type_path in dep_type_vocabulary_set:
+                    dep_type_vocabulary.append(reverse_dep_type_path)
+                    path_word_vocabulary += reverse_train_instance.dependency_words
+                    dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
+                    words_between_entities_vocabulary += reverse_train_instance.between_words
+                    candidate_instances.append(reverse_train_instance)
+                else:
+                    dep_type_vocabulary.append(forward_dep_type_path)
+                    path_word_vocabulary += forward_train_instance.dependency_words
+                    dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
+                    words_between_entities_vocabulary += forward_train_instance.between_words
+                    candidate_instances.append(forward_train_instance)
+
+    data, count, dep_path_word_dictionary, reversed_dictionary = build_dataset(path_word_vocabulary)
+    dep_data, dep_count, dep_dictionary, dep_reversed_dictionary = build_dataset(dep_type_vocabulary)
+    dep_element_data, dep_element_count, dep_element_dictionary, dep_element_reversed_dictionary = build_dataset(
+        dep_type_word_elements_vocabulary)
+    between_data, between_count, between_word_dictionary, between_reversed_dictionary = build_dataset(
+        words_between_entities_vocabulary)
 
 
+    print(dep_dictionary)
+    print(dep_path_word_dictionary)
+    print(between_word_dictionary)
+    print(dep_element_dictionary)
 
-        else:
-            print('key not found')
-            continue
+    for ci in candidate_instances:
+        ci.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary)
+
+    return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary
 
 
-    return 0,0,0,0,0
 
 
 
