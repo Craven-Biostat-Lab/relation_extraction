@@ -30,6 +30,57 @@ def build_dataset(words, occur_count = None):
     return data, count, dictionary, reversed_dictionary
 
 
+def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary,
+                            distant_interactions,reverse_distant_interactions, entity_a_text, entity_b_text, symmetric = False):
+    test_instances = []
+    for key in test_forward_sentences:
+        splitkey = key.split('|')
+        reverse_key = splitkey[0] + '|' + splitkey[1] + '|' + splitkey[3] + '|' + splitkey[2]
+        if reverse_key in test_reverse_sentences:
+            forward_test_instance = Instance(test_forward_sentences[key], 0)
+            forward_test_instance.fix_word_lists(entity_a_text, entity_b_text)
+            reverse_test_instance = Instance(test_reverse_sentences[reverse_key], 0)
+            reverse_test_instance.fix_word_lists(entity_a_text, entity_b_text)
+
+            entity_combo = (forward_test_instance.sentence.entity_1_norm.split('(')[0],
+                                forward_test_instance.sentence.entity_2_norm.split('(')[0])
+
+
+            if symmetric is False:
+                # check if check returned true because of reverse
+                if entity_combo in distant_interactions:
+                    forward_test_instance.set_label(1)
+                elif entity_combo in reverse_distant_interactions:
+                    reverse_test_instance.set_label(1)
+                else:
+                    pass
+
+                test_instances.append(forward_test_instance)
+                test_instances.append(reverse_test_instance)
+
+            #if symmetric is True
+            else:
+                if entity_combo in distant_interactions or \
+                                entity_combo in reverse_distant_interactions:
+                    forward_test_instance.set_label(1)
+                    reverse_test_instance.set_label(1)
+
+                forward_dep_type_path = ' '.join(forward_test_instance.dependency_path)
+                reverse_dep_type_path = ' '.join(reverse_test_instance.dependency_path)
+
+                if forward_dep_type_path in dep_dictionary:
+                    test_instances.append(forward_test_instance)
+                elif reverse_dep_type_path in dep_dictionary:
+                    test_instances.append(reverse_test_instance)
+                else:
+                    test_instances.append(forward_test_instance)
+        else:
+            continue
+
+    for instance in test_instances:
+        instance.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary,  between_word_dictionary)
+
+    return test_instances
 
 def build_instances_training(
         training_forward_sentences,training_reverse_sentences,distant_interactions,
@@ -52,7 +103,6 @@ def build_instances_training(
 
             entity_combo = (forward_train_instance.sentence.entity_1_norm.split('(')[0],
                              forward_train_instance.sentence.entity_2_norm.split('(')[0])
-
 
 
             if symmetric is False:
@@ -114,6 +164,9 @@ def build_instances_training(
                     dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
                     words_between_entities_vocabulary += forward_train_instance.between_words
                     candidate_instances.append(forward_train_instance)
+
+        else:
+            continue
 
     data, count, dep_path_word_dictionary, reversed_dictionary = build_dataset(path_word_vocabulary)
     dep_data, dep_count, dep_dictionary, dep_reversed_dictionary = build_dataset(dep_type_vocabulary)
