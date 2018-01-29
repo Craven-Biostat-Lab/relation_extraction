@@ -54,6 +54,7 @@ def build_instances_training(
                              forward_train_instance.sentence.entity_2_norm.split('(')[0])
 
 
+
             if symmetric is False:
                 # check if check returned true because of reverse
                 if entity_combo in distant_interactions:
