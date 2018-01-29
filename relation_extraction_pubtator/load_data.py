@@ -192,8 +192,8 @@ def build_instances_training(
 
 
 def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_species):
-    entity_a_texts = set()
-    entity_b_texts = set()
+    entity_a_texts = {}
+    entity_b_texts = {}
     pmid_list = set()
     forward_sentences = {}
     reverse_sentences = {}
@@ -219,6 +219,10 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
             dep_parse = l[12].split(' ')
             sentence = l[13].split(' ')
 
+            if pmid not in entity_a_texts:
+                entity_a_texts[pmid] = set()
+            if pmid not in entity_b_texts:
+                entity_b_texts[pmid]=set()
             label = pmid + '|' + sentence_no + '|' + entity_1_loc + '|' + entity_2_loc
             pubtator_sentence = Sentence(pmid,sentence_no,entity_1_text,entity_1_loc,entity_2_text,entity_2_loc,
                                           entity_1_formal,entity_2_formal,entity_1_norm,entity_2_norm,entity_1_type, entity_2_type,
@@ -257,13 +261,13 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
 
 
                 if entity_1_correct is True and entity_2_correct is True:
-                    entity_a_texts.add(entity_1_text)
-                    entity_b_texts.add(entity_2_text)
+                    entity_a_texts[pmid].add(entity_1_text)
+                    entity_b_texts[pmid].add(entity_2_text)
                     forward_sentences[label] = pubtator_sentence
 
                 elif entity_1_reverse is True and entity_2_reverse is True:
-                    entity_b_texts.add(entity_1_text)
-                    entity_a_texts.add(entity_2_text)
+                    entity_b_texts[pmid].add(entity_1_text)
+                    entity_a_texts[pmid].add(entity_2_text)
                     reverse_sentences[label] = pubtator_sentence
 
                 else:

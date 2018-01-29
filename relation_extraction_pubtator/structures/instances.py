@@ -12,7 +12,7 @@ def list_correction(checklist,entity_a_text,entity_b_text):
             if word in entity_b_text:
                 checklist[i] = 'ENTITY_B'
             elif word in entity_a_text:
-                checklist = 'ENTITY_A'
+                checklist[i] = 'ENTITY_A'
 
     return checklist
 class Instance(object):
@@ -103,9 +103,11 @@ class Instance(object):
         self.between_words = sentence_words[right_pairs[0] + 1:right_pairs[1]]
 
 
-    def fix_word_lists(self,entity_a_text,entity_b_text):
+    def fix_word_lists(self,entity_a_text_dict,entity_b_text_dict):
         #fix dependency_word_list
 
+        entity_a_text = entity_a_text_dict[self.sentence.pmid]
+        entity_b_text = entity_b_text_dict[self.sentence.pmid]
         self.dependency_words = list_correction(self.dependency_words,entity_a_text,entity_b_text)
         self.between_words = list_correction(self.between_words,entity_a_text,entity_b_text)
 
