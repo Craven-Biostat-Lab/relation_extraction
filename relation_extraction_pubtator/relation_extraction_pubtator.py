@@ -1,6 +1,36 @@
 import sys
 import os
 
+import load_data
+
+def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e2_col,distant_rel_col,entity_1, entity_2, symmetric):
+
+    print(distant_file)
+    print(distant_e1_col)
+    print(distant_e2_col)
+    print(distant_rel_col)
+    distant_interactions, reverse_distant_interactions = load_data.load_distant_kb(distant_file, distant_e1_col,
+                                                                                   distant_e2_col, distant_rel_col)
+
+
+    training_pmids,training_forward_sentences,training_reverse_sentences, entity_1_text, entity_2_text = load_data.load_pubtator_abstract_sentences(
+        pubtator_file,entity_1,entity_2)
+
+
+    total_training_forward_sentences = {}
+    total_training_reverse_sentences = {}
+
+    for key in training_forward_sentences:
+        if key.split('|')[0] in training_pmids:
+            total_training_forward_sentences[key] = training_forward_sentences[key]
+
+    for key in training_reverse_sentences:
+        if key.split('|')[0] in training_pmids:
+            total_training_reverse_sentences[key] = training_reverse_sentences[key]
+
+    training_instances, dep_dictionary, dep_word_dictionary, element_dictionary, between_word_dictionary = load_data.build_instances_training(
+        total_training_forward_sentences,total_training_reverse_sentences,distant_interactions,
+        reverse_distant_interactions, entity_1_text, entity_2_text, symmetric)
 
 def main():
     ''' Main method, mode determines whether program runs training, testing, or prediction'''
@@ -15,6 +45,8 @@ def main():
         entity_1 = sys.argv[8].upper()  # entity_1
         entity_2 = sys.argv[9].upper()  # entity_2
         symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
+
+        distant_train(model_out, pubtator_file, distant_file, distant_e1_col, distant_e2_col, distant_rel_col, entity_1,entity_2, symmetric)
 
     else:
         print("usage error")
