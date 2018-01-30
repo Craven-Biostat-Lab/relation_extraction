@@ -161,18 +161,8 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
     positives = collections.Counter(total_test)[1]
     accuracy = float(positives) / total_test.size
     precision, recall, _ = metrics.precision_recall_curve(total_test, total_predicted_prob, 1)
-    plt.step(recall, precision, color='b', alpha=0.2, where='post')
-    plt.fill_between(recall, precision, step='post', alpha=0.2,
-                         color='b')
 
-    plt.plot((0.0, 1.0), (accuracy, accuracy))
-
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.ylim([0.0, 1.05])
-    plt.xlim([0.0, 1.0])
-    plt.show()
-
+    return precision,recall,accuracy
 
 def predict_sentences(model_file, pubtator_file, entity_1, entity_2, symmetric,threshold):
 
@@ -189,7 +179,7 @@ def predict_sentences(model_file, pubtator_file, entity_1, entity_2, symmetric,t
     instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(
         predict_instances, symmetric)
 
-    instance_pairs = []
+    instances = []
     pair_labels = []
     for g in group_to_instance_dict:
         group_X = []
@@ -205,13 +195,13 @@ def predict_sentences(model_file, pubtator_file, entity_1, entity_2, symmetric,t
         predicted_prob = model.predict_proba(group_predict_X)[:, 1]
         negation_predicted_prob = 1 - predicted_prob
         noisy_or = 1 - np.prod(negation_predicted_prob)
-        instance_pairs.append(instance)
+        instances.append(instance)
         if noisy_or >= threshold:
             pair_labels.append(1)
         else:
             pair_labels.append(0)
 
-    return instance_pairs, pair_labels
+    return instances, pair_labels
         
 
 
@@ -230,11 +220,22 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
 
 
     #k-cross val
-    k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,
+    precision,recall, accuracy = k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,
                             reverse_distant_interactions,entity_1_text,entity_2_text,symmetric)
 
 
+    plt.step(recall, precision, color='b', alpha=0.2, where='post')
+    plt.fill_between(recall, precision, step='post', alpha=0.2,
+                         color='b')
 
+    plt.plot((0.0, 1.0), (accuracy, accuracy))
+
+    plt.title(os.path.basename(model_out).split('.')[0])
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.ylim([0.0, 1.05])
+    plt.xlim([0.0, 1.0])
+    plt.show()
 
 
     training_instances, dep_dictionary, dep_word_dictionary, element_dictionary, between_word_dictionary = load_data.build_instances_training(
@@ -303,9 +304,23 @@ def main():
         entity_2 = sys.argv[5].upper()
         symmetric = sys.argv[6].upper() in ['TRUE', 'Y', 'YES']
         threshold = float(sys.argv[7])
+        out_pairs_file = sys.argv[8]
 
-        predicted_pairs, predicted_labels = predict_sentences(model_file, sentence_file, entity_1,
+        predicted_instances, predicted_labels = predict_sentences(model_file, sentence_file, entity_1,
                                                                   entity_2, symmetric,threshold)
+
+        outfile = open(out_pairs_file,'w')
+
+        for i in range(len(predicted_labels)):
+            if predicted_labels[i] == 1:
+                outfile.write(predicted_instances[i].sentence.entity_1_formal + '\t' + predicted_instances[i].sentence.entity_2_formal +
+                              '\t' + predicted_instances[i].sentence.entity_1_species + '\t' + predicted_instances[i].sentence.entity_2_species +
+                              '\n')
+
+        outfile.close()
+
+
+
 
     else:
         print("usage error")

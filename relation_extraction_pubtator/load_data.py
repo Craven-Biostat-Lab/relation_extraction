@@ -299,11 +299,15 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
                 if entity_1_correct is True and entity_2_correct is True:
                     entity_a_texts[pmid].add(entity_1_text)
                     entity_b_texts[pmid].add(entity_2_text)
+                    pubtator_sentence.set_entity_1_species(entity_a_species)
+                    pubtator_sentence.set_entity_2_species(entity_b_species)
                     forward_sentences[label] = pubtator_sentence
 
                 elif entity_1_reverse is True and entity_2_reverse is True:
                     entity_b_texts[pmid].add(entity_1_text)
                     entity_a_texts[pmid].add(entity_2_text)
+                    pubtator_sentence.set_entity_1_species(entity_b_species)
+                    pubtator_sentence.set_entity_2_species(entity_a_species)
                     reverse_sentences[label] = pubtator_sentence
 
                 else:
