@@ -174,6 +174,46 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
     plt.show()
 
 
+def predict_sentences(model_file, pubtator_file, entity_1, entity_2, symmetric,threshold):
+
+    predict_pmids, predict_forward_sentences, predict_reverse_sentences, entity_1_text, entity_2_text = load_data.load_pubtator_abstract_sentences(
+        pubtator_file,entity_1,entity_2)
+
+    model, dep_dictionary, dep_word_dictionary, dep_element_dictionary, between_word_dictionary = joblib.load(
+        model_file)
+
+    predict_instances = load_data.build_instances_predict(predict_forward_sentences, predict_reverse_sentences,dep_dictionary,
+                                                          dep_word_dictionary, dep_element_dictionary,
+                                                          between_word_dictionary,entity_1_text,entity_2_text, symmetric)
+
+    instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(
+        predict_instances, symmetric)
+
+    instance_pairs = []
+    pair_labels = []
+    for g in group_to_instance_dict:
+        group_X = []
+        group_y = []
+        for ti in group_to_instance_dict[g]:
+            instance = ti
+            group_X.append(ti.features)
+
+        group_predict_X = np.array(group_X)
+
+
+
+        predicted_prob = model.predict_proba(group_predict_X)[:, 1]
+        negation_predicted_prob = 1 - predicted_prob
+        noisy_or = 1 - np.prod(negation_predicted_prob)
+        instance_pairs.append(instance)
+        if noisy_or >= threshold:
+            pair_labels.append(1)
+        else:
+            pair_labels.append(0)
+
+    return instance_pairs, pair_labels
+        
+
 
 def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e2_col,distant_rel_col,entity_1, entity_2, symmetric):
 
@@ -194,22 +234,11 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
                             reverse_distant_interactions,entity_1_text,entity_2_text,symmetric)
 
 
-    #Training full model
-    total_training_forward_sentences = {}
-    total_training_reverse_sentences = {}
-
-    for key in training_forward_sentences:
-        if key.split('|')[0] in training_pmids:
-            total_training_forward_sentences[key] = training_forward_sentences[key]
-
-    for key in training_reverse_sentences:
-        if key.split('|')[0] in training_pmids:
-            total_training_reverse_sentences[key] = training_reverse_sentences[key]
 
 
 
     training_instances, dep_dictionary, dep_word_dictionary, element_dictionary, between_word_dictionary = load_data.build_instances_training(
-        total_training_forward_sentences,total_training_reverse_sentences,distant_interactions,
+        training_forward_sentences, training_reverse_sentences,distant_interactions,
         reverse_distant_interactions, entity_1_text, entity_2_text, symmetric)
 
     print(len(training_instances))
@@ -265,6 +294,18 @@ def main():
         symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
 
         distant_train(model_out, pubtator_file, distant_file, distant_e1_col, distant_e2_col, distant_rel_col, entity_1,entity_2, symmetric)
+
+
+    elif mode.upper() == "PREDICT":
+        model_file = sys.argv[2]
+        sentence_file = sys.argv[3]
+        entity_1 = sys.argv[4].upper()
+        entity_2 = sys.argv[5].upper()
+        symmetric = sys.argv[6].upper() in ['TRUE', 'Y', 'YES']
+        threshold = float(sys.argv[7])
+
+        predicted_pairs, predicted_labels = predict_sentences(model_file, sentence_file, entity_1,
+                                                                  entity_2, symmetric,threshold)
 
     else:
         print("usage error")

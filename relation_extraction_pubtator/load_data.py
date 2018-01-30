@@ -30,6 +30,42 @@ def build_dataset(words, occur_count = None):
     return data, count, dictionary, reversed_dictionary
 
 
+def build_instances_predict(predict_forward_sentences, predict_reverse_sentences, dep_dictionary,
+                                                          dep_word_dictionary, dep_element_dictionary,
+                                                          between_word_dictionary,entity_a_text,entity_b_text, symmetric):
+    predict_instances = []
+    for key in predict_forward_sentences:
+        splitkey = key.split('|')
+        reverse_key = splitkey[0] + '|' + splitkey[1] + '|' + splitkey[3] + '|' + splitkey[2]
+        if reverse_key in predict_reverse_sentences:
+            forward_predict_instance = Instance(predict_forward_sentences[key], -1)
+            forward_predict_instance.fix_word_lists(entity_a_text, entity_b_text)
+            reverse_predict_instance = Instance(predict_reverse_sentences[reverse_key], -1)
+            reverse_predict_instance.fix_word_lists(entity_a_text, entity_b_text)
+
+            if symmetric is False:
+                predict_instances.append(forward_predict_instance)
+                predict_instances.append(reverse_predict_instance)
+
+            else:
+                forward_dep_type_path = ' '.join(forward_predict_instance.dependency_path)
+                reverse_dep_type_path = ' '.join(reverse_predict_instance.dependency_path)
+
+                if forward_dep_type_path in dep_dictionary:
+                    predict_instances.append(forward_predict_instance)
+                elif reverse_dep_type_path in dep_dictionary:
+                    predict_instances.append(reverse_predict_instance)
+                else:
+                    predict_instances.append(forward_predict_instance)
+        else:
+            continue
+
+    for instance in predict_instances:
+        instance.build_features(dep_dictionary, dep_word_dictionary, dep_element_dictionary,  between_word_dictionary)
+
+    return predict_instances
+
+
 def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary,
                             distant_interactions,reverse_distant_interactions, entity_a_text, entity_b_text, symmetric = False):
     test_instances = []
