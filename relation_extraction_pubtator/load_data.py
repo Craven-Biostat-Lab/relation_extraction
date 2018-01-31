@@ -313,7 +313,7 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
                 else:
                     continue
 
-            elif entity_1_type.upper() == 'GENE' and entity_2_type.upper() == 'GENE' and entity_a_species != entity_b_species:
+            elif entity_1_type.upper() == 'GENE' and entity_2_type.upper() == 'GENE' and entity_a_species == entity_b_species:
                 pmid_list.add(pmid)
                 same_species = entity_a_species
 
