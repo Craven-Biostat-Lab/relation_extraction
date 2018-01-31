@@ -269,7 +269,7 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
             entity_1_reverse = False
             entity_2_correct = False
             entity_2_reverse = False
-            if entity_1_type.upper() == 'GENE' and entity_2_type.upper() == 'GENE':
+            if entity_1_type.upper() == 'GENE' and entity_2_type.upper() == 'GENE' and entity_a_species != entity_b_species:
                 pmid_list.add(pmid)
 
                 if entity_a_species != 'HUMAN':
@@ -313,6 +313,30 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
                 else:
                     continue
 
+            elif entity_1_type.upper() == 'GENE' and entity_2_type.upper() == 'GENE' and entity_a_species != entity_b_species:
+                pmid_list.add(pmid)
+                same_species = entity_a_species
+
+                reverse_label = pmid + '|' + sentence_no + '|' + entity_2_loc + '|' + entity_1_loc
+                correct_entities = False
+                if same_species != 'HUMAN':
+                    if 'Tax:' + same_species in entity_1_norm and 'Tax:' + same_species in entity_2_norm:
+                        correct_entities = True
+
+                else:
+                    if 'Tax:' not in entity_1_norm and 'Tax:' not in entity_2_norm:
+                        correct_entities = True
+
+                if correct_entities is True:
+                    entity_a_texts[pmid].add(entity_1_text)
+                    entity_b_texts[pmid].add(entity_2_text)
+                    pubtator_sentence.set_entity_1_species(entity_a_species)
+                    pubtator_sentence.set_entity_2_species(entity_b_species)
+
+                    if reverse_label in forward_sentences:
+                        reverse_sentences[label] = pubtator_sentence
+                    else:
+                        forward_sentences[label] = pubtator_sentence
 
             else:
                 continue
