@@ -255,54 +255,45 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
             dep_parse = l[12].split(' ')
             sentence = l[13].split(' ')
 
+            e1_split = entity_1_norm.split('(Tax:')
+            entity_1_norm_simple = e1_split[0]
+            entity_1_species = 'HUMAN'
+            if len(e1_split) > 1:
+                entity_1_species = e1_split[1][:-1]
+            e2_split = entity_2_norm.split('(Tax:')
+            entity_2_norm_simple = e2_split[0]
+            entity_2_species = 'HUMAN'
+            if len(e2_split) > 1:
+                entity_2_species = e2_split[1][:-1]
+
+
             if pmid not in entity_a_texts:
                 entity_a_texts[pmid] = set()
             if pmid not in entity_b_texts:
                 entity_b_texts[pmid]=set()
+
+            if entity_a_species == entity_1_species and entity_b_species == entity_2_species:
+                entity_a_texts[pmid].add(entity_1_text)
+                entity_b_texts[pmid].add(entity_2_text)
+
+            if entity_a_species == entity_2_species and entity_b_species == entity_1_species:
+                entity_a_texts[pmid].add(entity_2_text)
+                entity_b_texts[pmid].add(entity_1_text)
+
+
             label = pmid + '|' + sentence_no + '|' + entity_1_loc + '|' + entity_2_loc
             pubtator_sentence = Sentence(pmid,sentence_no,entity_1_text,entity_1_loc,entity_2_text,entity_2_loc,
-                                          entity_1_formal,entity_2_formal,entity_1_norm,entity_2_norm,entity_1_type, entity_2_type,
-                                          dep_parse, sentence)
+                                          entity_1_formal,entity_2_formal,entity_1_norm,entity_2_norm,entity_1_type,
+                                         entity_2_type, entity_1_norm_simple,entity_2_norm_simple,
+                                         entity_1_species, entity_2_species,dep_parse, sentence)
 
-            pubtator_sentence.set_entity_1_simple_norm('(',0)
-            pubtator_sentence.set_entity_2_simple_norm('(',0)
-
-
-            if entity_a_species != 'HUMAN':
-                if '(Tax:' + entity_a_species + ')' in entity_1_norm:
-                    pubtator_sentence.set_entity_1_species(entity_a_species)
-                    entity_a_texts[pmid].add(entity_1_text)
-                elif '(Tax:' + entity_a_species + ')' in entity_2_norm:
-                    pubtator_sentence.set_entity_2_species(entity_a_species)
-                    entity_a_texts[pmid].add(entity_2_text)
-            else:
-                if 'Tax:' not in entity_1_norm:
-                    pubtator_sentence.set_entity_1_species(entity_a_species)
-                    entity_a_texts[pmid].add(entity_1_text)
-                elif 'Tax:' not in entity_2_norm:
-                    pubtator_sentence.set_entity_2_species(entity_a_species)
-                    entity_a_texts[pmid].add(entity_2_text)
-
-            if entity_b_species != 'HUMAN':
-                if '(Tax:' + entity_b_species + ')' in entity_2_norm:
-                    pubtator_sentence.set_entity_2_species(entity_b_species)
-                    entity_b_texts[pmid].add(entity_2_text)
-                elif '(Tax:' + entity_b_species + ')' in entity_1_norm:
-                    pubtator_sentence.set_entity_1_species(entity_b_species)
-                    entity_b_texts[pmid].add(entity_1_text)
-            else:
-                if 'Tax:' not in entity_2_norm:
-                    pubtator_sentence.set_entity_2_species(entity_b_species)
-                    entity_b_texts[pmid].add(entity_2_text)
-                elif 'Tax:' not in entity_1_norm:
-                    pubtator_sentence.set_entity_1_species(entity_b_species)
-                    entity_b_texts[pmid].add(entity_1_text)
 
             if entity_1_type.upper() == 'GENE' and entity_2_type.upper() == 'GENE' and entity_a_species != entity_b_species:
                 pmid_list.add(pmid)
 
                 if entity_a_species == pubtator_sentence.entity_1_species and entity_b_species == pubtator_sentence.entity_2_species:
                     forward_sentences[label] = pubtator_sentence
+
 
                 elif entity_a_species == pubtator_sentence.entity_2_species and entity_b_species == pubtator_sentence.entity_1_species:
                     reverse_sentences[label] = pubtator_sentence
