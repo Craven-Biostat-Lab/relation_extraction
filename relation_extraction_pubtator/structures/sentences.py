@@ -17,6 +17,8 @@ class Sentence(object):
         self.entity_2_type = entity_2_type
         self.entity_1_species = ''
         self.entity_2_species = ''
+        self.entity_1_simple_norm = ''
+        self.entity_2_simple_norm = ''
         self.dep_parse = dep_parse
         self.sentence_words = sentence
 
@@ -29,3 +31,9 @@ class Sentence(object):
 
     def set_entity_2_species(self,species):
         self.entity_2_species = species
+
+    def set_entity_1_simple_norm(self,splitter,col):
+        self.entity_1_simple_norm = self.entity_1_norm.split(splitter)[col]
+
+    def set_entity_2_simple_norm(self,splitter,col):
+        self.entity_2_simple_norm = self.entity_2_norm.split(splitter)[col]

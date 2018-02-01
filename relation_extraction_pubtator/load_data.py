@@ -78,8 +78,8 @@ def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_d
             reverse_test_instance = Instance(test_reverse_sentences[reverse_key], 0)
             reverse_test_instance.fix_word_lists(entity_a_text, entity_b_text)
 
-            entity_combo = (forward_test_instance.sentence.entity_1_norm.split('(')[0],
-                                forward_test_instance.sentence.entity_2_norm.split('(')[0])
+            entity_combo = (forward_test_instance.sentence.entity_1_simple_norm,
+                                forward_test_instance.sentence.entity_2_simple_norm)
 
 
             if symmetric is False:
@@ -137,8 +137,8 @@ def build_instances_training(
             reverse_train_instance = Instance(training_reverse_sentences[reverse_key],0)
             reverse_train_instance.fix_word_lists(entity_a_text, entity_b_text)
 
-            entity_combo = (forward_train_instance.sentence.entity_1_norm.split('(')[0],
-                             forward_train_instance.sentence.entity_2_norm.split('(')[0])
+            entity_combo = (forward_train_instance.sentence.entity_1_simple_norm,
+                             forward_train_instance.sentence.entity_2_simple_norm)
 
 
             if symmetric is False:
@@ -264,6 +264,8 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
                                           entity_1_formal,entity_2_formal,entity_1_norm,entity_2_norm,entity_1_type, entity_2_type,
                                           dep_parse, sentence)
 
+            pubtator_sentence.set_entity_1_simple_norm('(',0)
+            pubtator_sentence.set_entity_2_simple_norm('(',0)
 
             entity_1_correct = False
             entity_1_reverse = False
