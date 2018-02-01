@@ -2,15 +2,15 @@ import sys
 import os
 
 import load_data
-import numpy as np
+#import numpy as np
 import itertools
 import collections
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.externals import joblib
-from sklearn import metrics
+#from sklearn.linear_model import LogisticRegression
+#from sklearn.externals import joblib
+#from sklearn import metrics
 
 
 def create_instance_groupings(group_instances, symmetric):

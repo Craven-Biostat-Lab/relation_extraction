@@ -3,16 +3,12 @@ import itertools
 def list_correction(checklist,entity_a_text,entity_b_text):
     for i in range(len(checklist)):
         word = checklist[i]
-        if len(entity_a_text) < len(entity_b_text):
-            if word in entity_a_text:
-                checklist[i] = 'ENTITY_A'
-            elif word in entity_b_text:
+        if word in entity_a_text and word in entity_b_text:
+            checklist[i] = 'ENTITY_A_B'
+        elif word in entity_a_text:
+            checklist[i] = 'ENTITY_A'
+        elif word in entity_b_text:
                 checklist[i] = 'ENTITY_B'
-        else:
-            if word in entity_b_text:
-                checklist[i] = 'ENTITY_B'
-            elif word in entity_a_text:
-                checklist[i] = 'ENTITY_A'
 
     return checklist
 class Instance(object):
@@ -106,8 +102,8 @@ class Instance(object):
     def fix_word_lists(self,entity_a_text_dict,entity_b_text_dict):
         #fix dependency_word_list
 
-        entity_a_text = entity_a_text_dict[self.sentence.pmid]
-        entity_b_text = entity_b_text_dict[self.sentence.pmid]
+        entity_a_text = entity_a_text_dict[self.sentence.pmid + '|' + self.sentence.sentence_no]
+        entity_b_text = entity_b_text_dict[self.sentence.pmid + '|' + self.sentence.sentence_no]
         self.dependency_words = list_correction(self.dependency_words,entity_a_text,entity_b_text)
         self.between_words = list_correction(self.between_words,entity_a_text,entity_b_text)
 

@@ -268,17 +268,17 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
 
 
             if pmid not in entity_a_texts:
-                entity_a_texts[pmid] = set()
+                entity_a_texts[pmid+'|'+sentence_no] = set()
             if pmid not in entity_b_texts:
-                entity_b_texts[pmid]=set()
+                entity_b_texts[pmid+'|'+sentence_no]=set()
 
             if entity_a_species == entity_1_species and entity_b_species == entity_2_species:
-                entity_a_texts[pmid].add(entity_1_text)
-                entity_b_texts[pmid].add(entity_2_text)
+                entity_a_texts[pmid+'|'+sentence_no].add(entity_1_text)
+                entity_b_texts[pmid+'|'+sentence_no].add(entity_2_text)
 
             if entity_a_species == entity_2_species and entity_b_species == entity_1_species:
-                entity_a_texts[pmid].add(entity_2_text)
-                entity_b_texts[pmid].add(entity_1_text)
+                entity_a_texts[pmid+'|'+sentence_no].add(entity_2_text)
+                entity_b_texts[pmid+'|'+sentence_no].add(entity_1_text)
 
 
             label = pmid + '|' + sentence_no + '|' + entity_1_loc + '|' + entity_2_loc
