@@ -1,12 +1,12 @@
 import sys
 import os
-
 import load_data
 import numpy as np
 import itertools
 import collections
-
 import matplotlib.pyplot as plt
+
+from model_learning import model_learning as ml
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.externals import joblib
@@ -218,7 +218,7 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
     training_pmids,training_forward_sentences,training_reverse_sentences, entity_1_text, entity_2_text = load_data.load_pubtator_abstract_sentences(
         pubtator_file,entity_1,entity_2)
 
-
+    '''
     #k-cross val
     precision,recall, accuracy = k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,
                             reverse_distant_interactions,entity_1_text,entity_2_text,symmetric)
@@ -236,7 +236,7 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
     plt.ylim([0.0, 1.05])
     plt.xlim([0.0, 1.0])
     plt.show()
-
+    '''
 
     training_instances, dep_dictionary, dep_word_dictionary, element_dictionary, between_word_dictionary = load_data.build_instances_training(
         training_forward_sentences, training_reverse_sentences,distant_interactions,
@@ -255,6 +255,8 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
     X_train = np.array(X)
     y_train = np.ravel(y)
 
+    
+    '''
     model = LogisticRegression()
     model.fit(X_train, y_train)
     print('Number of Sentences')
@@ -275,7 +277,7 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
     print('length of feature space')
     print(len(dep_dictionary) + len(dep_word_dictionary) + len(element_dictionary) + len(between_word_dictionary))
     joblib.dump((model, dep_dictionary, dep_word_dictionary, element_dictionary, between_word_dictionary), model_out)
-
+    '''
     print("trained model")
 
 
