@@ -255,7 +255,7 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
     X_train = np.array(X)
     y_train = np.ravel(y)
 
-    
+
     '''
     model = LogisticRegression()
     model.fit(X_train, y_train)
