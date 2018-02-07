@@ -181,12 +181,15 @@ def predict_sentences(model_file, pubtator_file, entity_1, entity_2, symmetric,t
 
     instances = []
     pair_labels = []
+    group_pmids = []
     for g in group_to_instance_dict:
         group_X = []
         group_y = []
+        pmid_set = set()
         for ti in group_to_instance_dict[g]:
             instance = ti
             group_X.append(ti.features)
+            pmid_set.add(ti.sentence.pmid)
 
         group_predict_X = np.array(group_X)
 
@@ -196,12 +199,13 @@ def predict_sentences(model_file, pubtator_file, entity_1, entity_2, symmetric,t
         negation_predicted_prob = 1 - predicted_prob
         noisy_or = 1 - np.prod(negation_predicted_prob)
         instances.append(instance)
+        group_pmids.append('|'.join(list(pmid_set)))
         if noisy_or >= threshold:
             pair_labels.append(1)
         else:
             pair_labels.append(0)
 
-    return instances, pair_labels
+    return instances, pair_labels, group_pmids
         
 
 
@@ -308,16 +312,17 @@ def main():
         threshold = float(sys.argv[7])
         out_pairs_file = sys.argv[8]
 
-        predicted_instances, predicted_labels = predict_sentences(model_file, sentence_file, entity_1,
+        predicted_instances, predicted_labels, group_pmids = predict_sentences(model_file, sentence_file, entity_1,
                                                                   entity_2, symmetric,threshold)
 
         outfile = open(out_pairs_file,'w')
 
+        outfile.write('GENE_1\tGENE_2\tGENE_1_SPECIES\tGENE_2_SPECIES\tPUBMED_IDS\n')
         for i in range(len(predicted_labels)):
             if predicted_labels[i] == 1:
                 outfile.write(predicted_instances[i].sentence.entity_1_formal + '\t' + predicted_instances[i].sentence.entity_2_formal +
                               '\t' + predicted_instances[i].sentence.entity_1_species + '\t' + predicted_instances[i].sentence.entity_2_species +
-                              '\n')
+                              '\t' + group_pmids[i]+'\n')
 
         outfile.close()
 
