@@ -31,11 +31,11 @@ def artificial_neural_network_train(training_features,training_labels,model_file
     num_labels = training_labels.shape[1]
 
     learning_rate = 0.01
-    training_epochs = 1
+    training_epochs = 20
 
     #number of hidden units in hidden layer
     #num_hidden = (num_features + num_labels)/2
-    num_hidden = 10
+    num_hidden = 100
 
     input_tensor = tf.placeholder(tf.float32,[None, num_features], name = 'input')
     output_tensor = tf.placeholder(tf.float32,[None,num_labels],name ='output')
