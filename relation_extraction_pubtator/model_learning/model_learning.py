@@ -11,12 +11,12 @@ def accuracy(predictions, labels):
 
 def ann_forward(input_tensor,weights,biases):
     layer_1_multiplication = tf.matmul(input_tensor,weights['h1'])
-    layer_1_addition = tf.add(layer_1_multiplication,biases['b1'])
-    layer_1_activation = tf.nn.sigmoid(layer_1_addition)
+    layer_1_bias_addition = tf.add(layer_1_multiplication,biases['b1'])
+    layer_1_activation = tf.nn.relu(layer_1_bias_addition)
 
     out_layer_multiplication = tf.matmul(layer_1_activation,weights['out'])
-    out_layer_addition = tf.add(out_layer_multiplication,biases['out'])
-    out_layer_activation = tf.nn.sigmoid(out_layer_addition)
+    out_layer_bias_addition = tf.add(out_layer_multiplication,biases['out'])
+    out_layer_activation = tf.nn.relu(out_layer_bias_addition)
 
     return out_layer_activation
 
@@ -53,7 +53,7 @@ def artificial_neural_network(training_features,training_labels,model_file):
 
     prediction = ann_forward(input_tensor,weights,biases)
 
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=training_labels))
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=training_labels))
     optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
 
 
@@ -69,8 +69,7 @@ def artificial_neural_network(training_features,training_labels,model_file):
         #print('Training accuracy: {:.1f}'.format(accuracy(predictions,training_labels)))
 
     print('try predicting new vals')
-    _, l, prediction_val = sess.run([optimizer, loss, prediction],
-                                    feed_dict={input_tensor: training_features, output_tensor: training_labels})
+    prediction_val = sess.run([prediction],feed_dict={input_tensor: training_features, output_tensor: training_labels})
     print(prediction_val)
 
     sess.close()
