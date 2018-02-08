@@ -6,7 +6,7 @@ import itertools
 import collections
 import matplotlib.pyplot as plt
 
-from model_learning import model_learning as ml
+from machine_learning_models import machine_learning_models as ml
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.externals import joblib
