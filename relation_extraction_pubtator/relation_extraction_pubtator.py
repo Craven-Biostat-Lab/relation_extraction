@@ -13,43 +13,46 @@ from sklearn.externals import joblib
 from sklearn import metrics
 
 
-def create_instance_groupings(group_instances, symmetric):
+def create_instance_groupings(all_instances, group_instances, symmetric):
 
     instance_to_group_dict = {}
     group_to_instance_dict = {}
     instance_dict = {}
     group = 0
 
-    for ig in group_instances:
+    for i in group_instances:
+        ig = all_instances[i]
         start_norm = ig.sentence.entity_1_norm
         end_norm = ig.sentence.entity_2_norm
-        instance_dict[ig] = [start_norm, end_norm]
-        instance_to_group_dict[ig] = group
+        instance_dict[i] = [start_norm, end_norm]
+        instance_to_group_dict[i] = group
         group += 1
 
-    for instance_1 in group_instances:
-        for instance_2 in group_instances:
+    for i1 in group_instances:
+        instance_1 = all_instances[i1]
+        for i2 in group_instances:
+            instance_2 = all_instances[i2]
 
             recent_update = False
 
             if instance_1 == instance_2 or instance_1.get_label() != instance_2.get_label():
                 continue
 
-            if instance_dict[instance_1][0] == instance_dict[instance_2][0] and \
-                            instance_dict[instance_1][1] == instance_dict[instance_2][1]:
-                instance_to_group_dict[instance_1] = instance_to_group_dict[instance_2]
+            if instance_dict[i1][0] == instance_dict[i2][0] and \
+                            instance_dict[i1][1] == instance_dict[i2][1]:
+                instance_to_group_dict[i1] = instance_to_group_dict[i2]
                 recent_update = True
 
             # check reverse direction if relation is symmetric and the forward direction wasn't incorporated
             if symmetric is True and recent_update is False:
-                if instance_dict[instance_1][1] == instance_dict[instance_2][0]  and \
-                                instance_dict[instance_1][0] == instance_dict[instance_2][1]:
-                    instance_to_group_dict[instance_1] = instance_to_group_dict[instance_2]
+                if instance_dict[i1][1] == instance_dict[i2][0]  and \
+                                instance_dict[i1][0] == instance_dict[i2][1]:
+                    instance_to_group_dict[i1] = instance_to_group_dict[i2]
 
-    for ig in instance_to_group_dict:
-        if instance_to_group_dict[ig] not in group_to_instance_dict:
-            group_to_instance_dict[instance_to_group_dict[ig]] = []
-        group_to_instance_dict[instance_to_group_dict[ig]].append(ig)
+    for i in instance_to_group_dict:
+        if instance_to_group_dict[i] not in group_to_instance_dict:
+            group_to_instance_dict[instance_to_group_dict[i]] = []
+        group_to_instance_dict[instance_to_group_dict[i]].append(i)
 
     return instance_to_group_dict, group_to_instance_dict, instance_dict
 
@@ -59,7 +62,6 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
     pmids = list(pmids)
     #split training sentences for cross validation
     ten_fold_length = len(pmids)/k
-    print(ten_fold_length)
     all_chunks = [pmids[i:i + ten_fold_length] for i in xrange(0, len(pmids), ten_fold_length)]
 
 
@@ -67,12 +69,10 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
     total_test = np.array([])
     total_predicted_prob = np.array([])
     for i in range(len(all_chunks)):
-        #print('building')
         print('Fold #: ' + str(i))
         fold_chunks = all_chunks[:]
         fold_test_abstracts = set(fold_chunks.pop(i))
         fold_training_abstracts = set(list(itertools.chain.from_iterable(fold_chunks)))
-        print(fold_training_abstracts)
 
         fold_training_forward_sentences = {}
         fold_training_reverse_sentences = {}
@@ -96,8 +96,7 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
             fold_training_forward_sentences, fold_training_reverse_sentences, distant_interactions,
             reverse_distant_interactions, entity_1_text, entity_2_text, symmetric)
 
-        #print('# of train instances: ' + str(len(fold_training_instances)))
-        print(len(fold_training_instances))
+
 
         #train model
         X = []
@@ -110,51 +109,60 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
         fold_train_X = np.array(X)
         fold_train_y = np.array(y)
 
-        model = LogisticRegression()
-        model.fit(fold_train_X, fold_train_y)
+        #model = LogisticRegression()
+        #model.fit(fold_train_X, fold_train_y)
+
+        test_model_path = ml.artificial_neural_network_train(fold_train_X,fold_train_y,'./model_building_meta_data/test' + str(i))
 
 
 
-        #pick up here
         fold_test_instances = load_data.build_instances_testing(fold_test_forward_sentences, fold_test_reverse_sentences,
                                                                 fold_dep_dictionary, fold_dep_word_dictionary,
                                                                 fold_dep_element_dictionary,fold_between_word_dictionary,
                                                                 distant_interactions,reverse_distant_interactions,
                                                                 entity_1_text,entity_2_text,symmetric)
 
-        #group instances by pmid
+        #group instances by pmid and build feature array
+        fold_test_features = []
+        fold_test_labels = []
         pmid_test_instances = {}
-        for fti in fold_test_instances:
+        for i in range(len(fold_test_instances)):
+            fti = fold_test_instances[i]
             if fti.sentence.pmid not in pmid_test_instances:
                 pmid_test_instances[fti.sentence.pmid] = []
-            pmid_test_instances[fti.sentence.pmid].append(fti)
+            pmid_test_instances[fti.sentence.pmid].append(i)
+            fold_test_features.append(fti.features)
+            fold_test_labels.append(fti.label)
+
+        fold_test_X = np.array(fold_test_features)
+        fold_test_y = np.array(fold_test_labels)
+
+        fold_test_predicted_prob = ml.artificial_neural_network_test(fold_test_X, fold_test_y, test_model_path)
 
         for abstract_pmid in pmid_test_instances:
-            instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(
+            instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(fold_test_instances,
                 pmid_test_instances[abstract_pmid],symmetric)
 
-
             for g in group_to_instance_dict:
-                group_X = []
-                group_y = []
-                for ti in group_to_instance_dict[g]:
-                    group_X.append(ti.features)
-                    group_y.append(ti.label)
+                predicted_prob = []
+                group_labels = []
+                for test_instance_index in group_to_instance_dict[g]:
+                    predicted_prob.append(fold_test_predicted_prob[test_instance_index])
+                    group_labels.append(fold_test_instances[test_instance_index].label)
 
-                group_test_X = np.array(group_X)
-                group_test_y = np.unique(group_y)
-
+                group_test_y = np.unique(group_labels)
                 if group_test_y.size == 1:
                     total_test = np.append(total_test, group_test_y[0])
                 else:
                     continue
                     print('error')
-                    #total_test = np.append(total_test,group_y)
+                    # total_test = np.append(total_test,group_y)
 
-                predicted_prob = model.predict_proba(group_test_X)[:, 1]
+                predicted_prob = np.array(predicted_prob)
                 negation_predicted_prob = 1 - predicted_prob
                 noisy_or = 1 - np.prod(negation_predicted_prob)
                 total_predicted_prob = np.append(total_predicted_prob, noisy_or)
+
 
                 # Generate precision recall curves
 
@@ -222,7 +230,7 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
     training_pmids,training_forward_sentences,training_reverse_sentences, entity_1_text, entity_2_text = load_data.load_pubtator_abstract_sentences(
         pubtator_file,entity_1,entity_2)
 
-    '''
+
     #k-cross val
     precision,recall, accuracy = k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,
                             reverse_distant_interactions,entity_1_text,entity_2_text,symmetric)
@@ -240,8 +248,8 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
     plt.ylim([0.0, 1.05])
     plt.xlim([0.0, 1.0])
     plt.show()
-    '''
 
+    '''
     training_instances, dep_dictionary, dep_word_dictionary, element_dictionary, between_word_dictionary = load_data.build_instances_training(
         training_forward_sentences, training_reverse_sentences,distant_interactions,
         reverse_distant_interactions, entity_1_text, entity_2_text, symmetric)
@@ -259,8 +267,9 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
     X_train = np.array(X)
     y_train = np.ravel(y)
 
-    ml.artificial_neural_network(X_train,y_train,model_out)
-    '''
+
+    trained_model_path = ml.artificial_neural_network_train(X_train,y_train,model_out)
+
     model = LogisticRegression()
     model.fit(X_train, y_train)
     print('Number of Sentences')

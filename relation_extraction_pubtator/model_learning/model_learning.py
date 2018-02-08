@@ -16,12 +16,12 @@ def ann_forward(input_tensor,weights,biases):
 
     out_layer_multiplication = tf.matmul(layer_1_activation,weights['out'])
     out_layer_bias_addition = tf.add(out_layer_multiplication,biases['out'])
-    out_layer_activation = tf.nn.relu(out_layer_bias_addition)
+    out_layer_activation = tf.nn.softmax(out_layer_bias_addition, name='out_layer_activation')
 
     return out_layer_activation
 
-def artificial_neural_network(training_features,training_labels,model_file):
-
+def artificial_neural_network_train(training_features,training_labels,model_file):
+    tf.reset_default_graph()
     #convert training_labels into one-hot representation
     training_labels = np.eye(np.unique(training_labels).size)[training_labels]
 
@@ -31,11 +31,11 @@ def artificial_neural_network(training_features,training_labels,model_file):
     num_labels = training_labels.shape[1]
 
     learning_rate = 0.01
-    training_epochs = 10
+    training_epochs = 1
 
     #number of hidden units in hidden layer
     #num_hidden = (num_features + num_labels)/2
-    num_hidden = 5
+    num_hidden = 10
 
     input_tensor = tf.placeholder(tf.float32,[None, num_features], name = 'input')
     output_tensor = tf.placeholder(tf.float32,[None,num_labels],name ='output')
@@ -54,8 +54,10 @@ def artificial_neural_network(training_features,training_labels,model_file):
     prediction = ann_forward(input_tensor,weights,biases)
 
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=training_labels))
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
+    optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
+
+    saver = tf.train.Saver()
 
     sess = tf.Session()
     init = tf.global_variables_initializer()
@@ -65,21 +67,33 @@ def artificial_neural_network(training_features,training_labels,model_file):
 
     for epoch in range(training_epochs):
         _, l,prediction_val = sess.run([optimizer,loss,prediction], feed_dict={input_tensor: training_features, output_tensor: training_labels})
-        print(prediction_val)
-        #print('Training accuracy: {:.1f}'.format(accuracy(predictions,training_labels)))
+        print('Training accuracy: {:.1f}'.format(accuracy(prediction_val,training_labels)))
 
-    print('try predicting new vals')
-    prediction_val = sess.run([prediction],feed_dict={input_tensor: training_features, output_tensor: training_labels})
-    print(prediction_val)
-
+    save_path = saver.save(sess, model_file)
     sess.close()
 
+    return save_path
 
 
+def artificial_neural_network_test(test_features,test_labels,model_file):
+    tf.reset_default_graph()
+    test_labels = np.eye(2)[test_labels]
 
+    restored_model = tf.train.import_meta_graph(model_file + '.meta')
 
+    sess = tf.Session()
 
+    restored_model.restore(sess,model_file)
 
+    graph = tf.get_default_graph()
+    input_tensor = graph.get_tensor_by_name('input:0')
+    output_tensor = graph.get_tensor_by_name('output:0')
+    predict_tensor = graph.get_tensor_by_name('out_layer_activation:0')
+
+    predicted_val = sess.run([predict_tensor],feed_dict={input_tensor:test_features,output_tensor:test_labels})
+    #print(predicted_val[0][:,1])
+    sess.close()
+    return predicted_val[0][:,1]
 
 
 

@@ -212,10 +212,10 @@ def build_instances_training(
         words_between_entities_vocabulary)
 
 
-    print(dep_dictionary)
-    print(dep_path_word_dictionary)
-    print(between_word_dictionary)
-    print(dep_element_dictionary)
+    #print(dep_dictionary)
+    #print(dep_path_word_dictionary)
+    #print(between_word_dictionary)
+    #print(dep_element_dictionary)
 
     for ci in candidate_instances:
         ci.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary)
