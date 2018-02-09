@@ -53,7 +53,7 @@ def artificial_neural_network_train(training_features,training_labels,model_file
 
     prediction = ann_forward(input_tensor,weights,biases)
 
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=training_labels))
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=output_tensor))
     optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
 
