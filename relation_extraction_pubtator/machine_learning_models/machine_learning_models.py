@@ -96,4 +96,35 @@ def artificial_neural_network_test(test_features,test_labels,model_file):
     return predicted_val[0][:,1]
 
 
+def high_level_neural_network_train(training_features, training_labels,model_file):
+    num_features = training_features.shape[1]
+    feature_columns = [tf.feature_column.numeric_column("x", shape=[num_features])]
 
+    classifier = tf.estimator.DNNClassifier(feature_columns=feature_columns,
+                                            hidden_units=[10, 20, 10],
+                                            n_classes=3,
+                                            model_dir=model_file)
+
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": training_features},
+        y=training_labels,
+        num_epochs=None,
+        shuffle=True)
+
+    # Train model.
+    classifier.train(input_fn=train_input_fn, steps=2000)
+
+    return classifier
+
+def high_level_neural_network_test(test_features,test_labels,classifier):
+    test_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": test_features},
+        y= test_labels,
+        num_epochs=1,
+        shuffle=False)
+
+    # Evaluate accuracy.
+    accuracy_score = classifier.evaluate(input_fn=test_input_fn)["accuracy"]
+
+    print("\nTest Accuracy: {0:f}\n".format(accuracy_score))
+    return accuracy_score
