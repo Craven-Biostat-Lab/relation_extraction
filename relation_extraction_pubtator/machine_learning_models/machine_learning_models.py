@@ -9,18 +9,22 @@ def accuracy(predictions, labels):
     return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
             / predictions.shape[0])
 
-def ann_forward(input_tensor,weights,biases):
-    layer_1_multiplication = tf.matmul(input_tensor,weights['h1'])
-    layer_1_bias_addition = tf.add(layer_1_multiplication,biases['b1'])
-    layer_1_activation = tf.nn.relu(layer_1_bias_addition)
+def ann_forward(input_tensor,num_hidden_layers,hidden_mult,hidden_add,hidden_act,weights,biases):
+    for i in range(num_hidden_layers):
+        if i == 0:
+            hidden_mult[i] = tf.matmul(input_tensor,weights[i])
+        else:
+            hidden_mult[i] = tf.matmul(hidden_act[i-1],weights[i])
+        hidden_add[i] = tf.add(hidden_mult[i], biases[i])
+        hidden_act[i] = tf.nn.relu(hidden_add[i])
 
-    out_layer_multiplication = tf.matmul(layer_1_activation,weights['out'])
+    out_layer_multiplication = tf.matmul(hidden_act[num_hidden_layers-1],weights['out'])
     out_layer_bias_addition = tf.add(out_layer_multiplication,biases['out'])
     out_layer_activation = tf.nn.softmax(out_layer_bias_addition, name='out_layer_activation')
 
     return out_layer_activation
 
-def artificial_neural_network_train(training_features,training_labels,model_file):
+def artificial_neural_network_train(training_features,training_labels,hidden_array,model_file):
     tf.reset_default_graph()
     #convert training_labels into one-hot representation
     training_labels = np.eye(np.unique(training_labels).size)[training_labels]
@@ -35,23 +39,36 @@ def artificial_neural_network_train(training_features,training_labels,model_file
 
     #number of hidden units in hidden layer
     #num_hidden = (num_features + num_labels)/2
-    num_hidden = 100
+    num_hidden_layers = len(hidden_array)
+    last_hidden_units = hidden_array[num_hidden_layers-1]
 
     input_tensor = tf.placeholder(tf.float32,[None, num_features], name = 'input')
     output_tensor = tf.placeholder(tf.float32,[None,num_labels],name ='output')
 
     #store layers weight and bias
     weights = {
-        'h1': tf.Variable(tf.random_normal([num_features, num_hidden])),
-        'out': tf.Variable(tf.random_normal([num_hidden,num_labels]))
+        #'h1': tf.Variable(tf.random_normal([num_features, num_hidden])),
+        'out': tf.Variable(tf.random_normal([last_hidden_units,num_labels]))
     }
 
     biases = {
-        'b1': tf.Variable(tf.random_normal([num_hidden])),
+        #'b1': tf.Variable(tf.random_normal([num_hidden])),
         'out': tf.Variable(tf.random_normal([num_labels]))
     }
 
-    prediction = ann_forward(input_tensor,weights,biases)
+    for i in range(num_hidden_layers):
+        num_hidden_units = hidden_array[i]
+        if i == 0:
+            weights[i] = tf.Variable(tf.random_normal([num_features,num_hidden_units]))
+        else:
+            weights[i] = tf.Variable(tf.random_normal([hidden_array[i-1],num_hidden_units]))
+
+        biases[i] = tf.Variabe(tf.random_normal([num_hidden_units]))
+
+    hidden_mult = {}
+    hidden_add = {}
+    hidden_act = {}
+    prediction = ann_forward(input_tensor,num_hidden_layers,hidden_mult,hidden_add,hidden_act,weights,biases)
 
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=output_tensor))
     optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)

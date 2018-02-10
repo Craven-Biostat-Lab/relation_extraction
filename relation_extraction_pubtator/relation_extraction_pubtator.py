@@ -111,8 +111,8 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
 
         #model = LogisticRegression()
         #model.fit(fold_train_X, fold_train_y)
-
-        test_model_path = ml.artificial_neural_network_train(fold_train_X,fold_train_y,'./model_building_meta_data/test' + str(i))
+        hidden_array = [10,10]
+        test_model_path = ml.artificial_neural_network_train(fold_train_X,fold_train_y,hidden_array,'./model_building_meta_data/test' + str(i))
 
 
 
