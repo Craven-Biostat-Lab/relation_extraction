@@ -9,7 +9,10 @@ def accuracy(predictions, labels):
     return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
             / predictions.shape[0])
 
-def ann_forward(input_tensor,num_hidden_layers,hidden_mult,hidden_add,hidden_act,weights,biases):
+def ann_forward(input_tensor,num_hidden_layers,weights,biases):
+    hidden_mult = {}
+    hidden_add = {}
+    hidden_act  = {}
     for i in range(num_hidden_layers):
         if i == 0:
             hidden_mult[i] = tf.matmul(input_tensor,weights[i])
@@ -63,12 +66,10 @@ def artificial_neural_network_train(training_features,training_labels,hidden_arr
         else:
             weights[i] = tf.Variable(tf.random_normal([hidden_array[i-1],num_hidden_units]))
 
-        biases[i] = tf.Variabe(tf.random_normal([num_hidden_units]))
+        biases[i] = tf.Variable(tf.random_normal([num_hidden_units]))
 
-    hidden_mult = {}
-    hidden_add = {}
-    hidden_act = {}
-    prediction = ann_forward(input_tensor,num_hidden_layers,hidden_mult,hidden_add,hidden_act,weights,biases)
+
+    prediction = ann_forward(input_tensor,num_hidden_layers,weights,biases)
 
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=output_tensor))
     optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
@@ -113,13 +114,14 @@ def artificial_neural_network_test(test_features,test_labels,model_file):
     return predicted_val[0][:,1]
 
 
-def high_level_neural_network_train(training_features, training_labels,model_file):
+def high_level_neural_network_train(training_features, training_labels,hidden_array,model_file):
     num_features = training_features.shape[1]
+    num_classes = np.unique(training_labels).size
     feature_columns = [tf.feature_column.numeric_column("x", shape=[num_features])]
 
     classifier = tf.estimator.DNNClassifier(feature_columns=feature_columns,
-                                            hidden_units=[10, 20, 10],
-                                            n_classes=3,
+                                            hidden_units=hidden_array,
+                                            n_classes=num_classes,
                                             model_dir=model_file)
 
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -144,4 +146,9 @@ def high_level_neural_network_test(test_features,test_labels,classifier):
     accuracy_score = classifier.evaluate(input_fn=test_input_fn)["accuracy"]
 
     print("\nTest Accuracy: {0:f}\n".format(accuracy_score))
+
+    predictions = list(classifier.predict(input_fn=test_input_fn))
+    predicted_classes = [p["probabilities"] for p in predictions]
+    print(predicted_classes)
+
     return accuracy_score
