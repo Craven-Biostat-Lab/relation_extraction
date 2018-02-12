@@ -111,8 +111,8 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
 
         #model = LogisticRegression()
         #model.fit(fold_train_X, fold_train_y)
-        hidden_array = [10,10]
-        test_model_path = ml.artificial_neural_network_train(fold_train_X,fold_train_y,hidden_array,'./model_building_meta_data/test' + str(i))
+        hidden_array = [1]
+        test_model = ml.high_level_neural_network_train(fold_train_X,fold_train_y,hidden_array,'./model_building_meta_data/test' + str(i))
 
 
 
@@ -137,7 +137,7 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
         fold_test_X = np.array(fold_test_features)
         fold_test_y = np.array(fold_test_labels)
 
-        fold_test_predicted_prob = ml.artificial_neural_network_test(fold_test_X, fold_test_y, test_model_path)
+        fold_test_predicted_prob = ml.high_level_neural_network_test(fold_test_X, fold_test_y, test_model)
 
         for abstract_pmid in pmid_test_instances:
             instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(fold_test_instances,

@@ -20,8 +20,10 @@ def ann_forward(input_tensor,num_hidden_layers,weights,biases):
             hidden_mult[i] = tf.matmul(hidden_act[i-1],weights[i])
         hidden_add[i] = tf.add(hidden_mult[i], biases[i])
         hidden_act[i] = tf.nn.relu(hidden_add[i])
-
-    out_layer_multiplication = tf.matmul(hidden_act[num_hidden_layers-1],weights['out'])
+    if num_hidden_layers != 0:
+        out_layer_multiplication = tf.matmul(hidden_act[num_hidden_layers-1],weights['out'])
+    else:
+        out_layer_multiplication = tf.matmul(input_tensor,weights['out'])
     out_layer_bias_addition = tf.add(out_layer_multiplication,biases['out'])
     out_layer_activation = tf.nn.softmax(out_layer_bias_addition, name='out_layer_activation')
 
@@ -115,7 +117,9 @@ def artificial_neural_network_test(test_features,test_labels,model_file):
 
 
 def high_level_neural_network_train(training_features, training_labels,hidden_array,model_file):
+    tf.reset_default_graph()
     num_features = training_features.shape[1]
+    print(num_features)
     num_classes = np.unique(training_labels).size
     feature_columns = [tf.feature_column.numeric_column("x", shape=[num_features])]
 
@@ -131,7 +135,7 @@ def high_level_neural_network_train(training_features, training_labels,hidden_ar
         shuffle=True)
 
     # Train model.
-    classifier.train(input_fn=train_input_fn, steps=2000)
+    classifier.train(input_fn=train_input_fn, steps=20000)
 
     return classifier
 
