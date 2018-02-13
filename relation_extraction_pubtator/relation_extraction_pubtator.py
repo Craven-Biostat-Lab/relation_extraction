@@ -4,6 +4,7 @@ import load_data
 import numpy as np
 import itertools
 import collections
+import shutil
 import matplotlib.pyplot as plt
 
 from machine_learning_models import machine_learning_models as ml
@@ -111,7 +112,10 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
 
         #model = LogisticRegression()
         #model.fit(fold_train_X, fold_train_y)
-        hidden_array = [1]
+        hidden_array = [1000]
+        model_dir = './model_building_meta_data/test' + str(i)
+        if os.path.exists(model_dir):
+            shutil.rmtree(model_dir)
         test_model = ml.high_level_neural_network_train(fold_train_X,fold_train_y,hidden_array,'./model_building_meta_data/test' + str(i))
 
 

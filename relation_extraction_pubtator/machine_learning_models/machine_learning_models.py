@@ -40,7 +40,9 @@ def artificial_neural_network_train(training_features,training_labels,hidden_arr
     num_labels = training_labels.shape[1]
 
     learning_rate = 0.01
-    training_epochs = 20
+    training_epochs = 150
+    loss_window = 0.000001
+    loss_hit = False
 
     #number of hidden units in hidden layer
     #num_hidden = (num_features + num_labels)/2
@@ -76,7 +78,7 @@ def artificial_neural_network_train(training_features,training_labels,hidden_arr
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=output_tensor))
     optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
-
+    previous_loss_val = 0
     saver = tf.train.Saver()
 
     sess = tf.Session()
@@ -85,10 +87,13 @@ def artificial_neural_network_train(training_features,training_labels,hidden_arr
 
 
 
-    for epoch in range(training_epochs):
+    while loss_hit is False:
         _, l,prediction_val = sess.run([optimizer,loss,prediction], feed_dict={input_tensor: training_features, output_tensor: training_labels})
         print('Training accuracy: {:.1f}'.format(accuracy(prediction_val,training_labels)))
-
+        print(abs(previous_loss_val-l))
+        if abs(previous_loss_val - l) <= loss_window:
+            loss_hit = True
+        previous_loss_val = l
     save_path = saver.save(sess, model_file)
     sess.close()
 
@@ -137,6 +142,17 @@ def high_level_neural_network_train(training_features, training_labels,hidden_ar
     # Train model.
     classifier.train(input_fn=train_input_fn, steps=20000)
 
+    train_input_fn_classifier = tf.estimator.inputs.numpy_input_fn(
+        x={"x": training_features},
+        y= training_labels,
+        num_epochs=1,
+        shuffle=False)
+
+
+    accuracy_score = classifier.evaluate(input_fn=train_input_fn_classifier)["accuracy"]
+
+    print("\nTrain Accuracy: {0:f}\n".format(accuracy_score))
+
     return classifier
 
 def high_level_neural_network_test(test_features,test_labels,classifier):
@@ -153,6 +169,6 @@ def high_level_neural_network_test(test_features,test_labels,classifier):
 
     predictions = list(classifier.predict(input_fn=test_input_fn))
     predicted_classes = [p["probabilities"] for p in predictions]
-    print(predicted_classes)
-
-    return accuracy_score
+    predicted_probs = [row[1] for row in predicted_classes]
+    print(predicted_probs)
+    return predicted_probs

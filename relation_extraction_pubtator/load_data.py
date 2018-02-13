@@ -10,12 +10,12 @@ def build_dataset(words, occur_count = None):
     num_total_words = len(set(words))
     discard_count = 0
     if occur_count is not None:
-        for c in collections.Counter(words):
-            if collections.Counter(words)[c] < occur_count:
-                discard_count +=1
-
+        word_count_dict = collections.Counter(words)
+        print(len(word_count_dict))
+        discard_count = sum(1 for i in word_count_dict.values() if i < occur_count)
+        print(discard_count)
     num_words = num_total_words - discard_count
-
+    print(num_words)
     count = []
     count.extend(collections.Counter(words).most_common(num_words))
     dictionary = dict()
