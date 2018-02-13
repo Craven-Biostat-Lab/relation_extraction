@@ -29,6 +29,15 @@ def build_dataset(words, occur_count = None):
     reversed_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
     return data, count, dictionary, reversed_dictionary
 
+def feature_pruning(feature_dict,feature_count_tuples,prune_val):
+    feature_count_dict = dict(feature_count_tuples)
+    for key, value in feature_count_dict.iteritems():
+        if value < prune_val:
+            popped_element = feature_dict.pop(key)
+
+    return feature_dict
+
+
 
 def build_instances_predict(predict_forward_sentences, predict_reverse_sentences, dep_dictionary,
                                                           dep_word_dictionary, dep_element_dictionary,
@@ -204,12 +213,12 @@ def build_instances_training(
         else:
             continue
 
-    data, count, dep_path_word_dictionary, reversed_dictionary = build_dataset(path_word_vocabulary)
-    dep_data, dep_count, dep_dictionary, dep_reversed_dictionary = build_dataset(dep_type_vocabulary)
+    data, count, dep_path_word_dictionary, reversed_dictionary = build_dataset(path_word_vocabulary,5)
+    dep_data, dep_count, dep_dictionary, dep_reversed_dictionary = build_dataset(dep_type_vocabulary,5)
     dep_element_data, dep_element_count, dep_element_dictionary, dep_element_reversed_dictionary = build_dataset(
-        dep_type_word_elements_vocabulary)
+        dep_type_word_elements_vocabulary,5)
     between_data, between_count, between_word_dictionary, between_reversed_dictionary = build_dataset(
-        words_between_entities_vocabulary)
+        words_between_entities_vocabulary,5)
 
 
     #print(dep_dictionary)
