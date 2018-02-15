@@ -223,14 +223,11 @@ def predict_sentences(model_file, pubtator_file, entity_1, entity_2, symmetric,t
 
 def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e2_col,distant_rel_col,entity_1, entity_2, symmetric):
 
-    print(distant_file)
-    print(distant_e1_col)
-    print(distant_e2_col)
-    print(distant_rel_col)
+    #get distant_relations from external knowledge base file
     distant_interactions, reverse_distant_interactions = load_data.load_distant_kb(distant_file, distant_e1_col,
                                                                                    distant_e2_col, distant_rel_col)
 
-
+    #get pmids,sentences,
     training_pmids,training_forward_sentences,training_reverse_sentences, entity_1_text, entity_2_text = load_data.load_pubtator_abstract_sentences(
         pubtator_file,entity_1,entity_2)
 

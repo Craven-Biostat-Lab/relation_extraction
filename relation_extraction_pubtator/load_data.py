@@ -5,8 +5,9 @@ import cPickle as pickle
 from structures.sentences import Sentence
 from structures.instances import Instance
 
+
 def build_dataset(words, occur_count = None):
-    """Process raw inputs into a dataset."""
+    """Process raw mentions of features into dictionary and count dictionary"""
     num_total_words = len(set(words))
     discard_count = 0
     if occur_count is not None:
@@ -29,7 +30,9 @@ def build_dataset(words, occur_count = None):
     reversed_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
     return data, count, dictionary, reversed_dictionary
 
+
 def feature_pruning(feature_dict,feature_count_tuples,prune_val):
+    """Feature pruning if not done earlier - Don't really need this  function"""
     feature_count_dict = dict(feature_count_tuples)
     for key, value in feature_count_dict.iteritems():
         if value < prune_val:
@@ -42,10 +45,15 @@ def feature_pruning(feature_dict,feature_count_tuples,prune_val):
 def build_instances_predict(predict_forward_sentences, predict_reverse_sentences, dep_dictionary,
                                                           dep_word_dictionary, dep_element_dictionary,
                                                           between_word_dictionary,entity_a_text,entity_b_text, symmetric):
+    """Builds the instances for the predict function"""
     predict_instances = []
     for key in predict_forward_sentences:
         splitkey = key.split('|')
-        reverse_key = splitkey[0] + '|' + splitkey[1] + '|' + splitkey[3] + '|' + splitkey[2]
+        pmid = splitkey[0]
+        sentence_id = splitkey[1]
+        entity_1_loc = splitkey[2]
+        entity_2_loc = splitkey[3]
+        reverse_key = pmid + '|' + sentence_id + '|' + entity_2_loc + '|' + entity_1_loc
         if reverse_key in predict_reverse_sentences:
             forward_predict_instance = Instance(predict_forward_sentences[key], -1)
             forward_predict_instance.fix_word_lists(entity_a_text, entity_b_text)
@@ -230,10 +238,6 @@ def build_instances_training(
         ci.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary)
 
     return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary
-
-
-
-
 
 
 def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_species):

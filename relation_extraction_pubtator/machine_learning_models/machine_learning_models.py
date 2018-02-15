@@ -5,14 +5,12 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 
-def accuracy(predictions, labels):
-    return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
-            / predictions.shape[0])
-
-def ann_forward(input_tensor,num_hidden_layers,weights,biases):
+def feed_forward(input_tensor, num_hidden_layers, weights, biases):
+    """Performs feed forward portion of neural network training"""
     hidden_mult = {}
     hidden_add = {}
     hidden_act  = {}
+
     for i in range(num_hidden_layers):
         with tf.name_scope('hidden_layer'+str(i)):
             if i == 0:
@@ -21,6 +19,7 @@ def ann_forward(input_tensor,num_hidden_layers,weights,biases):
                 hidden_mult[i] = tf.matmul(hidden_act[i-1],weights[i],'hidden_mult'+str(i))
             hidden_add[i] = tf.add(hidden_mult[i], biases[i],'hidden_add'+str(i))
             hidden_act[i] = tf.nn.relu(hidden_add[i],'hidden_act'+str(i))
+
     with tf.name_scope('out_activation'):
         if num_hidden_layers != 0:
             out_layer_multiplication = tf.matmul(hidden_act[num_hidden_layers-1],weights['out'],name='out_layer_mult')
@@ -31,11 +30,12 @@ def ann_forward(input_tensor,num_hidden_layers,weights,biases):
 
     return out_layer_activation
 
+
 def artificial_neural_network_train(training_features,training_labels,hidden_array,model_file):
+
     tf.reset_default_graph()
     #convert training_labels into one-hot representation
     training_labels = np.eye(np.unique(training_labels).size)[training_labels]
-
 
     #define network parameters
     num_features = training_features.shape[1]
@@ -78,7 +78,7 @@ def artificial_neural_network_train(training_features,training_labels,hidden_arr
             biases[i] = tf.Variable(tf.random_normal([num_hidden_units]), name='biases' + str(i))
 
 
-    prediction = ann_forward(input_tensor,num_hidden_layers,weights,biases)
+    prediction = feed_forward(input_tensor, num_hidden_layers, weights, biases)
 
     with tf.name_scope('loss_function'):
         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=output_tensor))
@@ -90,34 +90,34 @@ def artificial_neural_network_train(training_features,training_labels,hidden_arr
         correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(output_tensor, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-    #tf.summary.scalar("loss", loss)
-    #tf.summary.scalar("accuracy",accuracy)
+    tf.summary.scalar("loss", loss)
+    tf.summary.scalar("accuracy",accuracy)
 
-    #summary_op = tf.summary.merge_all()
+    summary_op = tf.summary.merge_all()
 
 
     previous_loss_val = 0
     saver = tf.train.Saver()
 
-    sess = tf.Session()
-    init = tf.global_variables_initializer()
-    sess.run(init)
+    with tf.Session() as sess:
+        init = tf.global_variables_initializer()
+        sess.run(init)
 
 
     #create log writer
-    writer = tf.summary.FileWriter(model_file, graph=tf.get_default_graph())
+        writer = tf.summary.FileWriter(model_file, graph=tf.get_default_graph())
 
-    epoch = 0
-    while epoch < 10:
-        _, l,prediction_val = sess.run([optimizer,loss,prediction], feed_dict={input_tensor: training_features, output_tensor: training_labels})
-        if abs(previous_loss_val - l) <= loss_window:
-            loss_hit = True
-        previous_loss_val = l
-        #writer.add_summary(summary, epoch)
+        epoch = 0
+        while epoch < 10:
+            _, l,prediction_val = sess.run([optimizer,loss,prediction], feed_dict={input_tensor: training_features, output_tensor: training_labels})
+            if abs(previous_loss_val - l) <= loss_window:
+                loss_hit = True
+            previous_loss_val = l
+            writer.add_summary(summary, epoch)
 
-        epoch+=1
+            epoch+=1
     save_path = saver.save(sess, model_file)
-    sess.close()
+
 
     return save_path
 
@@ -128,23 +128,22 @@ def artificial_neural_network_test(test_features,test_labels,model_file):
 
     restored_model = tf.train.import_meta_graph(model_file + '.meta')
 
-    sess = tf.Session()
+    with tf.Session() as sess:
 
-    restored_model.restore(sess,model_file)
+        restored_model.restore(sess,model_file)
+        graph = tf.get_default_graph()
+        input_tensor = graph.get_tensor_by_name('input_features_labels/input:0')
+        output_tensor = graph.get_tensor_by_name('input_features_labels/output:0')
+        predict_tensor = graph.get_tensor_by_name('out_activation/out_layer_activation:0')
 
-    graph = tf.get_default_graph()
-    input_tensor = graph.get_tensor_by_name('input_features_labels/input:0')
-    output_tensor = graph.get_tensor_by_name('input_features_labels/output:0')
-    predict_tensor = graph.get_tensor_by_name('out_activation/out_layer_activation:0')
+        predicted_val = sess.run([predict_tensor],feed_dict={input_tensor:test_features,output_tensor:test_labels})
 
-    predicted_val = sess.run([predict_tensor],feed_dict={input_tensor:test_features,output_tensor:test_labels})
     #print(predicted_val[0][:,1])
-    sess.close()
     return predicted_val[0][:,1]
 
 
-
 def high_level_custom_model(features,labels,mode,params):
+
     net = tf.feature_column.input_layer(features, params['feature_columns'])
 
     for units in params['hidden_units']:
@@ -161,7 +160,6 @@ def high_level_custom_model(features,labels,mode,params):
             'logits': logits,
         }
         return tf.estimator.EstimatorSpec(mode, predictions=predictions)
-
 
     # Compute loss.
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
@@ -186,18 +184,12 @@ def high_level_custom_model(features,labels,mode,params):
 
 
 def high_level_neural_network_train(training_features, training_labels,hidden_array,model_file):
+
     tf.reset_default_graph()
+
     num_features = training_features.shape[1]
-    print(num_features)
     num_classes = np.unique(training_labels).size
     feature_columns = [tf.feature_column.numeric_column("x", shape=[num_features])]
-
-    '''
-    classifier = tf.estimator.DNNClassifier(feature_columns=feature_columns,
-                                            hidden_units=hidden_array,
-                                            n_classes=num_classes,
-                                            model_dir=model_file)
-    '''
 
     classifier = tf.estimator.Estimator(model_fn = high_level_custom_model,
                                         model_dir=model_file,
