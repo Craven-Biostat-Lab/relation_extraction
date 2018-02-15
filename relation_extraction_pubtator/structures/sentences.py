@@ -1,7 +1,7 @@
 class Sentence(object):
-    def __init__(self,pmid,sentence_no,entity_1_text,entity_1_loc,entity_2_text,entity_2_loc,
-                                          entity_1_formal,entity_2_formal,entity_1_norm,entity_2_norm,entity_1_type, entity_2_type,
-                 entity_1_simple_norm, entity_2_simple_norm, entity_1_species, entity_2_species,dep_parse, sentence):
+    def __init__(self, pmid, sentence_no, entity_1_text, entity_1_loc, entity_2_text, entity_2_loc,
+                 entity_1_raw_string, entity_2_raw_string, entity_1_norm, entity_2_norm, entity_1_type, entity_2_type,
+                 entity_1_simple_norm, entity_2_simple_norm, entity_1_species, entity_2_species, dep_parse, sentence):
         '''Constructor for Sentence Object'''
         self.pmid = pmid
         self.sentence_no = sentence_no
@@ -9,8 +9,8 @@ class Sentence(object):
         self.entity_1_loc = entity_1_loc
         self.entity_2_text = entity_2_text
         self.entity_2_loc = entity_2_loc
-        self.entity_1_formal = entity_1_formal
-        self.entity_2_formal = entity_2_formal
+        self.entity_1_raw_string = entity_1_raw_string
+        self.entity_2_raw_string = entity_2_raw_string
         self.entity_1_norm = entity_1_norm
         self.entity_2_norm = entity_2_norm
         self.entity_1_type = entity_1_type

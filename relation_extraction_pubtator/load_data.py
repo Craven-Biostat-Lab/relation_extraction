@@ -259,8 +259,8 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
             entity_1_loc = l[3]
             entity_2_text = l[4]
             entity_2_loc = l[5]
-            entity_1_formal = l[6]
-            entity_2_formal = l[7]
+            entity_1_raw_string = l[6]
+            entity_2_raw_string = l[7]
             entity_1_norm = l[8]
             entity_2_norm = l[9]
             entity_1_type = l[10]
@@ -296,7 +296,7 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
 
             label = pmid + '|' + sentence_no + '|' + entity_1_loc + '|' + entity_2_loc
             pubtator_sentence = Sentence(pmid,sentence_no,entity_1_text,entity_1_loc,entity_2_text,entity_2_loc,
-                                          entity_1_formal,entity_2_formal,entity_1_norm,entity_2_norm,entity_1_type,
+                                          entity_1_raw_string,entity_2_raw_string,entity_1_norm,entity_2_norm,entity_1_type,
                                          entity_2_type, entity_1_norm_simple,entity_2_norm_simple,
                                          entity_1_species, entity_2_species,dep_parse, sentence)
 

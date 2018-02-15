@@ -112,10 +112,13 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
 
         #model = LogisticRegression()
         #model.fit(fold_train_X, fold_train_y)
+
+
         hidden_array = [10]
         model_dir = './model_building_meta_data/test' + str(i)
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
+
         test_model = ml.high_level_neural_network_train(fold_train_X,fold_train_y,hidden_array,'./model_building_meta_data/test' + str(i) +'/')
 
 
@@ -142,6 +145,10 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
         fold_test_y = np.array(fold_test_labels)
 
         fold_test_predicted_prob = ml.high_level_neural_network_test(fold_test_X, fold_test_y, test_model)
+        #fold_test_predicted_prob = model.predict_proba(fold_test_X)[:,1]
+
+        #predictions = model.predict(fold_test_X)
+        #print(metrics.accuracy_score(fold_test_y,predictions))
 
         for abstract_pmid in pmid_test_instances:
             instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(fold_test_instances,
@@ -330,7 +337,7 @@ def main():
         outfile.write('GENE_1\tGENE_2\tGENE_1_SPECIES\tGENE_2_SPECIES\tPUBMED_IDS\n')
         for i in range(len(predicted_labels)):
             if predicted_labels[i] == 1:
-                outfile.write(predicted_instances[i].sentence.entity_1_formal + '\t' + predicted_instances[i].sentence.entity_2_formal +
+                outfile.write(predicted_instances[i].sentence.entity_1_raw_string + '\t' + predicted_instances[i].sentence.entity_2_raw_string +
                               '\t' + predicted_instances[i].sentence.entity_1_species + '\t' + predicted_instances[i].sentence.entity_2_species +
                               '\t' + group_pmids[i]+'\n')
 

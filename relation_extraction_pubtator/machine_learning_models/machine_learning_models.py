@@ -84,7 +84,7 @@ def artificial_neural_network_train(training_features,training_labels,hidden_arr
         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=output_tensor))
 
     with tf.name_scope('optimizer_function'):
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
+        optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
     with tf.name_scope('accuracy_function'):
         correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(output_tensor, 1))
@@ -108,15 +108,16 @@ def artificial_neural_network_train(training_features,training_labels,hidden_arr
         writer = tf.summary.FileWriter(model_file, graph=tf.get_default_graph())
 
         epoch = 0
-        while epoch < 10:
-            _, l,prediction_val = sess.run([optimizer,loss,prediction], feed_dict={input_tensor: training_features, output_tensor: training_labels})
+        while epoch < 200:
+            print(epoch)
+            _, l,prediction_val,summary = sess.run([optimizer,loss,prediction,summary_op], feed_dict={input_tensor: training_features, output_tensor: training_labels})
             if abs(previous_loss_val - l) <= loss_window:
                 loss_hit = True
             previous_loss_val = l
             writer.add_summary(summary, epoch)
 
             epoch+=1
-    save_path = saver.save(sess, model_file)
+        save_path = saver.save(sess, model_file)
 
 
     return save_path
@@ -147,9 +148,12 @@ def high_level_custom_model(features,labels,mode,params):
     net = tf.feature_column.input_layer(features, params['feature_columns'])
 
     for units in params['hidden_units']:
-        net = tf.layers.dense(net, units=units, activation=tf.nn.relu)
+        net = tf.layers.dense(net,
+                              units=units,
+                              activation=tf.nn.relu,
+                              kernel_regularizer=None)
 
-    logits = tf.layers.dense(net, params['n_classes'], activation=None)
+    logits = tf.layers.dense(net, params['n_classes'], activation=tf.nn.softmax)
 
     # Compute predictions.
     predicted_classes = tf.argmax(logits, 1)
@@ -162,7 +166,8 @@ def high_level_custom_model(features,labels,mode,params):
         return tf.estimator.EstimatorSpec(mode, predictions=predictions)
 
     # Compute loss.
-    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
+    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits) + tf.losses.get_regularization_loss()
+
 
     # Compute evaluation metrics.
     accuracy = tf.metrics.accuracy(labels=labels,
@@ -178,7 +183,7 @@ def high_level_custom_model(features,labels,mode,params):
     # Create training op.
     assert mode == tf.estimator.ModeKeys.TRAIN
 
-    optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
     train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
     return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=train_op)
 
@@ -188,6 +193,7 @@ def high_level_neural_network_train(training_features, training_labels,hidden_ar
     tf.reset_default_graph()
 
     num_features = training_features.shape[1]
+    num_instances = training_features.shape[0]
     num_classes = np.unique(training_labels).size
     feature_columns = [tf.feature_column.numeric_column("x", shape=[num_features])]
 
@@ -204,7 +210,7 @@ def high_level_neural_network_train(training_features, training_labels,hidden_ar
         shuffle=True)
 
     # Train model.
-    classifier.train(input_fn=train_input_fn, steps=20000)
+    classifier.train(input_fn=train_input_fn, steps=30000)
 
     train_input_fn_classifier = tf.estimator.inputs.numpy_input_fn(
         x={"x": training_features},
