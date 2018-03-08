@@ -304,11 +304,11 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
             if entity_1_type.upper() == 'GENE' and entity_2_type.upper() == 'GENE' and entity_a_species != entity_b_species:
                 pmid_list.add(pmid)
 
-                if entity_a_species == pubtator_sentence.entity_1_species and entity_b_species == pubtator_sentence.entity_2_species:
+                if entity_a_species == pubtator_sentence.start_entity_species and entity_b_species == pubtator_sentence.end_entity_species:
                     forward_sentences[label] = pubtator_sentence
 
 
-                elif entity_a_species == pubtator_sentence.entity_2_species and entity_b_species == pubtator_sentence.entity_1_species:
+                elif entity_a_species == pubtator_sentence.end_entity_species and entity_b_species == pubtator_sentence.start_entity_species:
                     reverse_sentences[label] = pubtator_sentence
 
                 else:
@@ -320,7 +320,7 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
 
                 reverse_label = pmid + '|' + sentence_no + '|' + entity_2_loc + '|' + entity_1_loc
 
-                if pubtator_sentence.entity_1_species == same_species and pubtator_sentence.entity_2_species == same_species:
+                if pubtator_sentence.start_entity_species == same_species and pubtator_sentence.end_entity_species == same_species:
                     if reverse_label in forward_sentences:
                         reverse_sentences[label] = pubtator_sentence
                     else:
