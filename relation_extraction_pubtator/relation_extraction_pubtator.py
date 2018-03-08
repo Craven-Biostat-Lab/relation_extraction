@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from machine_learning_models import machine_learning_models as ml
 
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.externals import joblib
 from sklearn import metrics
 
@@ -69,6 +69,7 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
 
     total_test = np.array([])
     total_predicted_prob = np.array([])
+    total_predicted_prob_2 = np.array([])
     for i in range(len(all_chunks)):
         print('Fold #: ' + str(i))
         fold_chunks = all_chunks[:]
@@ -110,11 +111,11 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
         fold_train_X = np.array(X)
         fold_train_y = np.array(y)
 
-        #model = LogisticRegression()
-        #model.fit(fold_train_X, fold_train_y)
+        model = SGDClassifier(loss='log',penalty="l2",learning_rate='constant',eta0=0.1)
+        model.fit(fold_train_X, fold_train_y)
 
 
-        hidden_array = [10]
+        hidden_array = [100]
         model_dir = './model_building_meta_data/test' + str(i)
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
@@ -147,8 +148,13 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
         fold_test_predicted_prob = ml.high_level_neural_network_test(fold_test_X, fold_test_y, test_model)
         #fold_test_predicted_prob = model.predict_proba(fold_test_X)[:,1]
 
-        #predictions = model.predict(fold_test_X)
-        #print(metrics.accuracy_score(fold_test_y,predictions))
+        predictions = model.predict(fold_test_X)
+        print('log stats')
+        print(metrics.accuracy_score(fold_test_y,predictions))
+        print(metrics.precision_score(fold_test_y, predictions))
+        print(metrics.recall_score(fold_test_y,predictions))
+        print('*')
+
 
         for abstract_pmid in pmid_test_instances:
             instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(fold_test_instances,
@@ -176,9 +182,13 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
 
 
                 # Generate precision recall curves
-
+        total_predicted_prob = np.append(total_predicted_prob,fold_test_predicted_prob)
+        total_test = np.append(total_test,fold_test_y)
     positives = collections.Counter(total_test)[1]
     accuracy = float(positives) / total_test.size
+    #plt.figure(1)
+    #plt.scatter(total_predicted_prob_2,total_predicted_prob)
+    #plt.show()
     precision, recall, _ = metrics.precision_recall_curve(total_test, total_predicted_prob, 1)
 
     return precision,recall,accuracy
@@ -244,6 +254,7 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
                             reverse_distant_interactions,entity_1_text,entity_2_text,symmetric)
 
 
+    plt.figure()
     plt.step(recall, precision, color='b', alpha=0.2, where='post')
     plt.fill_between(recall, precision, step='post', alpha=0.2,
                          color='b')
