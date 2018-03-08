@@ -7,7 +7,7 @@ import collections
 import shutil
 import matplotlib.pyplot as plt
 
-from machine_learning_models import machine_learning_models as ml
+from machine_learning_models import tf_neural_network as ann
 
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.externals import joblib
@@ -23,8 +23,8 @@ def create_instance_groupings(all_instances, group_instances, symmetric):
 
     for i in group_instances:
         ig = all_instances[i]
-        start_norm = ig.sentence.entity_1_norm
-        end_norm = ig.sentence.entity_2_norm
+        start_norm = ig.sentence.start_entity_id
+        end_norm = ig.sentence.end_entity_id
         instance_dict[i] = [start_norm, end_norm]
         instance_to_group_dict[i] = group
         group += 1
@@ -57,8 +57,8 @@ def create_instance_groupings(all_instances, group_instances, symmetric):
 
     return instance_to_group_dict, group_to_instance_dict, instance_dict
 
-def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant_interactions, reverse_distant_interactions,
-                            entity_1_text, entity_2_text, symmetric):
+def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
+                            entity_a_text, entity_b_text, symmetric):
 
     pmids = list(pmids)
     #split training sentences for cross validation
@@ -96,7 +96,7 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
 
         fold_training_instances, fold_dep_dictionary, fold_dep_word_dictionary, fold_dep_element_dictionary, fold_between_word_dictionary = load_data.build_instances_training(
             fold_training_forward_sentences, fold_training_reverse_sentences, distant_interactions,
-            reverse_distant_interactions, entity_1_text, entity_2_text, symmetric)
+            reverse_distant_interactions, entity_a_text, entity_b_text, symmetric)
 
 
 
@@ -120,15 +120,15 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
 
-        test_model = ml.high_level_neural_network_train(fold_train_X,fold_train_y,hidden_array,'./model_building_meta_data/test' + str(i) +'/')
+        test_model = ann.high_level_neural_network_train(fold_train_X, fold_train_y, hidden_array, './model_building_meta_data/test' + str(i) + '/')
 
 
 
         fold_test_instances = load_data.build_instances_testing(fold_test_forward_sentences, fold_test_reverse_sentences,
                                                                 fold_dep_dictionary, fold_dep_word_dictionary,
-                                                                fold_dep_element_dictionary,fold_between_word_dictionary,
-                                                                distant_interactions,reverse_distant_interactions,
-                                                                entity_1_text,entity_2_text,symmetric)
+                                                                fold_dep_element_dictionary, fold_between_word_dictionary,
+                                                                distant_interactions, reverse_distant_interactions,
+                                                                entity_a_text, entity_b_text, symmetric)
 
         #group instances by pmid and build feature array
         fold_test_features = []
@@ -145,7 +145,7 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
         fold_test_X = np.array(fold_test_features)
         fold_test_y = np.array(fold_test_labels)
 
-        fold_test_predicted_prob = ml.high_level_neural_network_test(fold_test_X, fold_test_y, test_model)
+        fold_test_predicted_prob = ann.high_level_neural_network_test(fold_test_X, fold_test_y, test_model)
         #fold_test_predicted_prob = model.predict_proba(fold_test_X)[:,1]
 
         predictions = model.predict(fold_test_X)
@@ -193,17 +193,17 @@ def k_fold_cross_validation(k,pmids,forward_sentences,reverse_sentences, distant
 
     return precision,recall,accuracy
 
-def predict_sentences(model_file, pubtator_file, entity_1, entity_2, symmetric,threshold):
+def predict_sentences(model_file, pubtator_file, entity_a, entity_b, symmetric, threshold):
 
-    predict_pmids, predict_forward_sentences, predict_reverse_sentences, entity_1_text, entity_2_text = load_data.load_pubtator_abstract_sentences(
-        pubtator_file,entity_1,entity_2)
+    predict_pmids, predict_forward_sentences, predict_reverse_sentences, entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(
+        pubtator_file,entity_a,entity_b)
 
     model, dep_dictionary, dep_word_dictionary, dep_element_dictionary, between_word_dictionary = joblib.load(
         model_file)
 
     predict_instances = load_data.build_instances_predict(predict_forward_sentences, predict_reverse_sentences,dep_dictionary,
                                                           dep_word_dictionary, dep_element_dictionary,
-                                                          between_word_dictionary,entity_1_text,entity_2_text, symmetric)
+                                                          between_word_dictionary,entity_a_text,entity_b_text, symmetric)
 
     instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(
         predict_instances, symmetric)
@@ -238,20 +238,20 @@ def predict_sentences(model_file, pubtator_file, entity_1, entity_2, symmetric,t
         
 
 
-def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e2_col,distant_rel_col,entity_1, entity_2, symmetric):
+def distant_train(model_out, pubtator_file, distant_file, distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b, symmetric):
 
     #get distant_relations from external knowledge base file
-    distant_interactions, reverse_distant_interactions = load_data.load_distant_kb(distant_file, distant_e1_col,
-                                                                                   distant_e2_col, distant_rel_col)
+    distant_interactions, reverse_distant_interactions = load_data.load_distant_kb(distant_file, distant_entity_a_col,
+                                                                                   distant_entity_b_col, distant_rel_col)
 
     #get pmids,sentences,
-    training_pmids,training_forward_sentences,training_reverse_sentences, entity_1_text, entity_2_text = load_data.load_pubtator_abstract_sentences(
-        pubtator_file,entity_1,entity_2)
+    training_pmids,training_forward_sentences,training_reverse_sentences, entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(
+        pubtator_file,entity_a,entity_b)
 
 
     #k-cross val
     precision,recall, accuracy = k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,
-                            reverse_distant_interactions,entity_1_text,entity_2_text,symmetric)
+                            reverse_distant_interactions,entity_a_text,entity_b_text,symmetric)
 
 
     plt.figure()
@@ -271,7 +271,7 @@ def distant_train(model_out,pubtator_file,distant_file ,distant_e1_col,distant_e
     '''
     training_instances, dep_dictionary, dep_word_dictionary, element_dictionary, between_word_dictionary = load_data.build_instances_training(
         training_forward_sentences, training_reverse_sentences,distant_interactions,
-        reverse_distant_interactions, entity_1_text, entity_2_text, symmetric)
+        reverse_distant_interactions, entity_a_text, entity_b_text, symmetric)
 
     print(len(training_instances))
 
@@ -321,35 +321,35 @@ def main():
         model_out = sys.argv[2]  # location of where model should be saved after training
         pubtator_file = sys.argv[3]  # xml file of sentences from Stanford Parser
         distant_file = sys.argv[4]  # distant supervision knowledge base to use
-        distant_e1_col = int(sys.argv[5])  # entity 1 column
-        distant_e2_col = int(sys.argv[6])  # entity 2 column
+        distant_entity_a_col = int(sys.argv[5])  # entity 1 column
+        distant_entity_b_col = int(sys.argv[6])  # entity 2 column
         distant_rel_col = int(sys.argv[7])  # relation column
-        entity_1 = sys.argv[8].upper()  # entity_1
-        entity_2 = sys.argv[9].upper()  # entity_2
+        entity_a = sys.argv[8].upper()  # entity_a
+        entity_b = sys.argv[9].upper()  # entity_b
         symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
 
-        distant_train(model_out, pubtator_file, distant_file, distant_e1_col, distant_e2_col, distant_rel_col, entity_1,entity_2, symmetric)
+        distant_train(model_out, pubtator_file, distant_file, distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b, symmetric)
 
 
     elif mode.upper() == "PREDICT":
         model_file = sys.argv[2]
         sentence_file = sys.argv[3]
-        entity_1 = sys.argv[4].upper()
-        entity_2 = sys.argv[5].upper()
+        entity_a = sys.argv[4].upper()
+        entity_b = sys.argv[5].upper()
         symmetric = sys.argv[6].upper() in ['TRUE', 'Y', 'YES']
         threshold = float(sys.argv[7])
         out_pairs_file = sys.argv[8]
 
-        predicted_instances, predicted_labels, group_pmids = predict_sentences(model_file, sentence_file, entity_1,
-                                                                  entity_2, symmetric,threshold)
+        predicted_instances, predicted_labels, group_pmids = predict_sentences(model_file, sentence_file, entity_a,
+                                                                  entity_b, symmetric,threshold)
 
         outfile = open(out_pairs_file,'w')
 
         outfile.write('GENE_1\tGENE_2\tGENE_1_SPECIES\tGENE_2_SPECIES\tPUBMED_IDS\n')
         for i in range(len(predicted_labels)):
             if predicted_labels[i] == 1:
-                outfile.write(predicted_instances[i].sentence.entity_1_raw_string + '\t' + predicted_instances[i].sentence.entity_2_raw_string +
-                              '\t' + predicted_instances[i].sentence.entity_1_species + '\t' + predicted_instances[i].sentence.entity_2_species +
+                outfile.write(predicted_instances[i].sentence.start_entity_raw_string + '\t' + predicted_instances[i].sentence.end_entity_raw_string +
+                              '\t' + predicted_instances[i].sentence.start_entity_species + '\t' + predicted_instances[i].sentence.end_entity_species +
                               '\t' + group_pmids[i]+'\n')
 
         outfile.close()

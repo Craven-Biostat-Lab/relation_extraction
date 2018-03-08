@@ -60,16 +60,16 @@ class Instance(object):
         self.dependency_path = ' '.join(dep_path)
 
     def build_words_between_features(self):
-        entity_1 = self.sentence.entity_1_text
-        entity_2 = self.sentence.entity_2_text
+        start_entity = self.sentence.start_entity_text
+        end_entity = self.sentence.end_entity_text
 
-        entity_1_start = int(self.sentence.entity_1_loc.split(',')[0])
-        entity_1_end = int(self.sentence.entity_1_loc.split(',')[1])
-        entity_2_start = int(self.sentence.entity_2_loc.split(',')[0])
-        entity_2_end = int(self.sentence.entity_2_loc.split(',')[1])
+        start_entity_start_position = int(self.sentence.start_entity_loc.split(',')[0])
+        start_entity_end_position = int(self.sentence.start_entity_loc.split(',')[1])
+        end_entity_start_position = int(self.sentence.end_entity_loc.split(',')[0])
+        end_entity_end_position = int(self.sentence.end_entity_loc.split(',')[1])
 
-        distance_1 = entity_1_start - entity_2_end
-        distance_2 = entity_2_start - entity_1_end
+        distance_1 = start_entity_start_position - end_entity_end_position
+        distance_2 = end_entity_start_position - start_entity_end_position
         true_char_difference = max(distance_1,distance_2)
 
         word_dict = {}
@@ -79,7 +79,7 @@ class Instance(object):
                 word_dict[sentence_words[word_position]] = []
             word_dict[sentence_words[word_position]].append(word_position)
 
-        pairs = itertools.product(word_dict[entity_1], word_dict[entity_2])
+        pairs = itertools.product(word_dict[start_entity], word_dict[end_entity])
         smallest_distance = float("inf")
         right_pairs = (-1, -1)
         for p in pairs:

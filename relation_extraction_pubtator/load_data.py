@@ -51,9 +51,9 @@ def build_instances_predict(predict_forward_sentences, predict_reverse_sentences
         splitkey = key.split('|')
         pmid = splitkey[0]
         sentence_id = splitkey[1]
-        entity_1_loc = splitkey[2]
-        entity_2_loc = splitkey[3]
-        reverse_key = pmid + '|' + sentence_id + '|' + entity_2_loc + '|' + entity_1_loc
+        start_entity = splitkey[2]
+        end_entity = splitkey[3]
+        reverse_key = pmid + '|' + sentence_id + '|' + end_entity + '|' + start_entity
         if reverse_key in predict_reverse_sentences:
             forward_predict_instance = Instance(predict_forward_sentences[key], -1)
             forward_predict_instance.fix_word_lists(entity_a_text, entity_b_text)
@@ -95,8 +95,8 @@ def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_d
             reverse_test_instance = Instance(test_reverse_sentences[reverse_key], 0)
             reverse_test_instance.fix_word_lists(entity_a_text, entity_b_text)
 
-            entity_combo = (forward_test_instance.sentence.entity_1_simple_norm,
-                                forward_test_instance.sentence.entity_2_simple_norm)
+            entity_combo = (forward_test_instance.sentence.start_entity_id,
+                                forward_test_instance.sentence.end_entity_id)
 
 
             if symmetric is False:
@@ -154,8 +154,8 @@ def build_instances_training(
             reverse_train_instance = Instance(training_reverse_sentences[reverse_key],0)
             reverse_train_instance.fix_word_lists(entity_a_text, entity_b_text)
 
-            entity_combo = (forward_train_instance.sentence.entity_1_simple_norm,
-                             forward_train_instance.sentence.entity_2_simple_norm)
+            entity_combo = (forward_train_instance.sentence.start_entity_id,
+                             forward_train_instance.sentence.end_entity_id)
 
 
             if symmetric is False:
@@ -255,29 +255,29 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
             # dividing each line elements of pubtator file
             pmid = l[0]
             sentence_no = l[1]
-            entity_1_text = l[2]
-            entity_1_loc = l[3]
-            entity_2_text = l[4]
-            entity_2_loc = l[5]
-            entity_1_raw_string = l[6]
-            entity_2_raw_string = l[7]
-            entity_1_norm = l[8]
-            entity_2_norm = l[9]
-            entity_1_type = l[10]
-            entity_2_type = l[11]
+            start_entity_text = l[2]
+            start_entity_loc = l[3]
+            end_entity_text = l[4]
+            end_entity_loc = l[5]
+            start_entity_raw_string = l[6]
+            end_entity_raw_string = l[7]
+            start_entity_full_norm = l[8]
+            end_entity_full_norm = l[9]
+            start_entity_type = l[10]
+            end_entity_type = l[11]
             dep_parse = l[12].split(' ')
             sentence = l[13].split(' ')
 
-            e1_split = entity_1_norm.split('(Tax:')
-            entity_1_norm_simple = e1_split[0]
-            entity_1_species = 'HUMAN'
-            if len(e1_split) > 1:
-                entity_1_species = e1_split[1][:-1]
-            e2_split = entity_2_norm.split('(Tax:')
-            entity_2_norm_simple = e2_split[0]
-            entity_2_species = 'HUMAN'
-            if len(e2_split) > 1:
-                entity_2_species = e2_split[1][:-1]
+            start_entity_norm_split = start_entity_full_norm.split('(Tax:')
+            start_entity_id = start_entity_norm_split[0]
+            start_entity_species = 'HUMAN'
+            if len(start_entity_norm_split) > 1:
+                start_entity_species = start_entity_norm_split[1][:-1]
+            end_entity_norm_split = end_entity_full_norm.split('(Tax:')
+            end_entity_id = end_entity_norm_split[0]
+            end_entity_species = 'HUMAN'
+            if len(end_entity_norm_split) > 1:
+                end_entity_species = end_entity_norm_split[1][:-1]
 
 
             if pmid not in entity_a_texts:
@@ -285,23 +285,23 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
             if pmid not in entity_b_texts:
                 entity_b_texts[pmid+'|'+sentence_no]=set()
 
-            if entity_a_species == entity_1_species and entity_b_species == entity_2_species:
-                entity_a_texts[pmid+'|'+sentence_no].add(entity_1_text)
-                entity_b_texts[pmid+'|'+sentence_no].add(entity_2_text)
+            if entity_a_species == start_entity_species and entity_b_species == end_entity_species:
+                entity_a_texts[pmid+'|'+sentence_no].add(start_entity_text)
+                entity_b_texts[pmid+'|'+sentence_no].add(end_entity_text)
 
-            if entity_a_species == entity_2_species and entity_b_species == entity_1_species:
-                entity_a_texts[pmid+'|'+sentence_no].add(entity_2_text)
-                entity_b_texts[pmid+'|'+sentence_no].add(entity_1_text)
-
-
-            label = pmid + '|' + sentence_no + '|' + entity_1_loc + '|' + entity_2_loc
-            pubtator_sentence = Sentence(pmid,sentence_no,entity_1_text,entity_1_loc,entity_2_text,entity_2_loc,
-                                          entity_1_raw_string,entity_2_raw_string,entity_1_norm,entity_2_norm,entity_1_type,
-                                         entity_2_type, entity_1_norm_simple,entity_2_norm_simple,
-                                         entity_1_species, entity_2_species,dep_parse, sentence)
+            if entity_a_species == end_entity_species and entity_b_species == start_entity_species:
+                entity_a_texts[pmid+'|'+sentence_no].add(end_entity_text)
+                entity_b_texts[pmid+'|'+sentence_no].add(start_entity_text)
 
 
-            if entity_1_type.upper() == 'GENE' and entity_2_type.upper() == 'GENE' and entity_a_species != entity_b_species:
+            label = pmid + '|' + sentence_no + '|' + start_entity_loc + '|' + end_entity_loc
+            pubtator_sentence = Sentence(pmid,sentence_no,start_entity_text,start_entity_loc,end_entity_text,end_entity_loc,
+                                          start_entity_raw_string,end_entity_raw_string,start_entity_full_norm,end_entity_full_norm,start_entity_type,
+                                         end_entity_type, start_entity_id,end_entity_id,
+                                         start_entity_species, end_entity_species,dep_parse, sentence)
+
+
+            if start_entity_type.upper() == 'GENE' and end_entity_type.upper() == 'GENE' and entity_a_species != entity_b_species:
                 pmid_list.add(pmid)
 
                 if entity_a_species == pubtator_sentence.start_entity_species and entity_b_species == pubtator_sentence.end_entity_species:
@@ -314,11 +314,11 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
                 else:
                     continue
 
-            elif entity_1_type.upper() == 'GENE' and entity_2_type.upper() == 'GENE' and entity_a_species == entity_b_species:
+            elif start_entity_type.upper() == 'GENE' and end_entity_type.upper() == 'GENE' and entity_a_species == entity_b_species:
                 pmid_list.add(pmid)
                 same_species = entity_a_species
 
-                reverse_label = pmid + '|' + sentence_no + '|' + entity_2_loc + '|' + entity_1_loc
+                reverse_label = pmid + '|' + sentence_no + '|' + end_entity_loc + '|' + start_entity_loc
 
                 if pubtator_sentence.start_entity_species == same_species and pubtator_sentence.end_entity_species == same_species:
                     if reverse_label in forward_sentences:
