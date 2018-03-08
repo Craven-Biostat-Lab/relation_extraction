@@ -88,7 +88,7 @@ def early_stopping(eval_results):
     return True
 '''
 
-def high_level_neural_network_train(training_features, training_labels,hidden_array,model_file):
+def neural_network_train(training_features, training_labels, hidden_array, model_file):
 
     tf.reset_default_graph()
 
@@ -139,7 +139,7 @@ def high_level_neural_network_train(training_features, training_labels,hidden_ar
 
     return classifier
 
-def high_level_neural_network_test(test_features,test_labels,classifier):
+def neural_network_test(test_features, test_labels, classifier):
     test_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": test_features},
         y= test_labels,

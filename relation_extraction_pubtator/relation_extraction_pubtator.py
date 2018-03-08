@@ -120,7 +120,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
 
-        test_model = ann.high_level_neural_network_train(fold_train_X, fold_train_y, hidden_array, './model_building_meta_data/test' + str(i) + '/')
+        test_model = ann.neural_network_train(fold_train_X, fold_train_y, hidden_array, './model_building_meta_data/test' + str(i) + '/')
 
 
 
@@ -145,7 +145,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_test_X = np.array(fold_test_features)
         fold_test_y = np.array(fold_test_labels)
 
-        fold_test_predicted_prob = ann.high_level_neural_network_test(fold_test_X, fold_test_y, test_model)
+        fold_test_predicted_prob = ann.neural_network_test(fold_test_X, fold_test_y, test_model)
         #fold_test_predicted_prob = model.predict_proba(fold_test_X)[:,1]
 
         predictions = model.predict(fold_test_X)
