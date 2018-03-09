@@ -7,22 +7,6 @@ from sklearn.model_selection import train_test_split
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
-class EarlyStoppingHook(tf.train.LoggingTensorHook):
-    _prev_loss = 1000
-    _threshold = 0.001
-    _step = 0
-
-    def after_run(self, run_context, run_values):
-        self._step+=1
-        if self._step % 100 == 0:
-            #print(self._prev_loss)
-            current_loss = run_values.results['my_loss']
-            #print(current_loss)
-            if abs(self._prev_loss-current_loss)<=self._threshold:
-                print('stopping_early')
-                run_context.request_stop()
-            self._prev_loss = current_loss
-
 
 def custom_model_function(features, labels, mode, params):
 
@@ -33,7 +17,7 @@ def custom_model_function(features, labels, mode, params):
                               units=units,
                               activation=tf.nn.relu)
 
-        net = tf.layers.dropout(net,rate=0.4,training=mode == tf.estimator.ModeKeys.TRAIN)
+        net = tf.layers.dropout(net,rate=0.5,training=mode == tf.estimator.ModeKeys.TRAIN)
 
     logits = tf.layers.dense(net,
                              params['n_classes'])
@@ -54,7 +38,6 @@ def custom_model_function(features, labels, mode, params):
     # Compute loss.
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits) + tf.losses.get_regularization_loss()
 
-    early_stopping_hook = EarlyStoppingHook({'my_loss':loss},every_n_iter=100)
 
     # Compute evaluation metrics.
     accuracy = tf.metrics.accuracy(labels=labels,
@@ -73,20 +56,9 @@ def custom_model_function(features, labels, mode, params):
 
     optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
     train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
-    return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=train_op,training_hooks=[early_stopping_hook])
+    return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=train_op)
 
-'''
-def early_stopping(eval_results):
-    # None argument for the first evaluation
-    if not eval_results:
-        return True
-    if eval_results["accuracy"] < PREVIOUS_ACCURACY:
-        return False
 
-    PREVIOUS_ACCURACY = eval_results['accuracy']
-    print PREVIOUS_ACCURACY
-    return True
-'''
 
 def neural_network_train(training_features, training_labels, hidden_array, model_file):
 
@@ -110,7 +82,7 @@ def neural_network_train(training_features, training_labels, hidden_array, model
         x={"x": training_features},
         y=training_labels,
         batch_size = 1,
-        num_epochs=25,
+        num_epochs=None,
         shuffle=True)
 
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -121,20 +93,9 @@ def neural_network_train(training_features, training_labels, hidden_array, model
         shuffle=False
     )
 
-    '''
-    experiment = tf.contrib.learn.Experiment(
-        estimator=classifier,
-        train_input_fn=train_input_fn,
-        eval_input_fn=eval_input_fn,
-        train_steps=100000,
-        eval_steps=None,  # evaluate runs until input is exhausted
-        train_steps_per_iteration=1000
-    )
 
-    experiment.continuous_train_and_eval(continuous_eval_predicate_fn=early_stopping)
-    '''
     # Train model.
-    classifier.train(input_fn=train_input_fn,steps = None)
+    classifier.train(input_fn=train_input_fn,steps = 25000)
 
 
     return classifier
