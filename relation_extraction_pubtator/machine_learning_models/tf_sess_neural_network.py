@@ -1,11 +1,12 @@
 import tensorflow as tf
 import numpy as np
 
-def feed_forward(input_tensor, num_hidden_layers, weights, biases):
+def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
     """Performs feed forward portion of neural network training"""
     hidden_mult = {}
     hidden_add = {}
     hidden_act  = {}
+    dropout = {}
 
     for i in range(num_hidden_layers):
         with tf.name_scope('hidden_layer'+str(i)):
@@ -15,10 +16,11 @@ def feed_forward(input_tensor, num_hidden_layers, weights, biases):
                 hidden_mult[i] = tf.matmul(hidden_act[i-1],weights[i],'hidden_mult'+str(i))
             hidden_add[i] = tf.add(hidden_mult[i], biases[i],'hidden_add'+str(i))
             hidden_act[i] = tf.nn.relu(hidden_add[i],'hidden_act'+str(i))
+            dropout[i] = tf.nn.dropout(hidden_act[i], keep_prob)
 
     with tf.name_scope('out_activation'):
         if num_hidden_layers != 0:
-            out_layer_multiplication = tf.matmul(hidden_act[num_hidden_layers-1],weights['out'],name='out_layer_mult')
+            out_layer_multiplication = tf.matmul(dropout[num_hidden_layers-1],weights['out'],name='out_layer_mult')
         else:
             out_layer_multiplication = tf.matmul(input_tensor,weights['out'],name = 'out_layer_mult')
         out_layer_bias_addition = tf.add(out_layer_multiplication,biases['out'],name='out_layer_add')
@@ -50,6 +52,7 @@ def neural_network_train(training_features,training_labels,hidden_array,model_fi
     with tf.name_scope('input_features_labels'):
         input_tensor = tf.placeholder(tf.float32,[None, num_features], name = 'input')
         output_tensor = tf.placeholder(tf.float32,[None,num_labels],name ='output')
+        keep_prob = tf.placeholder(tf.float32)
 
     #store layers weight and bias
     with tf.name_scope('weights'):
@@ -73,7 +76,7 @@ def neural_network_train(training_features,training_labels,hidden_array,model_fi
             biases[i] = tf.Variable(tf.random_normal([num_hidden_units]), name='biases' + str(i))
 
 
-    prediction = feed_forward(input_tensor, num_hidden_layers, weights, biases)
+    prediction = feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob)
 
     with tf.name_scope('loss_function'):
         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=output_tensor))
