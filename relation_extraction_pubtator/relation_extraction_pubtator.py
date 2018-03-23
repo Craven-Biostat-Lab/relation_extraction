@@ -115,7 +115,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         model.fit(fold_train_X, fold_train_y)
 
 
-        hidden_array = [100]
+        hidden_array = [250]
         model_dir = './model_building_meta_data/test' + str(i)
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)

@@ -12,12 +12,14 @@ def custom_model_function(features, labels, mode, params):
 
     net = tf.feature_column.input_layer(features, params['feature_columns'])
 
+
     for units in params['hidden_units']:
         net = tf.layers.dense(net,
                               units=units,
                               activation=tf.nn.relu)
 
-        net = tf.layers.dropout(net,rate=0.5,training=mode == tf.estimator.ModeKeys.TRAIN)
+        net = tf.layers.dropout(net,rate=0.50,training=(mode == tf.estimator.ModeKeys.TRAIN))
+        #net = tf.layers.batch_normalization(net,axis=1,training=(mode==tf.estimator.ModeKeys.TRAIN))
 
     logits = tf.layers.dense(net,
                              params['n_classes'])
@@ -36,7 +38,7 @@ def custom_model_function(features, labels, mode, params):
         return tf.estimator.EstimatorSpec(mode, predictions=predictions)
 
     # Compute loss.
-    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits) + tf.losses.get_regularization_loss()
+    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
 
 
     # Compute evaluation metrics.
@@ -82,7 +84,7 @@ def neural_network_train(training_features, training_labels, hidden_array, model
         x={"x": training_features},
         y=training_labels,
         batch_size = 1,
-        num_epochs=None,
+        num_epochs=10,
         shuffle=True)
 
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -95,7 +97,7 @@ def neural_network_train(training_features, training_labels, hidden_array, model
 
 
     # Train model.
-    classifier.train(input_fn=train_input_fn,steps = 25000)
+    classifier.train(input_fn=train_input_fn,steps = None)
 
 
     return classifier
@@ -121,4 +123,5 @@ def neural_network_test(test_features, test_labels, classifier):
     print(predicted_classes)
     print(metrics.precision_score(test_labels,np.array(predicted_classes)))
     print(metrics.recall_score(test_labels, np.array(predicted_classes)))
+    print(metrics.f1_score(test_labels,np.array(predicted_classes)))
     return predicted_probs
