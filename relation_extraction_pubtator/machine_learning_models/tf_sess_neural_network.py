@@ -13,9 +13,9 @@ def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
             if i == 0:
                 hidden_mult[i] = tf.matmul(input_tensor,weights[i],name='hidden_mult'+str(i))
             else:
-                hidden_mult[i] = tf.matmul(hidden_act[i-1],weights[i],'hidden_mult'+str(i))
+                hidden_mult[i] = tf.matmul(hidden_act[i-1],weights[i],name='hidden_mult'+str(i))
             hidden_add[i] = tf.add(hidden_mult[i], biases[i],'hidden_add'+str(i))
-            hidden_act[i] = tf.nn.relu(hidden_add[i],'hidden_act'+str(i))
+            hidden_act[i] = tf.nn.sigmoid(hidden_add[i],'hidden_act'+str(i))
             dropout[i] = tf.nn.dropout(hidden_act[i], keep_prob)
 
     with tf.name_scope('out_activation'):
@@ -29,93 +29,69 @@ def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
 
     return out_layer_activation
 
-
-def neural_network_train(training_features,training_labels,hidden_array,model_file):
+def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
+    num_features = train_X.shape[1]  # Number of input nodes: 4 features and 1 bias
+    num_labels = train_y.shape[1]  # Number of outcomes (3 iris flowers)
+    num_hidden_layers = len(hidden_array)
 
     tf.reset_default_graph()
-    #convert training_labels into one-hot representation
-    training_labels = np.eye(np.unique(training_labels).size)[training_labels]
-
-    #define network parameters
-    num_features = training_features.shape[1]
-    num_labels = training_labels.shape[1]
-
-    learning_rate = 0.1
-
-
-
-    #number of hidden units in hidden layer
-    #num_hidden = (num_features + num_labels)/2
-    num_hidden_layers = len(hidden_array)
-    last_hidden_units = hidden_array[num_hidden_layers-1]
 
     with tf.name_scope('input_features_labels'):
-        input_tensor = tf.placeholder(tf.float32,[None, num_features], name = 'input')
-        output_tensor = tf.placeholder(tf.float32,[None,num_labels],name ='output')
+        input_tensor = tf.placeholder(tf.float32, [None, num_features], name='input')
+        output_tensor = tf.placeholder(tf.float32, [None, num_labels], name='output')
         keep_prob = tf.placeholder(tf.float32)
 
-    #store layers weight and bias
     with tf.name_scope('weights'):
-        weights = {
-            'out': tf.Variable(tf.random_normal([last_hidden_units,num_labels]),name='out_weights')
-        }
+        weights = {}
+        previous_layer_size = num_features
         for i in range(num_hidden_layers):
             num_hidden_units = hidden_array[i]
-            if i == 0:
-                weights[i] = tf.Variable(tf.random_normal([num_features, num_hidden_units]), name='weights' + str(i))
-            else:
-                weights[i] = tf.Variable(tf.random_normal([hidden_array[i - 1], num_hidden_units]),
-                                         name='weights' + str(i))
+            weights[i] = tf.Variable(tf.random_normal([previous_layer_size, num_hidden_units], stddev=0.1))
+            previous_layer_size = num_hidden_units
+        weights['out'] = tf.Variable(tf.random_normal([previous_layer_size, num_labels], stddev=0.1))
 
     with tf.name_scope('biases'):
-        biases = {
-            'out': tf.Variable(tf.random_normal([num_labels]),name='out_bias')
-        }
+        biases = {}
         for i in range(num_hidden_layers):
             num_hidden_units = hidden_array[i]
-            biases[i] = tf.Variable(tf.random_normal([num_hidden_units]), name='biases' + str(i))
+            biases[i] = tf.Variable(tf.random_normal([num_hidden_units], stddev=0.1), name='biases' + str(i))
+        biases['out'] = tf.Variable(tf.random_normal([num_labels], stddev=0.1), name='out_bias')
 
+    # Forward propagation
+    yhat = feed_forward(input_tensor, num_hidden_layers, weights, biases, keep_prob)
+    predict = tf.argmax(yhat, axis=1)
 
-    prediction = feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob)
+    # Backward propagation
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=output_tensor, logits=yhat))
+    updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
 
-    with tf.name_scope('loss_function'):
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=output_tensor))
-
-    with tf.name_scope('optimizer_function'):
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
-
-    with tf.name_scope('accuracy_function'):
-        correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(output_tensor, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-
-    tf.summary.scalar("loss", loss)
-    tf.summary.scalar("accuracy",accuracy)
-
-    summary_op = tf.summary.merge_all()
-
-
-    previous_loss_val = 0
     saver = tf.train.Saver()
-
+    # Run SGD
     with tf.Session() as sess:
         init = tf.global_variables_initializer()
         sess.run(init)
 
+        writer = tf.summary.FileWriter(model_dir, graph=tf.get_default_graph())
 
-    #create log writer
-        writer = tf.summary.FileWriter(model_file, graph=tf.get_default_graph())
+        for epoch in range(100):
+            # Train with each example
+            for i in range(len(train_X)):
+                u, loss = sess.run([updates, cost],
+                                   feed_dict={input_tensor: train_X[i: i + 1], output_tensor: train_y[i: i + 1],
+                                              keep_prob: 0.5})
 
-        epoch = 0
-        while epoch < 200:
-            print(epoch)
-            _, l,prediction_val,summary = sess.run([optimizer,loss,prediction,summary_op], feed_dict={input_tensor: training_features, output_tensor: training_labels})
-            writer.add_summary(summary, epoch)
+            save_path = saver.save(sess, model_dir)
 
-            epoch+=1
-        save_path = saver.save(sess, model_file)
+            if test_X is not None and test_y is not None:
+                train_accuracy = np.mean(np.argmax(train_y, axis=1) ==
+                                     sess.run(predict, feed_dict={input_tensor: train_X, output_tensor: train_y,
+                                                                  keep_prob: 1.0}))
+                test_accuracy = np.mean(np.argmax(test_y, axis=1) ==
+                                    sess.run(predict, feed_dict={input_tensor: test_X, output_tensor: test_y,
+                                                                 keep_prob: 1.0}))
 
-
-    return save_path
+                print("Epoch = %d, train accuracy = %.2f%%, test accuracy = %.2f%%"
+                    % (epoch + 1, 100. * train_accuracy, 100. * test_accuracy))
 
 
 def neural_network_test(test_features,test_labels,model_file):

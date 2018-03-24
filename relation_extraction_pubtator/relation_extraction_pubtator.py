@@ -120,17 +120,15 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
 
-        test_model = ann.neural_network_train(fold_train_X, fold_train_y, hidden_array, './model_building_meta_data/test' + str(i) + '/')
-
-
-
-        fold_test_instances = load_data.build_instances_testing(fold_test_forward_sentences, fold_test_reverse_sentences,
+        fold_test_instances = load_data.build_instances_testing(fold_test_forward_sentences,
+                                                                fold_test_reverse_sentences,
                                                                 fold_dep_dictionary, fold_dep_word_dictionary,
-                                                                fold_dep_element_dictionary, fold_between_word_dictionary,
+                                                                fold_dep_element_dictionary,
+                                                                fold_between_word_dictionary,
                                                                 distant_interactions, reverse_distant_interactions,
                                                                 entity_a_text, entity_b_text, symmetric)
 
-        #group instances by pmid and build feature array
+        # group instances by pmid and build feature array
         fold_test_features = []
         fold_test_labels = []
         pmid_test_instances = {}
@@ -144,6 +142,12 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
 
         fold_test_X = np.array(fold_test_features)
         fold_test_y = np.array(fold_test_labels)
+
+        test_model = ann.neural_network_train(fold_train_X, fold_train_y,fold_test_X,fold_test_y, hidden_array, './model_building_meta_data/test' + str(i) + '/')
+
+
+
+
 
         fold_test_predicted_prob = ann.neural_network_test(fold_test_X, fold_test_y, test_model)
         #fold_test_predicted_prob = model.predict_proba(fold_test_X)[:,1]

@@ -62,7 +62,7 @@ def custom_model_function(features, labels, mode, params):
 
 
 
-def neural_network_train(training_features, training_labels, hidden_array, model_file):
+def neural_network_train(training_features, training_labels,test_features,test_labels, hidden_array, model_file):
 
     tf.reset_default_graph()
 
@@ -87,18 +87,31 @@ def neural_network_train(training_features, training_labels, hidden_array, model
         num_epochs=10,
         shuffle=True)
 
-    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={"x": training_features},
-        y=training_labels,
-        batch_size=1,
+    test_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": test_features},
+        y=test_labels,
         num_epochs=1,
-        shuffle=False
-    )
+        shuffle=False)
+
 
 
     # Train model.
     classifier.train(input_fn=train_input_fn,steps = None)
 
+    accuracy_score = classifier.evaluate(input_fn=test_input_fn)["accuracy"]
+
+    print("\nTest Accuracy: {0:f}\n".format(accuracy_score))
+
+    predictions = list(classifier.predict(input_fn=test_input_fn))
+    predicted_probs = [p["probabilities"][1] for p in predictions]
+    print(predicted_probs)
+
+    # predicted_probs = [row[1] for row in predicted_classes]
+    predicted_classes = [p["class_ids"][0] for p in predictions]
+    print(predicted_classes)
+    print(metrics.precision_score(test_labels, np.array(predicted_classes)))
+    print(metrics.recall_score(test_labels, np.array(predicted_classes)))
+    print(metrics.f1_score(test_labels, np.array(predicted_classes)))
 
     return classifier
 
