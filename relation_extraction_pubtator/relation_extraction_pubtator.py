@@ -94,9 +94,17 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                 fold_test_reverse_sentences[key] = reverse_sentences[key]
 
 
-        fold_training_instances, fold_dep_dictionary, fold_dep_word_dictionary, fold_dep_element_dictionary, fold_between_word_dictionary = load_data.build_instances_training(
-            fold_training_forward_sentences, fold_training_reverse_sentences, distant_interactions,
-            reverse_distant_interactions, entity_a_text, entity_b_text, symmetric)
+        fold_training_instances, \
+        fold_dep_dictionary, \
+        fold_dep_word_dictionary, \
+        fold_dep_element_dictionary, \
+        fold_between_word_dictionary = load_data.build_instances_training(fold_training_forward_sentences,
+                                                                          fold_training_reverse_sentences,
+                                                                          distant_interactions,
+                                                                          reverse_distant_interactions,
+                                                                          entity_a_text,
+                                                                          entity_b_text,
+                                                                          symmetric)
 
 
 
@@ -143,7 +151,12 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_test_X = np.array(fold_test_features)
         fold_test_y = np.array(fold_test_labels)
 
-        test_model = ann.neural_network_train(fold_train_X, fold_train_y,fold_test_X,fold_test_y, hidden_array, './model_building_meta_data/test' + str(i) + '/')
+        test_model = ann.neural_network_train(fold_train_X,
+                                              fold_train_y,
+                                              fold_test_X,
+                                              fold_test_y,
+                                              hidden_array,
+                                              './model_building_meta_data/test' + str(i) + '/')
 
 
 
@@ -162,7 +175,8 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
 
         for abstract_pmid in pmid_test_instances:
             instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(fold_test_instances,
-                pmid_test_instances[abstract_pmid],symmetric)
+                                                                                                      pmid_test_instances[abstract_pmid],
+                                                                                                      symmetric)
 
             for g in group_to_instance_dict:
                 predicted_prob = []
@@ -199,8 +213,10 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
 
 def predict_sentences(model_file, pubtator_file, entity_a, entity_b, symmetric, threshold):
 
-    predict_pmids, predict_forward_sentences, predict_reverse_sentences, entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(
-        pubtator_file,entity_a,entity_b)
+    predict_pmids, \
+    predict_forward_sentences,\
+    predict_reverse_sentences,\
+    entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(pubtator_file,entity_a,entity_b)
 
     model, dep_dictionary, dep_word_dictionary, dep_element_dictionary, between_word_dictionary = joblib.load(
         model_file)
