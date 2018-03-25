@@ -9,23 +9,23 @@ def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
     dropout = {}
 
     for i in range(num_hidden_layers):
-        with tf.name_scope('hidden_layer'+str(i)):
-            if i == 0:
-                hidden_mult[i] = tf.matmul(input_tensor,weights[i],name='hidden_mult'+str(i))
-            else:
-                hidden_mult[i] = tf.matmul(hidden_act[i-1],weights[i],name='hidden_mult'+str(i))
-            hidden_add[i] = tf.add(hidden_mult[i], biases[i],'hidden_add'+str(i))
-            hidden_act[i] = tf.nn.sigmoid(hidden_add[i],'hidden_act'+str(i))
-            dropout[i] = tf.nn.dropout(hidden_act[i], keep_prob)
-
-    with tf.name_scope('out_activation'):
-        if num_hidden_layers != 0:
-            out_layer_multiplication = tf.matmul(dropout[num_hidden_layers-1],weights['out'],name='out_layer_mult')
+        #with tf.name_scope('hidden_layer'+str(i)):
+        if i == 0:
+            hidden_mult[i] = tf.matmul(input_tensor,weights[i],name='hidden_mult'+str(i))
         else:
-            out_layer_multiplication = tf.matmul(input_tensor,weights['out'],name = 'out_layer_mult')
-        out_layer_bias_addition = tf.add(out_layer_multiplication,biases['out'],name='out_layer_add')
-        out_layer_activation = out_layer_bias_addition
-        # out_layer_activation = tf.nn.softmax(out_layer_bias_addition, name='out_layer_activation')
+            hidden_mult[i] = tf.matmul(hidden_act[i-1],weights[i],name='hidden_mult'+str(i))
+        hidden_add[i] = tf.add(hidden_mult[i], biases[i],'hidden_add'+str(i))
+        hidden_act[i] = tf.nn.sigmoid(hidden_add[i],'hidden_act'+str(i))
+        dropout[i] = tf.nn.dropout(hidden_act[i], keep_prob)
+
+    #with tf.name_scope('out_activation'):
+    if num_hidden_layers != 0:
+        out_layer_multiplication = tf.matmul(dropout[num_hidden_layers-1],weights['out'],name='out_layer_mult')
+    else:
+        out_layer_multiplication = tf.matmul(input_tensor,weights['out'],name = 'out_layer_mult')
+    out_layer_bias_addition = tf.add(out_layer_multiplication,biases['out'],name='out_layer_add')
+    out_layer_activation = out_layer_bias_addition
+    # out_layer_activation = tf.nn.softmax(out_layer_bias_addition, name='out_layer_activation')
 
     return out_layer_activation
 
@@ -36,26 +36,29 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
 
     tf.reset_default_graph()
 
-    with tf.name_scope('input_features_labels'):
-        input_tensor = tf.placeholder(tf.float32, [None, num_features], name='input')
-        output_tensor = tf.placeholder(tf.float32, [None, num_labels], name='output')
-        keep_prob = tf.placeholder(tf.float32)
+    #with tf.name_scope('input_features_labels'):
+    input_tensor = tf.placeholder(tf.float32, [None, num_features], name='input')
+    output_tensor = tf.placeholder(tf.float32, [None, num_labels], name='output')
+    keep_prob = tf.placeholder(tf.float32)
 
-    with tf.name_scope('weights'):
-        weights = {}
-        previous_layer_size = num_features
-        for i in range(num_hidden_layers):
-            num_hidden_units = hidden_array[i]
-            weights[i] = tf.Variable(tf.random_normal([previous_layer_size, num_hidden_units], stddev=0.1))
-            previous_layer_size = num_hidden_units
-        weights['out'] = tf.Variable(tf.random_normal([previous_layer_size, num_labels], stddev=0.1))
+    #with tf.name_scope('weights'):
+    weights = {}
+    biases = {}
+    previous_layer_size = num_features
+    for i in range(num_hidden_layers):
+        num_hidden_units = hidden_array[i]
+        weights[i] = tf.Variable(tf.random_normal([previous_layer_size, num_hidden_units], stddev=0.1),name = 'weights' + str(i))
+        biases[i] = tf.Variable(tf.random_normal([num_hidden_units], stddev=0.1), name='biases' + str(i))
+        previous_layer_size = num_hidden_units
+    weights['out'] = tf.Variable(tf.random_normal([previous_layer_size, num_labels], stddev=0.1),name='out_weights')
+    biases['out'] = tf.Variable(tf.random_normal([num_labels], stddev=0.1), name='out_bias')
 
-    with tf.name_scope('biases'):
-        biases = {}
-        for i in range(num_hidden_layers):
-            num_hidden_units = hidden_array[i]
-            biases[i] = tf.Variable(tf.random_normal([num_hidden_units], stddev=0.1), name='biases' + str(i))
-        biases['out'] = tf.Variable(tf.random_normal([num_labels], stddev=0.1), name='out_bias')
+    #with tf.name_scope('biases'):
+    #biases = {}
+    #for i in range(num_hidden_layers):
+    #    num_hidden_units = hidden_array[i]
+    #    biases[i] = tf.Variable(tf.random_normal([num_hidden_units], stddev=0.1), name='biases' + str(i))
+    #biases['out'] = tf.Variable(tf.random_normal([num_labels], stddev=0.1), name='out_bias')
 
     # Forward propagation
     yhat = feed_forward(input_tensor, num_hidden_layers, weights, biases, keep_prob)
