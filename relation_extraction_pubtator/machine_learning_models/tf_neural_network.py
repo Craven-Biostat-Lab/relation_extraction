@@ -84,7 +84,7 @@ def neural_network_train(training_features, training_labels,test_features,test_l
         x={"x": training_features},
         y=training_labels,
         batch_size = 1,
-        num_epochs=1,
+        num_epochs=10,
         shuffle=True)
 
     test_input_fn = tf.estimator.inputs.numpy_input_fn(

@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from random import shuffle
+from sklearn import metrics
 
 def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
     """Performs feed forward portion of neural network training"""
@@ -16,7 +17,7 @@ def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
         else:
             hidden_mult[i] = tf.matmul(hidden_act[i-1],weights[i],name='hidden_mult'+str(i))
         hidden_add[i] = tf.add(hidden_mult[i], biases[i],'hidden_add'+str(i))
-        hidden_act[i] = tf.nn.sigmoid(hidden_add[i],'hidden_act'+str(i))
+        hidden_act[i] = tf.nn.relu(hidden_add[i],'hidden_act'+str(i))
         dropout[i] = tf.nn.dropout(hidden_act[i], keep_prob)
 
     #with tf.name_scope('out_activation'):
@@ -72,7 +73,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
     predict = tf.argmax(prob_yhat, axis=1,name='predict_tensor')
 
     # Backward propagation
-    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=output_tensor, logits=yhat))
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=output_tensor, logits=yhat))
     updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
 
     saver = tf.train.Saver()
@@ -95,7 +96,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
                                    feed_dict={input_tensor: train_X[i: i + 1], output_tensor: train_y[i: i + 1],
                                               keep_prob: 0.5})
 
-
+            save_path = saver.save(sess, model_dir)
 
             if test_X is not None and test_y is not None:
                 train_accuracy = np.mean(np.argmax(train_y, axis=1) ==
@@ -104,9 +105,10 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
                 test_accuracy = np.mean(np.argmax(test_y, axis=1) ==
                                     sess.run(predict, feed_dict={input_tensor: test_X, output_tensor: test_y,
                                                                  keep_prob: 1.0}))
+                test_f1 = metrics.f1_score(np.argmax(test_y,axis=1),sess.run(predict, feed_dict={input_tensor: test_X, output_tensor: test_y,keep_prob: 1.0}))
 
-                if test_accuracy > max_accuracy:
-                    max_accuracy = test_accuracy
+                if test_f1 > max_accuracy:
+                    max_accuracy = test_f1
                     save_path = saver.save(sess, model_dir)
                 print("Epoch = %d, train accuracy = %.2f%%, test accuracy = %.2f%%"
                     % (epoch + 1, 100. * train_accuracy, 100. * test_accuracy))
