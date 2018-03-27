@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+from random import shuffle
 
 def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
     """Performs feed forward portion of neural network training"""
@@ -24,14 +25,19 @@ def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
     else:
         out_layer_multiplication = tf.matmul(input_tensor,weights['out'],name = 'out_layer_mult')
     out_layer_bias_addition = tf.add(out_layer_multiplication,biases['out'],name='out_layer_add')
-    out_layer_activation = out_layer_bias_addition
-    # out_layer_activation = tf.nn.softmax(out_layer_bias_addition, name='out_layer_activation')
+    #out_layer_activation = out_layer_bias_addition
+    out_layer_activation = tf.identity(out_layer_bias_addition, name='out_layer_activation')
 
     return out_layer_activation
 
 def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
     num_features = train_X.shape[1]  # Number of input nodes: 4 features and 1 bias
-    num_labels = train_y.shape[1]  # Number of outcomes (3 iris flowers)
+    print(num_features)
+    num_labels = np.unique(train_y).size
+    print(num_labels)
+    train_y = np.eye(num_labels)[train_y]
+    test_y = np.eye(num_labels)[test_y]
+    #num_labels = 2
     num_hidden_layers = len(hidden_array)
 
     tf.reset_default_graph()
@@ -39,7 +45,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
     #with tf.name_scope('input_features_labels'):
     input_tensor = tf.placeholder(tf.float32, [None, num_features], name='input')
     output_tensor = tf.placeholder(tf.float32, [None, num_labels], name='output')
-    keep_prob = tf.placeholder(tf.float32)
+    keep_prob = tf.placeholder(tf.float32,name='keep_prob')
 
     #with tf.name_scope('weights'):
     weights = {}
@@ -47,22 +53,23 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
     previous_layer_size = num_features
     for i in range(num_hidden_layers):
         num_hidden_units = hidden_array[i]
-        weights[i] = tf.Variable(tf.random_normal([previous_layer_size, num_hidden_units], stddev=0.1),name = 'weights' + str(i))
+        weights[i] = tf.Variable(tf.random_normal([previous_layer_size, num_hidden_units], stddev=0.1),name='weights' + str(i))
         biases[i] = tf.Variable(tf.random_normal([num_hidden_units], stddev=0.1), name='biases' + str(i))
         previous_layer_size = num_hidden_units
     weights['out'] = tf.Variable(tf.random_normal([previous_layer_size, num_labels], stddev=0.1),name='out_weights')
     biases['out'] = tf.Variable(tf.random_normal([num_labels], stddev=0.1), name='out_bias')
 
     #with tf.name_scope('biases'):
-    #biases = {}
-    #for i in range(num_hidden_layers):
-    #    num_hidden_units = hidden_array[i]
-    #    biases[i] = tf.Variable(tf.random_normal([num_hidden_units], stddev=0.1), name='biases' + str(i))
-    #biases['out'] = tf.Variable(tf.random_normal([num_labels], stddev=0.1), name='out_bias')
+    #    biases = {}
+    #    for i in range(num_hidden_layers):
+    #        num_hidden_units = hidden_array[i]
+    #        biases[i] = tf.Variable(tf.random_normal([num_hidden_units], stddev=0.1), name='biases' + str(i))
+    #    biases['out'] = tf.Variable(tf.random_normal([num_labels], stddev=0.1), name='out_bias')
 
     # Forward propagation
     yhat = feed_forward(input_tensor, num_hidden_layers, weights, biases, keep_prob)
-    predict = tf.argmax(yhat, axis=1)
+    prob_yhat = tf.nn.softmax(yhat,name='predict_prob')
+    predict = tf.argmax(prob_yhat, axis=1,name='predict_tensor')
 
     # Backward propagation
     cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=output_tensor, logits=yhat))
@@ -76,14 +83,19 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
 
         writer = tf.summary.FileWriter(model_dir, graph=tf.get_default_graph())
 
-        for epoch in range(100):
+        values = range(len(train_X))
+
+        max_accuracy = 0
+        save_path = None
+        for epoch in range(10):
+            shuffle(values)
             # Train with each example
-            for i in range(len(train_X)):
+            for i in values:
                 u, loss = sess.run([updates, cost],
                                    feed_dict={input_tensor: train_X[i: i + 1], output_tensor: train_y[i: i + 1],
                                               keep_prob: 0.5})
 
-            save_path = saver.save(sess, model_dir)
+
 
             if test_X is not None and test_y is not None:
                 train_accuracy = np.mean(np.argmax(train_y, axis=1) ==
@@ -93,9 +105,13 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
                                     sess.run(predict, feed_dict={input_tensor: test_X, output_tensor: test_y,
                                                                  keep_prob: 1.0}))
 
+                if test_accuracy > max_accuracy:
+                    max_accuracy = test_accuracy
+                    save_path = saver.save(sess, model_dir)
                 print("Epoch = %d, train accuracy = %.2f%%, test accuracy = %.2f%%"
                     % (epoch + 1, 100. * train_accuracy, 100. * test_accuracy))
 
+    return save_path
 
 def neural_network_test(test_features,test_labels,model_file):
     tf.reset_default_graph()
@@ -107,11 +123,16 @@ def neural_network_test(test_features,test_labels,model_file):
 
         restored_model.restore(sess,model_file)
         graph = tf.get_default_graph()
-        input_tensor = graph.get_tensor_by_name('input_features_labels/input:0')
-        output_tensor = graph.get_tensor_by_name('input_features_labels/output:0')
-        predict_tensor = graph.get_tensor_by_name('out_activation/out_layer_activation:0')
+        input_tensor = graph.get_tensor_by_name('input:0')
+        output_tensor = graph.get_tensor_by_name('output:0')
+        keep_prob_tensor = graph.get_tensor_by_name('keep_prob:0')
+        predict_tensor = graph.get_tensor_by_name('predict_tensor:0')
+        predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
-        predicted_val = sess.run([predict_tensor],feed_dict={input_tensor:test_features,output_tensor:test_labels})
-
-    #print(predicted_val[0][:,1])
+        predicted_val = sess.run([predict_prob],feed_dict={input_tensor:test_features,output_tensor:test_labels,keep_prob_tensor:1.0})
+        test_accuracy = np.mean(np.argmax(test_labels, axis=1) ==
+                                sess.run(predict_tensor, feed_dict={input_tensor: test_features, output_tensor: test_labels,
+                                                             keep_prob_tensor: 1.0}))
+    print(test_accuracy)
+    print(predicted_val[0][:,1])
     return predicted_val[0][:,1]
