@@ -28,6 +28,9 @@ class Instance(object):
         '''Sets the label of the candidate sentence (positive/negative)'''
         self.label = label
 
+    def set_label_i(self,label,index):
+        self.label[index] = label
+
     def get_label(self):
         return self.label
 

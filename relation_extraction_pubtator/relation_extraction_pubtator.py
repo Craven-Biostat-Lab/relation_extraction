@@ -59,7 +59,7 @@ def create_instance_groupings(all_instances, group_instances, symmetric):
     return instance_to_group_dict, group_to_instance_dict, instance_dict
 
 def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
-                            entity_a_text, entity_b_text, symmetric):
+                            entity_a_text, entity_b_text):
 
     pmids = list(pmids)
     #split training sentences for cross validation
@@ -104,8 +104,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                                                                           distant_interactions,
                                                                           reverse_distant_interactions,
                                                                           entity_a_text,
-                                                                          entity_b_text,
-                                                                          symmetric)
+                                                                          entity_b_text)
 
 
 
@@ -135,7 +134,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                                                                 fold_dep_element_dictionary,
                                                                 fold_between_word_dictionary,
                                                                 distant_interactions, reverse_distant_interactions,
-                                                                entity_a_text, entity_b_text, symmetric)
+                                                                entity_a_text, entity_b_text)
 
         # group instances by pmid and build feature array
         fold_test_features = []
@@ -260,11 +259,17 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b, symmetric, 
         
 
 
-def distant_train(model_out, pubtator_file, distant_file, distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b, symmetric):
+def distant_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
+                  distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b):
 
     #get distant_relations from external knowledge base file
-    distant_interactions, reverse_distant_interactions = load_data.load_distant_kb(distant_file, distant_entity_a_col,
-                                                                                   distant_entity_b_col, distant_rel_col)
+    distant_interactions, reverse_distant_interactions = load_data.load_distant_directories(directional_distant_directory,
+                                                                                            symmetric_distant_directory,
+                                                                                            distant_entity_a_col,
+                                                                                            distant_entity_b_col,
+                                                                                            distant_rel_col)
+
+    # distant_interactions, reverse_distant_interactions = load_data.load_distant_kb(directional_distant_directory, distant_entity_a_col,distant_entity_b_col, distant_rel_col)
 
     #get pmids,sentences,
     training_pmids,training_forward_sentences,training_reverse_sentences, entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(
@@ -273,7 +278,7 @@ def distant_train(model_out, pubtator_file, distant_file, distant_entity_a_col, 
 
     #k-cross val
     precision,recall, accuracy = k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,
-                            reverse_distant_interactions,entity_a_text,entity_b_text,symmetric)
+                            reverse_distant_interactions,entity_a_text,entity_b_text)
 
 
     plt.figure()
@@ -342,15 +347,18 @@ def main():
     if mode.upper() == "DISTANT_TRAIN":
         model_out = sys.argv[2]  # location of where model should be saved after training
         pubtator_file = sys.argv[3]  # xml file of sentences from Stanford Parser
-        distant_file = sys.argv[4]  # distant supervision knowledge base to use
-        distant_entity_a_col = int(sys.argv[5])  # entity 1 column
-        distant_entity_b_col = int(sys.argv[6])  # entity 2 column
-        distant_rel_col = int(sys.argv[7])  # relation column
-        entity_a = sys.argv[8].upper()  # entity_a
-        entity_b = sys.argv[9].upper()  # entity_b
-        symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
+        directional_distant_directory = sys.argv[4]  # distant supervision knowledge base to use
+        symmetric_distant_directory = sys.argv[5]
+        distant_entity_a_col = int(sys.argv[6])  # entity 1 column
+        distant_entity_b_col = int(sys.argv[7])  # entity 2 column
+        distant_rel_col = int(sys.argv[8])  # relation column
+        entity_a = sys.argv[9].upper()  # entity_a
+        entity_b = sys.argv[10].upper()  # entity_b
 
-        distant_train(model_out, pubtator_file, distant_file, distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b, symmetric)
+        #symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
+
+        distant_train(model_out, pubtator_file, directional_distant_directory,symmetric_distant_directory,
+                      distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b)
 
 
     elif mode.upper() == "PREDICT":

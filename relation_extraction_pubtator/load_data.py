@@ -1,4 +1,5 @@
 import collections
+import os
 import itertools
 import cPickle as pickle
 
@@ -84,49 +85,40 @@ def build_instances_predict(predict_forward_sentences, predict_reverse_sentences
 
 
 def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary,
-                            distant_interactions,reverse_distant_interactions, entity_a_text, entity_b_text, symmetric = False):
+                            distant_interactions,reverse_distant_interactions, entity_a_text, entity_b_text):
+
     test_instances = []
+    key_order = sorted(distant_interactions)
+
     for key in test_forward_sentences:
         splitkey = key.split('|')
         reverse_key = splitkey[0] + '|' + splitkey[1] + '|' + splitkey[3] + '|' + splitkey[2]
         if reverse_key in test_reverse_sentences:
-            forward_test_instance = Instance(test_forward_sentences[key], 0)
+            forward_test_instance = Instance(test_forward_sentences[key], [0]*len(key_order))
             forward_test_instance.fix_word_lists(entity_a_text, entity_b_text)
-            reverse_test_instance = Instance(test_reverse_sentences[reverse_key], 0)
+            reverse_test_instance = Instance(test_reverse_sentences[reverse_key], [0]*len(key_order))
             reverse_test_instance.fix_word_lists(entity_a_text, entity_b_text)
 
             entity_combo = (forward_test_instance.sentence.start_entity_id,
                                 forward_test_instance.sentence.end_entity_id)
 
-
-            if symmetric is False:
-                # check if check returned true because of reverse
-                if entity_combo in distant_interactions:
-                    forward_test_instance.set_label(1)
-                elif entity_combo in reverse_distant_interactions:
-                    reverse_test_instance.set_label(1)
+            for i in range(len(key_order)):
+                distant_key = key_order[i]
+                if 'SYMMETRIC' in distant_key:
+                    if entity_combo in distant_interactions[distant_key] or entity_combo in reverse_distant_interactions[distant_key]:
+                        forward_test_instance.set_label_i(1,i)
+                        reverse_test_instance.set_label_i(1,i)
                 else:
-                    pass
+                    if entity_combo in distant_interactions[distant_key]:
+                        forward_test_instance.set_label_i(1, i)
+                    elif entity_combo in reverse_distant_interactions[distant_key]:
+                        reverse_test_instance.set_label_i(1, i)
 
-                test_instances.append(forward_test_instance)
-                test_instances.append(reverse_test_instance)
 
-            #if symmetric is True
-            else:
-                if entity_combo in distant_interactions or \
-                                entity_combo in reverse_distant_interactions:
-                    forward_test_instance.set_label(1)
-                    reverse_test_instance.set_label(1)
 
-                forward_dep_type_path = ' '.join(forward_test_instance.dependency_path)
-                reverse_dep_type_path = ' '.join(reverse_test_instance.dependency_path)
+            test_instances.append(forward_test_instance)
+            test_instances.append(reverse_test_instance)
 
-                if forward_dep_type_path in dep_dictionary:
-                    test_instances.append(forward_test_instance)
-                elif reverse_dep_type_path in dep_dictionary:
-                    test_instances.append(reverse_test_instance)
-                else:
-                    test_instances.append(forward_test_instance)
         else:
             continue
 
@@ -137,86 +129,52 @@ def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_d
 
 def build_instances_training(
         training_forward_sentences,training_reverse_sentences,distant_interactions,
-        reverse_distant_interactions, entity_a_text, entity_b_text, symmetric):
+        reverse_distant_interactions, entity_a_text, entity_b_text):
 
     path_word_vocabulary = []
     words_between_entities_vocabulary = []
     dep_type_vocabulary = []
     dep_type_word_elements_vocabulary = []
+    key_order = sorted(distant_interactions)
+
 
     candidate_instances = []
     for key in training_forward_sentences:
         splitkey = key.split('|')
         reverse_key = splitkey[0] + '|' +splitkey[1] +'|' +splitkey[3] + '|' + splitkey[2]
         if reverse_key in training_reverse_sentences:
-            forward_train_instance = Instance(training_forward_sentences[key],0)
+            forward_train_instance = Instance(training_forward_sentences[key],[0]*len(key_order))
             forward_train_instance.fix_word_lists(entity_a_text,entity_b_text)
-            reverse_train_instance = Instance(training_reverse_sentences[reverse_key],0)
+            reverse_train_instance = Instance(training_reverse_sentences[reverse_key],[0]*len(key_order))
             reverse_train_instance.fix_word_lists(entity_a_text, entity_b_text)
 
             entity_combo = (forward_train_instance.sentence.start_entity_id,
                              forward_train_instance.sentence.end_entity_id)
 
 
-            if symmetric is False:
-                # check if check returned true because of reverse
-                if entity_combo in distant_interactions:
-                    path_word_vocabulary += forward_train_instance.dependency_words
-                    words_between_entities_vocabulary += forward_train_instance.between_words
-                    dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
-                    dep_type_vocabulary.append(forward_train_instance.dependency_path)
-                    forward_train_instance.set_label(1)
-                    candidate_instances.append(forward_train_instance)
-                elif entity_combo in reverse_distant_interactions:
-                    path_word_vocabulary += reverse_train_instance.dependency_words
-                    words_between_entities_vocabulary += reverse_train_instance.between_words
-                    dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
-                    dep_type_vocabulary.append(reverse_train_instance.dependency_path)
-                    reverse_train_instance.set_label(1)
-                    candidate_instances.append(reverse_train_instance)
+            for i in range(len(key_order)):
+                distant_key = key_order[i]
+                if 'SYMMETRIC' in distant_key:
+                    if entity_combo in distant_interactions[distant_key] or entity_combo in reverse_distant_interactions[distant_key]:
+                        forward_train_instance.set_label_i(1,i)
+                        reverse_train_instance.set_label_i(1,i)
                 else:
-                    path_word_vocabulary += forward_train_instance.dependency_words
-                    path_word_vocabulary += reverse_train_instance.dependency_words
-                    words_between_entities_vocabulary += forward_train_instance.between_words
-                    words_between_entities_vocabulary += reverse_train_instance.between_words
-                    dep_type_vocabulary.append(forward_train_instance.dependency_path)
-                    dep_type_vocabulary.append(reverse_train_instance.dependency_path)
-                    dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
-                    dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
-                    candidate_instances.append(forward_train_instance)
-                    candidate_instances.append(reverse_train_instance)
+                    if entity_combo in distant_interactions[distant_key]:
+                        forward_train_instance.set_label_i(1, i)
+                    elif entity_combo in reverse_distant_interactions[distant_key]:
+                        reverse_train_instance.set_label_i(1, i)
 
+            path_word_vocabulary += forward_train_instance.dependency_words
+            path_word_vocabulary += reverse_train_instance.dependency_words
+            words_between_entities_vocabulary += forward_train_instance.between_words
+            words_between_entities_vocabulary += reverse_train_instance.between_words
+            dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
+            dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
+            dep_type_vocabulary.append(forward_train_instance.dependency_path)
+            dep_type_vocabulary.append(reverse_train_instance.dependency_path)
+            candidate_instances.append(forward_train_instance)
+            candidate_instances.append(reverse_train_instance)
 
-            # if symmetric is true
-            else:
-                if entity_combo in distant_interactions or entity_combo in reverse_distant_interactions:
-
-                    forward_train_instance.set_label(1)
-                    reverse_train_instance.set_label(1)
-                else:
-                    pass
-                dep_type_vocabulary_set = set(dep_type_vocabulary)
-                forward_dep_type_path = forward_train_instance.dependency_path
-                reverse_dep_type_path = reverse_train_instance.dependency_path
-
-                if forward_dep_type_path in dep_type_vocabulary_set:
-                    dep_type_vocabulary.append(forward_dep_type_path)
-                    path_word_vocabulary += forward_train_instance.dependency_words
-                    dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
-                    words_between_entities_vocabulary += forward_train_instance.between_words
-                    candidate_instances.append(forward_train_instance)
-                elif reverse_dep_type_path in dep_type_vocabulary_set:
-                    dep_type_vocabulary.append(reverse_dep_type_path)
-                    path_word_vocabulary += reverse_train_instance.dependency_words
-                    dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
-                    words_between_entities_vocabulary += reverse_train_instance.between_words
-                    candidate_instances.append(reverse_train_instance)
-                else:
-                    dep_type_vocabulary.append(forward_dep_type_path)
-                    path_word_vocabulary += forward_train_instance.dependency_words
-                    dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
-                    words_between_entities_vocabulary += forward_train_instance.between_words
-                    candidate_instances.append(forward_train_instance)
 
         else:
             continue
@@ -365,3 +323,21 @@ def load_distant_kb(distant_kb_file, column_a, column_b,distant_rel_col):
 
     #returns both forward and backward tuples for relations
     return distant_interactions,reverse_distant_interactions
+
+def load_distant_directories(directional_distant_directory,symmetric_distant_directory,distant_entity_a_col,
+                             distant_entity_b_col,distant_rel_col):
+    forward_dictionary = {}
+    reverse_dictionary = {}
+    for filename in os.listdir(directional_distant_directory):
+        distant_interactions,reverse_distant_interactions = load_distant_kb(directional_distant_directory+filename,
+                                                                            distant_entity_a_col,distant_entity_b_col,distant_rel_col)
+        forward_dictionary[filename] = distant_interactions
+        reverse_dictionary[filename] = reverse_distant_interactions
+
+    for filename in os.listdir(symmetric_distant_directory):
+        distant_interactions,reverse_distant_interactions = load_distant_kb(symmetric_distant_directory+filename,
+                                                                            distant_entity_a_col,distant_entity_b_col,distant_rel_col)
+        forward_dictionary['SYMMETRIC'+filename] = distant_interactions
+        reverse_dictionary['SYMMETRIC'+filename] = reverse_distant_interactions
+
+    return forward_dictionary,reverse_dictionary
