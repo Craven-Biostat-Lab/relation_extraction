@@ -15,7 +15,7 @@ from sklearn.externals import joblib
 from sklearn import metrics
 
 
-def create_instance_groupings(all_instances, group_instances, symmetric):
+def create_instance_groupings(all_instances, group_instances):
 
     instance_to_group_dict = {}
     group_to_instance_dict = {}
@@ -37,7 +37,7 @@ def create_instance_groupings(all_instances, group_instances, symmetric):
 
             recent_update = False
 
-            if instance_1 == instance_2 or instance_1.get_label() != instance_2.get_label():
+            if instance_1 == instance_2:
                 continue
 
             if instance_dict[i1][0] == instance_dict[i2][0] and \
@@ -45,11 +45,6 @@ def create_instance_groupings(all_instances, group_instances, symmetric):
                 instance_to_group_dict[i1] = instance_to_group_dict[i2]
                 recent_update = True
 
-            # check reverse direction if relation is symmetric and the forward direction wasn't incorporated
-            if symmetric is True and recent_update is False:
-                if instance_dict[i1][1] == instance_dict[i2][0]  and \
-                                instance_dict[i1][0] == instance_dict[i2][1]:
-                    instance_to_group_dict[i1] = instance_to_group_dict[i2]
 
     for i in instance_to_group_dict:
         if instance_to_group_dict[i] not in group_to_instance_dict:
@@ -65,12 +60,9 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
     #split training sentences for cross validation
     ten_fold_length = len(pmids)/k
     all_chunks = [pmids[i:i + ten_fold_length] for i in xrange(0, len(pmids), ten_fold_length)]
-
-
-
     total_test = np.array([])
     total_predicted_prob = np.array([])
-    total_predicted_prob_2 = np.array([])
+
     for i in range(len(all_chunks)):
         print('Fold #: ' + str(i))
         fold_chunks = all_chunks[:]
@@ -119,10 +111,6 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_train_X = np.array(X)
         fold_train_y = np.array(y)
 
-        model = SGDClassifier(loss='log',penalty="l2",learning_rate='constant',eta0=0.1)
-        model.fit(fold_train_X, fold_train_y)
-
-
         hidden_array = [256]
         model_dir = './model_building_meta_data/test' + str(i)
         if os.path.exists(model_dir):
@@ -135,6 +123,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                                                                 fold_between_word_dictionary,
                                                                 distant_interactions, reverse_distant_interactions,
                                                                 entity_a_text, entity_b_text)
+
 
         # group instances by pmid and build feature array
         fold_test_features = []
@@ -159,25 +148,13 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                                               './model_building_meta_data/test' + str(i) + '/')
 
 
-
-
-
-        #fold_test_predicted_prob = snn.neural_network_test(fold_test_X, fold_test_y, test_model)
         fold_test_predicted_prob = snn.neural_network_test(fold_test_X,fold_test_y,test_model)
-        #fold_test_predicted_prob = model.predict_proba(fold_test_X)[:,1]
 
-        predictions = model.predict(fold_test_X)
-        print('log stats')
-        print(metrics.accuracy_score(fold_test_y,predictions))
-        print(metrics.precision_score(fold_test_y, predictions))
-        print(metrics.recall_score(fold_test_y,predictions))
-        print('*')
 
 
         for abstract_pmid in pmid_test_instances:
             instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(fold_test_instances,
-                                                                                                      pmid_test_instances[abstract_pmid],
-                                                                                                      symmetric)
+                                                                                                      pmid_test_instances[abstract_pmid])
 
             for g in group_to_instance_dict:
                 predicted_prob = []
@@ -269,7 +246,6 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
                                                                                             distant_entity_b_col,
                                                                                             distant_rel_col)
 
-    # distant_interactions, reverse_distant_interactions = load_data.load_distant_kb(directional_distant_directory, distant_entity_a_col,distant_entity_b_col, distant_rel_col)
 
     #get pmids,sentences,
     training_pmids,training_forward_sentences,training_reverse_sentences, entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(

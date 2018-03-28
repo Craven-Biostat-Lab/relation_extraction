@@ -5,7 +5,7 @@ import cPickle as pickle
 
 from structures.sentences import Sentence
 from structures.instances import Instance
-
+from collections import Counter
 
 def build_dataset(words, occur_count = None):
     """Process raw mentions of features into dictionary and count dictionary"""
@@ -136,6 +136,7 @@ def build_instances_training(
     dep_type_vocabulary = []
     dep_type_word_elements_vocabulary = []
     key_order = sorted(distant_interactions)
+    print(key_order)
 
 
     candidate_instances = []
@@ -329,13 +330,13 @@ def load_distant_directories(directional_distant_directory,symmetric_distant_dir
     forward_dictionary = {}
     reverse_dictionary = {}
     for filename in os.listdir(directional_distant_directory):
-        distant_interactions,reverse_distant_interactions = load_distant_kb(directional_distant_directory+filename,
+        distant_interactions,reverse_distant_interactions = load_distant_kb(directional_distant_directory+'/'+filename,
                                                                             distant_entity_a_col,distant_entity_b_col,distant_rel_col)
         forward_dictionary[filename] = distant_interactions
         reverse_dictionary[filename] = reverse_distant_interactions
 
     for filename in os.listdir(symmetric_distant_directory):
-        distant_interactions,reverse_distant_interactions = load_distant_kb(symmetric_distant_directory+filename,
+        distant_interactions,reverse_distant_interactions = load_distant_kb(symmetric_distant_directory+'/'+filename,
                                                                             distant_entity_a_col,distant_entity_b_col,distant_rel_col)
         forward_dictionary['SYMMETRIC'+filename] = distant_interactions
         reverse_dictionary['SYMMETRIC'+filename] = reverse_distant_interactions

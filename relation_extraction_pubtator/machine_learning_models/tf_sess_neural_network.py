@@ -32,12 +32,12 @@ def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
     return out_layer_activation
 
 def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
-    num_features = train_X.shape[1]  # Number of input nodes: 4 features and 1 bias
+    num_features = train_X.shape[1]
     print(num_features)
-    num_labels = np.unique(train_y).size
+    num_labels = train_y.shape[1]
     print(num_labels)
-    train_y = np.eye(num_labels)[train_y]
-    test_y = np.eye(num_labels)[test_y]
+    #train_y = np.eye(num_labels)[train_y]
+    #test_y = np.eye(num_labels)[test_y]
     #num_labels = 2
     num_hidden_layers = len(hidden_array)
 
@@ -69,11 +69,12 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
 
     # Forward propagation
     yhat = feed_forward(input_tensor, num_hidden_layers, weights, biases, keep_prob)
-    prob_yhat = tf.nn.softmax(yhat,name='predict_prob')
-    predict = tf.argmax(prob_yhat, axis=1,name='predict_tensor')
+    prob_yhat = tf.nn.sigmoid(yhat,name='predict_prob')
+    class_yhat = tf.to_int32(prob_yhat > 0.5,name='class_predict')
+    #predict = tf.argmax(prob_yhat, axis=1,name='predict_tensor')
 
     # Backward propagation
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=output_tensor, logits=yhat))
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=output_tensor, logits=yhat))
     updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
 
     saver = tf.train.Saver()
@@ -88,7 +89,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
 
         max_accuracy = 0
         save_path = None
-        for epoch in range(10):
+        for epoch in range(1000):
             shuffle(values)
             # Train with each example
             for i in values:
@@ -99,17 +100,12 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
             save_path = saver.save(sess, model_dir)
 
             if test_X is not None and test_y is not None:
-                train_accuracy = np.mean(np.argmax(train_y, axis=1) ==
-                                     sess.run(predict, feed_dict={input_tensor: train_X, output_tensor: train_y,
+                train_accuracy = metrics.accuracy_score(y_true=train_y,y_pred=sess.run(class_yhat,feed_dict={
+                    input_tensor: train_X, output_tensor: train_y,
                                                                   keep_prob: 1.0}))
-                test_accuracy = np.mean(np.argmax(test_y, axis=1) ==
-                                    sess.run(predict, feed_dict={input_tensor: test_X, output_tensor: test_y,
-                                                                 keep_prob: 1.0}))
-                test_f1 = metrics.f1_score(np.argmax(test_y,axis=1),sess.run(predict, feed_dict={input_tensor: test_X, output_tensor: test_y,keep_prob: 1.0}))
+                test_accuracy = metrics.accuracy_score(y_true=test_y, y_pred=sess.run(class_yhat, feed_dict={
+                    input_tensor: test_X, output_tensor: test_y,keep_prob: 1.0}))
 
-                if test_f1 > max_accuracy:
-                    max_accuracy = test_f1
-                    save_path = saver.save(sess, model_dir)
                 print("Epoch = %d, train accuracy = %.2f%%, test accuracy = %.2f%%"
                     % (epoch + 1, 100. * train_accuracy, 100. * test_accuracy))
 
@@ -128,7 +124,7 @@ def neural_network_test(test_features,test_labels,model_file):
         input_tensor = graph.get_tensor_by_name('input:0')
         output_tensor = graph.get_tensor_by_name('output:0')
         keep_prob_tensor = graph.get_tensor_by_name('keep_prob:0')
-        predict_tensor = graph.get_tensor_by_name('predict_tensor:0')
+        predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
         predicted_val = sess.run([predict_prob],feed_dict={input_tensor:test_features,output_tensor:test_labels,keep_prob_tensor:1.0})
