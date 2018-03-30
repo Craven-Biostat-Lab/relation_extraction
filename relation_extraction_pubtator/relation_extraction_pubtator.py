@@ -248,19 +248,25 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
 
 
     plt.figure()
-
+    total_key_order = []
     for k in range(len(key_order)):
         print(key_order[k])
-        print(100. * (np.count_nonzero(class_labels[:,k]) / float(class_labels[:,k].size)))
+        total_key_order.append(key_order[k])
+        total_key_order.append('')
+        color_val = 'C' + str(k)
+        accuracy = np.count_nonzero(class_labels[:,k]) / float(class_labels[:,k].size)
+        print(100. * accuracy)
         precision,recall,_ = metrics.precision_recall_curve(y_true=class_labels[:,k],probas_pred=probabilities[:,k])
-        plt.step(recall, precision)
+        plt.step(recall, precision,color=color_val)
+        plt.plot((0.0, 1.0), (accuracy, accuracy),color=color_val,linestyle='dashed')
+
         #plt.fill_between(recall, precision, step='post', alpha=0.2,color='b')
 
 
     #plt.title(os.path.basename(model_out).split('.')[0])
     plt.xlabel('Recall')
     plt.ylabel('Precision')
-    plt.legend(key_order, loc='best')
+    plt.legend(total_key_order, loc='best')
     plt.ylim([0.0, 1.0])
     plt.xlim([0.0, 1.0])
     plt.show()
