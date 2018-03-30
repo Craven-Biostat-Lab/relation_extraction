@@ -62,6 +62,8 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
     all_chunks = [pmids[i:i + ten_fold_length] for i in xrange(0, len(pmids), ten_fold_length)]
     total_test = [] #test_labels
     total_predicted_prob = [] #test_probability returns
+    key_order = []
+
 
     for i in range(len(all_chunks)):
         print('Fold #: ' + str(i))
@@ -130,11 +132,11 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_test_features = []
         fold_test_labels = []
         pmid_test_instances = {}
-        for i in range(len(fold_test_instances)):
-            fti = fold_test_instances[i]
+        for test_index in range(len(fold_test_instances)):
+            fti = fold_test_instances[test_index]
             if fti.sentence.pmid not in pmid_test_instances:
                 pmid_test_instances[fti.sentence.pmid] = []
-            pmid_test_instances[fti.sentence.pmid].append(i)
+            pmid_test_instances[fti.sentence.pmid].append(test_index)
             fold_test_features.append(fti.features)
             fold_test_labels.append(fti.label)
 
@@ -248,6 +250,8 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
     plt.figure()
 
     for k in range(len(key_order)):
+        print(key_order[k])
+        print(100. * (np.count_nonzero(class_labels[:,k]) / float(class_labels[:,k].size)))
         precision,recall,_ = metrics.precision_recall_curve(y_true=class_labels[:,k],probas_pred=probabilities[:,k])
         plt.step(recall, precision)
         #plt.fill_between(recall, precision, step='post', alpha=0.2,color='b')
