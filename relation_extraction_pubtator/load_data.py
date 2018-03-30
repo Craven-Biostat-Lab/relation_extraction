@@ -85,10 +85,9 @@ def build_instances_predict(predict_forward_sentences, predict_reverse_sentences
 
 
 def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary,
-                            distant_interactions,reverse_distant_interactions, entity_a_text, entity_b_text):
+                            distant_interactions,reverse_distant_interactions, entity_a_text, entity_b_text,key_order):
 
     test_instances = []
-    key_order = sorted(distant_interactions)
 
     for key in test_forward_sentences:
         splitkey = key.split('|')
@@ -196,7 +195,7 @@ def build_instances_training(
     for ci in candidate_instances:
         ci.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary)
 
-    return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary
+    return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary,key_order
 
 
 def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_species):

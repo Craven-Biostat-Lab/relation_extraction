@@ -60,8 +60,8 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
     #split training sentences for cross validation
     ten_fold_length = len(pmids)/k
     all_chunks = [pmids[i:i + ten_fold_length] for i in xrange(0, len(pmids), ten_fold_length)]
-    total_test = np.array([])
-    total_predicted_prob = np.array([])
+    total_test = [] #test_labels
+    total_predicted_prob = [] #test_probability returns
 
     for i in range(len(all_chunks)):
         print('Fold #: ' + str(i))
@@ -91,7 +91,8 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_dep_dictionary, \
         fold_dep_word_dictionary, \
         fold_dep_element_dictionary, \
-        fold_between_word_dictionary = load_data.build_instances_training(fold_training_forward_sentences,
+        fold_between_word_dictionary, \
+        key_order = load_data.build_instances_training(fold_training_forward_sentences,
                                                                           fold_training_reverse_sentences,
                                                                           distant_interactions,
                                                                           reverse_distant_interactions,
@@ -122,7 +123,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                                                                 fold_dep_element_dictionary,
                                                                 fold_between_word_dictionary,
                                                                 distant_interactions, reverse_distant_interactions,
-                                                                entity_a_text, entity_b_text)
+                                                                entity_a_text, entity_b_text,key_order)
 
 
         # group instances by pmid and build feature array
@@ -140,16 +141,16 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_test_X = np.array(fold_test_features)
         fold_test_y = np.array(fold_test_labels)
 
+
         test_model = snn.neural_network_train(fold_train_X,
                                               fold_train_y,
                                               fold_test_X,
                                               fold_test_y,
                                               hidden_array,
-                                              './model_building_meta_data/test' + str(i) + '/')
+                                              './model_building_meta_data/test' + str(i) + '/', key_order)
 
 
         fold_test_predicted_prob = snn.neural_network_test(fold_test_X,fold_test_y,test_model)
-
 
 
         for abstract_pmid in pmid_test_instances:
@@ -163,31 +164,18 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                     predicted_prob.append(fold_test_predicted_prob[test_instance_index])
                     group_labels.append(fold_test_instances[test_instance_index].label)
 
-                group_test_y = np.unique(group_labels)
-                if group_test_y.size == 1:
-                    total_test = np.append(total_test, group_test_y[0])
-                else:
-                    continue
-                    print('error')
-                    # total_test = np.append(total_test,group_y)
 
                 predicted_prob = np.array(predicted_prob)
                 negation_predicted_prob = 1 - predicted_prob
-                noisy_or = 1 - np.prod(negation_predicted_prob)
-                total_predicted_prob = np.append(total_predicted_prob, noisy_or)
+                noisy_or = 1 - np.prod(negation_predicted_prob,axis=0)
+                total_predicted_prob.append(noisy_or)
+                total_test.append(np.array(group_labels[0]))
 
-
-                # Generate precision recall curves
-        total_predicted_prob = np.append(total_predicted_prob,fold_test_predicted_prob)
-        total_test = np.append(total_test,fold_test_y)
-    positives = collections.Counter(total_test)[1]
-    accuracy = float(positives) / total_test.size
-    #plt.figure(1)
-    #plt.scatter(total_predicted_prob_2,total_predicted_prob)
-    #plt.show()
-    precision, recall, _ = metrics.precision_recall_curve(total_test, total_predicted_prob, 1)
-
-    return precision,recall,accuracy
+    total_test = np.array(total_test)
+    total_predicted_prob = np.array(total_predicted_prob)
+    print(total_test.shape)
+    print(total_predicted_prob.shape)
+    return total_test,total_predicted_prob,key_order
 
 def predict_sentences(model_file, pubtator_file, entity_a, entity_b, symmetric, threshold):
 
@@ -253,21 +241,23 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
 
 
     #k-cross val
-    precision,recall, accuracy = k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,
+    class_labels,probabilities,key_order = k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,
                             reverse_distant_interactions,entity_a_text,entity_b_text)
 
 
     plt.figure()
-    plt.step(recall, precision, color='b', alpha=0.2, where='post')
-    plt.fill_between(recall, precision, step='post', alpha=0.2,
-                         color='b')
 
-    plt.plot((0.0, 1.0), (accuracy, accuracy))
+    for k in range(len(key_order)):
+        precision,recall,_ = metrics.precision_recall_curve(y_true=class_labels[:,k],probas_pred=probabilities[:,k])
+        plt.step(recall, precision)
+        #plt.fill_between(recall, precision, step='post', alpha=0.2,color='b')
 
-    plt.title(os.path.basename(model_out).split('.')[0])
+
+    #plt.title(os.path.basename(model_out).split('.')[0])
     plt.xlabel('Recall')
     plt.ylabel('Precision')
-    plt.ylim([0.0, 1.05])
+    plt.legend(key_order, loc='best')
+    plt.ylim([0.0, 1.0])
     plt.xlim([0.0, 1.0])
     plt.show()
 

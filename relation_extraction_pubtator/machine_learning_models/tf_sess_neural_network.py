@@ -31,7 +31,7 @@ def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
 
     return out_layer_activation
 
-def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
+def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,key_order):
     num_features = train_X.shape[1]
     print(num_features)
     num_labels = train_y.shape[1]
@@ -89,7 +89,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
 
         max_accuracy = 0
         save_path = None
-        for epoch in range(1000):
+        for epoch in range(250):
             shuffle(values)
             # Train with each example
             for i in values:
@@ -100,20 +100,23 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir):
             save_path = saver.save(sess, model_dir)
 
             if test_X is not None and test_y is not None:
-                train_accuracy = metrics.accuracy_score(y_true=train_y,y_pred=sess.run(class_yhat,feed_dict={
-                    input_tensor: train_X, output_tensor: train_y,
-                                                                  keep_prob: 1.0}))
-                test_accuracy = metrics.accuracy_score(y_true=test_y, y_pred=sess.run(class_yhat, feed_dict={
-                    input_tensor: test_X, output_tensor: test_y,keep_prob: 1.0}))
+                train_y_pred = sess.run(class_yhat,feed_dict={input_tensor: train_X, output_tensor: train_y,keep_prob: 1.0})
+                test_y_pred =  sess.run(class_yhat,feed_dict={input_tensor: test_X, output_tensor: test_y,keep_prob: 1.0})
+                train_accuracy = metrics.accuracy_score(y_true=train_y,y_pred=train_y_pred)
+                test_accuracy = metrics.accuracy_score(y_true=test_y, y_pred=test_y_pred)
+                for l in range(len(key_order)):
+                    column_l = test_y_pred[:,l]
+                    column_true = test_y[:,l]
+                    label_accuracy = metrics.accuracy_score(y_true=column_true,y_pred=column_l)
 
-                print("Epoch = %d, train accuracy = %.2f%%, test accuracy = %.2f%%"
-                    % (epoch + 1, 100. * train_accuracy, 100. * test_accuracy))
+                    print("Epoch = %d,Label = %s: %.2f%%, train accuracy = %.2f%%, test accuracy = %.2f%%"
+                        % (epoch + 1, key_order[l],100. * label_accuracy, 100. * train_accuracy, 100. * test_accuracy))
 
     return save_path
 
 def neural_network_test(test_features,test_labels,model_file):
     tf.reset_default_graph()
-    test_labels = np.eye(2)[test_labels]
+
 
     restored_model = tf.train.import_meta_graph(model_file + '.meta')
 
@@ -127,10 +130,6 @@ def neural_network_test(test_features,test_labels,model_file):
         predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
-        predicted_val = sess.run([predict_prob],feed_dict={input_tensor:test_features,output_tensor:test_labels,keep_prob_tensor:1.0})
-        test_accuracy = np.mean(np.argmax(test_labels, axis=1) ==
-                                sess.run(predict_tensor, feed_dict={input_tensor: test_features, output_tensor: test_labels,
-                                                             keep_prob_tensor: 1.0}))
-    print(test_accuracy)
-    print(predicted_val[0][:,1])
-    return predicted_val[0][:,1]
+        predicted_val,predict_class = sess.run([predict_prob,predict_tensor],feed_dict={input_tensor:test_features,output_tensor:test_labels,keep_prob_tensor:1.0})
+        test_accuracy = metrics.accuracy_score(y_true=test_labels, y_pred=predict_class)
+    return predicted_val
