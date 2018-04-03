@@ -114,7 +114,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_train_X = np.array(X)
         fold_train_y = np.array(y)
 
-        hidden_array = [256]
+        hidden_array = []
         model_dir = './model_building_meta_data/test' + str(i)
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
@@ -240,7 +240,6 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
     #get pmids,sentences,
     training_pmids,training_forward_sentences,training_reverse_sentences, entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(
         pubtator_file,entity_a,entity_b)
-
 
     #k-cross val
     class_labels,probabilities,key_order = k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,

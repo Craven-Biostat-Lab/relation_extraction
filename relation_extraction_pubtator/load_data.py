@@ -198,7 +198,7 @@ def build_instances_training(
     return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary,key_order
 
 
-def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_species):
+def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_species, entity_a_set, entity_b_set):
     entity_a_texts = {}
     entity_b_texts = {}
     pmid_list = set()
@@ -228,14 +228,26 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
 
             start_entity_norm_split = start_entity_full_norm.split('(Tax:')
             start_entity_id = start_entity_norm_split[0]
-            start_entity_species = 'HUMAN'
-            if len(start_entity_norm_split) > 1:
-                start_entity_species = start_entity_norm_split[1][:-1]
+            start_entity_species = '9606'
+            if start_entity_id in entity_a_set:
+                start_entity_species = entity_a_species
+            elif start_entity_id in entity_b_set:
+                start_entity_species = entity_b_species
+            else:
+                if len(start_entity_norm_split) > 1:
+                    start_entity_species = start_entity_norm_split[1][:-1]
+
+
             end_entity_norm_split = end_entity_full_norm.split('(Tax:')
             end_entity_id = end_entity_norm_split[0]
-            end_entity_species = 'HUMAN'
-            if len(end_entity_norm_split) > 1:
-                end_entity_species = end_entity_norm_split[1][:-1]
+            end_entity_species = '9606'
+            if end_entity_id in entity_a_set:
+                end_entity_species = entity_a_species
+            elif end_entity_id in entity_b_set:
+                end_entity_species = entity_b_species
+            else:
+                if len(end_entity_norm_split) > 1:
+                    end_entity_species = start_entity_norm_split[1][:-1]
 
 
             if pmid+'|'+sentence_no not in entity_a_texts:
@@ -253,10 +265,12 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
 
 
             label = pmid + '|' + sentence_no + '|' + start_entity_loc + '|' + end_entity_loc
+
             pubtator_sentence = Sentence(pmid,sentence_no,start_entity_text,start_entity_loc,end_entity_text,end_entity_loc,
                                           start_entity_raw_string,end_entity_raw_string,start_entity_full_norm,end_entity_full_norm,start_entity_type,
                                          end_entity_type, start_entity_id,end_entity_id,
                                          start_entity_species, end_entity_species,dep_parse, sentence)
+
 
 
             if start_entity_type.upper() == 'GENE' and end_entity_type.upper() == 'GENE' and entity_a_species != entity_b_species:
@@ -301,7 +315,9 @@ def load_pubtator_abstract_sentences(pubtator_file, entity_a, entity_b):
     entity_b_type = entity_b_elements[1]
 
     if entity_a_type == 'GENE' and entity_b_type == 'GENE':
-        return load_gene_gene_abstract_sentences(pubtator_file, entity_a_specific, entity_b_specific)
+        entity_a_set = load_entity_set('./entity_ids/gene_ids/'+entity_a_specific +'.txt',2)
+        entity_b_set = load_entity_set('./entity_ids/gene_ids/'+entity_b_specific +'.txt',2)
+        return load_gene_gene_abstract_sentences(pubtator_file, entity_a_specific, entity_b_specific, entity_a_set, entity_b_set)
 
 
 def load_distant_kb(distant_kb_file, column_a, column_b,distant_rel_col):
@@ -341,3 +357,14 @@ def load_distant_directories(directional_distant_directory,symmetric_distant_dir
         reverse_dictionary['SYMMETRIC'+filename] = reverse_distant_interactions
 
     return forward_dictionary,reverse_dictionary
+
+def load_entity_set(filename,column):
+    entity_set = set()
+    if os.path.isfile(filename) is False:
+        return entity_set
+    with open(filename) as file:
+        for line in file:
+            splitline = line.split('\t')
+            entity_set.add(splitline[column])
+
+    return entity_set
