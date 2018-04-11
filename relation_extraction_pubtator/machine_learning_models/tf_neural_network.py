@@ -26,11 +26,11 @@ def custom_model_function(features, labels, mode, params):
 
 
     # Compute predictions.
-    predicted_classes = tf.argmax(logits, 1)
+    #predicted_classes = tf.argmax(logits, 1)
 
     predictions = {
-        'class_ids': predicted_classes[:, tf.newaxis],
-        'probabilities': tf.nn.softmax(logits),
+        #'class_ids': predicted_classes[:, tf.newaxis],
+        'probabilities': tf.nn.sigmoid(logits),
         'logits': logits,
     }
 
@@ -38,20 +38,18 @@ def custom_model_function(features, labels, mode, params):
         return tf.estimator.EstimatorSpec(mode, predictions=predictions)
 
     # Compute loss.
-    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
+    loss = tf.losses.sigmoid_cross_entropy(labels=labels, logits=logits)
 
 
     # Compute evaluation metrics.
-    accuracy = tf.metrics.accuracy(labels=labels,
-                                   predictions=predicted_classes,
-                                   name='acc_op')
+    #accuracy = tf.metrics.accuracy(labels=labels,predictions=predicted_classes,name='acc_op')
 
-    metrics = {'accuracy': accuracy}
-    tf.summary.scalar('accuracy', accuracy[1])
+    #metrics = {'accuracy': accuracy}
+    #tf.summary.scalar('accuracy', accuracy[1])
 
-    if mode == tf.estimator.ModeKeys.EVAL:
-        return tf.estimator.EstimatorSpec(
-            mode, loss=loss, eval_metric_ops=metrics)
+    #if mode == tf.estimator.ModeKeys.EVAL:
+    #    return tf.estimator.EstimatorSpec(
+    #        mode, loss=loss, eval_metric_ops=metrics)
 
     # Create training op.
     assert mode == tf.estimator.ModeKeys.TRAIN
@@ -68,7 +66,7 @@ def neural_network_train(training_features, training_labels,test_features,test_l
 
     num_features = training_features.shape[1]
     num_instances = training_features.shape[0]
-    num_classes = np.unique(training_labels).size
+    num_classes = training_labels.shape[1]
     feature_columns = [tf.feature_column.numeric_column("x", shape=[num_features])]
 
 
@@ -84,7 +82,7 @@ def neural_network_train(training_features, training_labels,test_features,test_l
         x={"x": training_features},
         y=training_labels,
         batch_size = 1,
-        num_epochs=10,
+        num_epochs=250,
         shuffle=True)
 
     test_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -98,9 +96,9 @@ def neural_network_train(training_features, training_labels,test_features,test_l
     # Train model.
     classifier.train(input_fn=train_input_fn,steps = None)
 
-    accuracy_score = classifier.evaluate(input_fn=test_input_fn)["accuracy"]
+    #accuracy_score = classifier.evaluate(input_fn=test_input_fn)["accuracy"]
 
-    print("\nTest Accuracy: {0:f}\n".format(accuracy_score))
+    #print("\nTest Accuracy: {0:f}\n".format(accuracy_score))
 
     predictions = list(classifier.predict(input_fn=test_input_fn))
     predicted_probs = [p["probabilities"][1] for p in predictions]

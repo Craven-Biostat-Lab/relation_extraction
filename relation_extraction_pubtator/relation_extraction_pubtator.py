@@ -149,7 +149,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                                               fold_test_X,
                                               fold_test_y,
                                               hidden_array,
-                                              './model_building_meta_data/test' + str(i) + '/', key_order)
+                                              model_dir + '/', key_order)
 
 
         fold_test_predicted_prob = snn.neural_network_test(fold_test_X,fold_test_y,test_model)
@@ -256,7 +256,10 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
         accuracy = np.count_nonzero(class_labels[:,k]) / float(class_labels[:,k].size)
         print(100. * accuracy)
         precision,recall,_ = metrics.precision_recall_curve(y_true=class_labels[:,k],probas_pred=probabilities[:,k])
-        plt.step(recall, precision,color=color_val)
+        print('PRECISION\tRECALL')
+        for z in range(precision.size):
+            print(str(precision[z]) + '\t' + str(recall[z]))
+        plt.plot(recall, precision,color=color_val)
         plt.plot((0.0, 1.0), (accuracy, accuracy),color=color_val,linestyle='dashed')
 
         #plt.fill_between(recall, precision, step='post', alpha=0.2,color='b')

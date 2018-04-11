@@ -1,7 +1,10 @@
 import tensorflow as tf
 import numpy as np
-from random import shuffle
+from random import shuffle, seed
 from sklearn import metrics
+
+seed(10)
+tf.set_random_seed(10)
 
 def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
     """Performs feed forward portion of neural network training"""
@@ -74,7 +77,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
     #predict = tf.argmax(prob_yhat, axis=1,name='predict_tensor')
 
     # Backward propagation
-    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=output_tensor, logits=yhat))
+    cost = tf.nn.sigmoid_cross_entropy_with_logits(labels=output_tensor, logits=yhat)
     updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
 
     saver = tf.train.Saver()
@@ -93,12 +96,12 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
             shuffle(values)
             # Train with each example
             for i in values:
-                u, loss = sess.run([updates, cost],
+                u = sess.run([updates],
                                    feed_dict={input_tensor: train_X[i: i + 1], output_tensor: train_y[i: i + 1],
                                               keep_prob: 0.5})
 
             save_path = saver.save(sess, model_dir)
-
+            '''
             if test_X is not None and test_y is not None:
                 train_y_pred = sess.run(class_yhat,feed_dict={input_tensor: train_X, output_tensor: train_y,keep_prob: 1.0})
                 test_y_pred =  sess.run(class_yhat,feed_dict={input_tensor: test_X, output_tensor: test_y,keep_prob: 1.0})
@@ -111,7 +114,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
 
                     print("Epoch = %d,Label = %s: %.2f%%, train accuracy = %.2f%%, test accuracy = %.2f%%"
                         % (epoch + 1, key_order[l],100. * label_accuracy, 100. * train_accuracy, 100. * test_accuracy))
-
+            '''
     return save_path
 
 def neural_network_test(test_features,test_labels,model_file):
