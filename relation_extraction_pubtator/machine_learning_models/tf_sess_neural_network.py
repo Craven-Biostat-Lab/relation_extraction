@@ -30,9 +30,9 @@ def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
         out_layer_multiplication = tf.matmul(input_tensor,weights['out'],name = 'out_layer_mult')
     out_layer_bias_addition = tf.add(out_layer_multiplication,biases['out'],name='out_layer_add')
     #out_layer_activation = out_layer_bias_addition
-    out_layer_activation = tf.identity(out_layer_bias_addition, name='out_layer_activation')
+    #out_layer_activation = tf.identity(out_layer_bias_addition, name='out_layer_activation')
 
-    return out_layer_activation
+    return out_layer_bias_addition
 
 def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,key_order):
     num_features = train_X.shape[1]
@@ -118,13 +118,10 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
     return save_path
 
 def neural_network_test(test_features,test_labels,model_file):
-    tf.reset_default_graph()
 
-
-    restored_model = tf.train.import_meta_graph(model_file + '.meta')
 
     with tf.Session() as sess:
-
+        restored_model = tf.train.import_meta_graph(model_file + '.meta')
         restored_model.restore(sess,model_file)
         graph = tf.get_default_graph()
         input_tensor = graph.get_tensor_by_name('input:0')

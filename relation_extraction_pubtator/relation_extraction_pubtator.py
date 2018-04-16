@@ -115,7 +115,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_train_y = np.array(y)
 
         hidden_array = []
-        model_dir = './model_building_meta_data/test' + str(i)
+        model_dir = './model_building_meta_data/testa' + str(i)
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
 
