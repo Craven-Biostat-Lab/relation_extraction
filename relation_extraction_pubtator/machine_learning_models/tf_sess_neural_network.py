@@ -92,7 +92,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
 
         max_accuracy = 0
         save_path = None
-        for epoch in range(250):
+        for epoch in range(500):
             shuffle(values)
             # Train with each example
             for i in values:
@@ -101,7 +101,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
                                               keep_prob: 0.5})
 
             save_path = saver.save(sess, model_dir)
-            '''
+
             if test_X is not None and test_y is not None:
                 train_y_pred = sess.run(class_yhat,feed_dict={input_tensor: train_X, output_tensor: train_y,keep_prob: 1.0})
                 test_y_pred =  sess.run(class_yhat,feed_dict={input_tensor: test_X, output_tensor: test_y,keep_prob: 1.0})
@@ -114,7 +114,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
 
                     print("Epoch = %d,Label = %s: %.2f%%, train accuracy = %.2f%%, test accuracy = %.2f%%"
                         % (epoch + 1, key_order[l],100. * label_accuracy, 100. * train_accuracy, 100. * test_accuracy))
-            '''
+
     return save_path
 
 def neural_network_test(test_features,test_labels,model_file):
