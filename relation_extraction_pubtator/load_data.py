@@ -13,11 +13,8 @@ def build_dataset(words, occur_count = None):
     discard_count = 0
     if occur_count is not None:
         word_count_dict = collections.Counter(words)
-        print(len(word_count_dict))
         discard_count = sum(1 for i in word_count_dict.values() if i < occur_count)
-        print(discard_count)
     num_words = num_total_words - discard_count
-    print(num_words)
     count = []
     count.extend(collections.Counter(words).most_common(num_words))
     dictionary = dict()
@@ -187,10 +184,6 @@ def build_instances_training(
         words_between_entities_vocabulary,5)
 
 
-    #print(dep_dictionary)
-    #print(dep_path_word_dictionary)
-    #print(between_word_dictionary)
-    #print(dep_element_dictionary)
 
     for ci in candidate_instances:
         ci.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary)

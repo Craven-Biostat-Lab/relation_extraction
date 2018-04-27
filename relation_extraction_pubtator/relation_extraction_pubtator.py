@@ -5,6 +5,7 @@ import numpy as np
 import itertools
 import collections
 import shutil
+import pickle
 import matplotlib.pyplot as plt
 
 from machine_learning_models import tf_neural_network as ann
@@ -66,7 +67,6 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
 
 
     for i in range(len(all_chunks)):
-        print('Fold #: ' + str(i))
         fold_chunks = all_chunks[:]
         fold_test_abstracts = set(fold_chunks.pop(i))
         fold_training_abstracts = set(list(itertools.chain.from_iterable(fold_chunks)))
@@ -175,8 +175,6 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
 
     total_test = np.array(total_test)
     total_predicted_prob = np.array(total_predicted_prob)
-    print(total_test.shape)
-    print(total_predicted_prob.shape)
     return total_test,total_predicted_prob,key_order
 
 def predict_sentences(model_file, pubtator_file, entity_a, entity_b, symmetric, threshold):
@@ -241,6 +239,7 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
     training_pmids,training_forward_sentences,training_reverse_sentences, entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(
         pubtator_file,entity_a,entity_b)
 
+    '''
     #k-cross val
     class_labels,probabilities,key_order = k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,
                             reverse_distant_interactions,entity_a_text,entity_b_text)
@@ -274,11 +273,19 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
     plt.show()
 
     '''
-    training_instances, dep_dictionary, dep_word_dictionary, element_dictionary, between_word_dictionary = load_data.build_instances_training(
-        training_forward_sentences, training_reverse_sentences,distant_interactions,
-        reverse_distant_interactions, entity_a_text, entity_b_text, symmetric)
+    training_instances, \
+    dep_dictionary, \
+    dep_word_dictionary, \
+    dep_element_dictionary, \
+    between_word_dictionary, \
+    key_order = load_data.build_instances_training(training_forward_sentences,
+                                                   training_reverse_sentences,
+                                                   distant_interactions,
+                                                   reverse_distant_interactions,
+                                                   entity_a_text,
+                                                   entity_b_text)
 
-    print(len(training_instances))
+
 
     X = []
     y = []
@@ -289,20 +296,25 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
         y.append(t.label)
 
     X_train = np.array(X)
-    y_train = np.ravel(y)
+    y_train = np.array(y)
+
+    if os.path.exists(model_out):
+        shutil.rmtree(model_out)
 
 
-    trained_model_path = ml.artificial_neural_network_train(X_train,y_train,model_out)
+    hidden_array=[256]
+    trained_model_path = snn.neural_network_train(X_train,
+                                              y_train,
+                                              None,
+                                              None,
+                                              hidden_array,
+                                              model_out + '/', key_order)
 
-    model = LogisticRegression()
-    model.fit(X_train, y_train)
+
     print('Number of Sentences')
     print(len(instance_sentences))
     print('Number of Instances')
     print(len(training_instances))
-    print('Number of Positive Instances')
-    print(y.count(1))
-    print(model.get_params)
     print('Number of dependency paths ')
     print(len(dep_dictionary))
     print('Number of dependency words')
@@ -310,13 +322,14 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
     print('Number of between words')
     print(len(between_word_dictionary))
     print('Number of elements')
-    print(len(element_dictionary))
+    print(len(dep_element_dictionary))
     print('length of feature space')
-    print(len(dep_dictionary) + len(dep_word_dictionary) + len(element_dictionary) + len(between_word_dictionary))
-    joblib.dump((model, dep_dictionary, dep_word_dictionary, element_dictionary, between_word_dictionary), model_out)
-    '''
+    print(len(dep_dictionary) + len(dep_word_dictionary) + len(dep_element_dictionary) + len(between_word_dictionary))
+    pickle.dump([dep_dictionary, dep_word_dictionary, dep_element_dictionary, between_word_dictionary,key_order], open(model_out + 'a.pickle','wb'))
     print("trained model")
 
+
+    return trained_model_path
 
 
 def main():
@@ -335,9 +348,10 @@ def main():
 
         #symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
 
-        distant_train(model_out, pubtator_file, directional_distant_directory,symmetric_distant_directory,
+        trained_model_path = distant_train(model_out, pubtator_file, directional_distant_directory,symmetric_distant_directory,
                       distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b)
 
+        print(trained_model_path)
 
     elif mode.upper() == "PREDICT":
         model_file = sys.argv[2]

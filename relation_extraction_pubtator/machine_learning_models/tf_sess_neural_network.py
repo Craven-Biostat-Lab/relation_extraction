@@ -36,9 +36,7 @@ def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
 
 def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,key_order):
     num_features = train_X.shape[1]
-    print(num_features)
     num_labels = train_y.shape[1]
-    print(num_labels)
     #train_y = np.eye(num_labels)[train_y]
     #test_y = np.eye(num_labels)[test_y]
     #num_labels = 2
@@ -92,7 +90,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
 
         max_accuracy = 0
         save_path = None
-        for epoch in range(500):
+        for epoch in range(250):
             shuffle(values)
             # Train with each example
             for i in values:
@@ -132,4 +130,5 @@ def neural_network_test(test_features,test_labels,model_file):
 
         predicted_val,predict_class = sess.run([predict_prob,predict_tensor],feed_dict={input_tensor:test_features,output_tensor:test_labels,keep_prob_tensor:1.0})
         test_accuracy = metrics.accuracy_score(y_true=test_labels, y_pred=predict_class)
+        print(test_accuracy)
     return predicted_val
