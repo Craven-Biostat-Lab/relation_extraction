@@ -177,51 +177,49 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
     total_predicted_prob = np.array(total_predicted_prob)
     return total_test,total_predicted_prob,key_order
 
-def predict_sentences(model_file, pubtator_file, entity_a, entity_b, symmetric, threshold):
+def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
 
     predict_pmids, \
     predict_forward_sentences,\
     predict_reverse_sentences,\
     entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(pubtator_file,entity_a,entity_b)
 
-    model, dep_dictionary, dep_word_dictionary, dep_element_dictionary, between_word_dictionary = joblib.load(
-        model_file)
+    dep_dictionary, dep_word_dictionary, dep_element_dictionary, between_word_dictionary, key_order = pickle.load(open(model_file + 'a.pickle','rb'))
 
     predict_instances = load_data.build_instances_predict(predict_forward_sentences, predict_reverse_sentences,dep_dictionary,
                                                           dep_word_dictionary, dep_element_dictionary,
-                                                          between_word_dictionary,entity_a_text,entity_b_text, symmetric)
+                                                          between_word_dictionary,entity_a_text,entity_b_text,key_order)
 
-    instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(
-        predict_instances, symmetric)
+    instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(predict_instances, range(len(predict_instances)))
 
-    instances = []
-    pair_labels = []
-    group_pmids = []
+
+
+    total_group_instances = []
+    total_group_instance_results = []
+    total_group_pmids = []
+    total_group_noisy_or = []
     for g in group_to_instance_dict:
         group_X = []
-        group_y = []
+        group_instances = []
         pmid_set = set()
-        for ti in group_to_instance_dict[g]:
-            instance = ti
-            group_X.append(ti.features)
-            pmid_set.add(ti.sentence.pmid)
+        for predict_index in group_to_instance_dict[g]:
+            pi = predict_instances[predict_index]
+            group_X.append(pi.features)
+            pmid_set.add(pi.sentence.pmid)
+            group_instances.append(pi)
 
         group_predict_X = np.array(group_X)
-
-
-
-        predicted_prob = model.predict_proba(group_predict_X)[:, 1]
+        predicted_prob = snn.neural_network_predict(group_predict_X,model_file + '/')
         negation_predicted_prob = 1 - predicted_prob
-        noisy_or = 1 - np.prod(negation_predicted_prob)
-        instances.append(instance)
-        group_pmids.append('|'.join(list(pmid_set)))
-        if noisy_or >= threshold:
-            pair_labels.append(1)
-        else:
-            pair_labels.append(0)
+        noisy_or = 1 - np.prod(negation_predicted_prob, axis=0)
 
-    return instances, pair_labels, group_pmids
-        
+        total_group_instances.append(group_instances)
+        total_group_instance_results.append(predicted_prob)
+        total_group_pmids.append(pmid_set)
+        total_group_noisy_or.append(noisy_or)
+    
+
+    return total_group_instances,total_group_instance_results,total_group_pmids,total_group_noisy_or
 
 
 def distant_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
@@ -358,13 +356,11 @@ def main():
         sentence_file = sys.argv[3]
         entity_a = sys.argv[4].upper()
         entity_b = sys.argv[5].upper()
-        symmetric = sys.argv[6].upper() in ['TRUE', 'Y', 'YES']
-        threshold = float(sys.argv[7])
-        out_pairs_file = sys.argv[8]
+        out_pairs_file = sys.argv[6]
 
-        predicted_instances, predicted_labels, group_pmids = predict_sentences(model_file, sentence_file, entity_a,
-                                                                  entity_b, symmetric,threshold)
-
+        total_group_instances, total_group_instance_results, total_group_pmids, total_group_noisy_or = predict_sentences(model_file, sentence_file, entity_a, entity_b)
+        print(total_group_instance_results)
+        '''
         outfile = open(out_pairs_file,'w')
 
         outfile.write('GENE_1\tGENE_2\tGENE_1_SPECIES\tGENE_2_SPECIES\tPUBMED_IDS\n')
@@ -375,7 +371,7 @@ def main():
                               '\t' + group_pmids[i]+'\n')
 
         outfile.close()
-
+        '''
 
 
 

@@ -90,7 +90,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
 
         max_accuracy = 0
         save_path = None
-        for epoch in range(250):
+        for epoch in range(3):
             shuffle(values)
             # Train with each example
             for i in values:
@@ -131,4 +131,21 @@ def neural_network_test(test_features,test_labels,model_file):
         predicted_val,predict_class = sess.run([predict_prob,predict_tensor],feed_dict={input_tensor:test_features,output_tensor:test_labels,keep_prob_tensor:1.0})
         test_accuracy = metrics.accuracy_score(y_true=test_labels, y_pred=predict_class)
         print(test_accuracy)
+    return predicted_val
+
+def neural_network_predict(predict_features,model_file):
+
+
+    with tf.Session() as sess:
+        restored_model = tf.train.import_meta_graph(model_file + '.meta')
+        restored_model.restore(sess,model_file)
+        graph = tf.get_default_graph()
+        input_tensor = graph.get_tensor_by_name('input:0')
+        output_tensor = graph.get_tensor_by_name('output:0')
+        keep_prob_tensor = graph.get_tensor_by_name('keep_prob:0')
+        predict_tensor = graph.get_tensor_by_name('class_predict:0')
+        predict_prob = graph.get_tensor_by_name('predict_prob:0')
+
+        predicted_val,predict_class = sess.run([predict_prob,predict_tensor],feed_dict={input_tensor:predict_features,keep_prob_tensor:1.0})
+
     return predicted_val

@@ -42,36 +42,22 @@ def feature_pruning(feature_dict,feature_count_tuples,prune_val):
 
 def build_instances_predict(predict_forward_sentences, predict_reverse_sentences, dep_dictionary,
                                                           dep_word_dictionary, dep_element_dictionary,
-                                                          between_word_dictionary,entity_a_text,entity_b_text, symmetric):
+                                                          between_word_dictionary,entity_a_text,entity_b_text,key_order):
     """Builds the instances for the predict function"""
     predict_instances = []
     for key in predict_forward_sentences:
         splitkey = key.split('|')
-        pmid = splitkey[0]
-        sentence_id = splitkey[1]
-        start_entity = splitkey[2]
-        end_entity = splitkey[3]
-        reverse_key = pmid + '|' + sentence_id + '|' + end_entity + '|' + start_entity
+        reverse_key = splitkey[0] + '|' + splitkey[1] + '|' + splitkey[3] + '|' + splitkey[2]
         if reverse_key in predict_reverse_sentences:
-            forward_predict_instance = Instance(predict_forward_sentences[key], -1)
+            forward_predict_instance = Instance(predict_forward_sentences[key], [-1]*len(key_order))
             forward_predict_instance.fix_word_lists(entity_a_text, entity_b_text)
-            reverse_predict_instance = Instance(predict_reverse_sentences[reverse_key], -1)
+            reverse_predict_instance = Instance(predict_reverse_sentences[reverse_key], [0]*len(key_order))
             reverse_predict_instance.fix_word_lists(entity_a_text, entity_b_text)
 
-            if symmetric is False:
-                predict_instances.append(forward_predict_instance)
-                predict_instances.append(reverse_predict_instance)
 
-            else:
-                forward_dep_type_path = ' '.join(forward_predict_instance.dependency_path)
-                reverse_dep_type_path = ' '.join(reverse_predict_instance.dependency_path)
+            predict_instances.append(forward_predict_instance)
+            predict_instances.append(reverse_predict_instance)
 
-                if forward_dep_type_path in dep_dictionary:
-                    predict_instances.append(forward_predict_instance)
-                elif reverse_dep_type_path in dep_dictionary:
-                    predict_instances.append(reverse_predict_instance)
-                else:
-                    predict_instances.append(forward_predict_instance)
         else:
             continue
 
