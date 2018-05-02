@@ -55,7 +55,7 @@ def create_instance_groupings(all_instances, group_instances):
     return instance_to_group_dict, group_to_instance_dict, instance_dict
 
 def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
-                            entity_a_text, entity_b_text):
+                            entity_a_text, entity_b_text,hidden_array,key_order):
 
     pmids = list(pmids)
     #split training sentences for cross validation
@@ -63,7 +63,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
     all_chunks = [pmids[i:i + ten_fold_length] for i in xrange(0, len(pmids), ten_fold_length)]
     total_test = [] #test_labels
     total_predicted_prob = [] #test_probability returns
-    key_order = []
+
 
 
     for i in range(len(all_chunks)):
@@ -93,13 +93,12 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_dep_dictionary, \
         fold_dep_word_dictionary, \
         fold_dep_element_dictionary, \
-        fold_between_word_dictionary, \
-        key_order = load_data.build_instances_training(fold_training_forward_sentences,
+        fold_between_word_dictionary = load_data.build_instances_training(fold_training_forward_sentences,
                                                                           fold_training_reverse_sentences,
                                                                           distant_interactions,
                                                                           reverse_distant_interactions,
                                                                           entity_a_text,
-                                                                          entity_b_text)
+                                                                          entity_b_text,key_order)
 
 
 
@@ -114,7 +113,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_train_X = np.array(X)
         fold_train_y = np.array(y)
 
-        hidden_array = [256,100]
+
         model_dir = './model_building_meta_data/test' + str(i)
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
@@ -175,7 +174,15 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
 
     total_test = np.array(total_test)
     total_predicted_prob = np.array(total_predicted_prob)
-    return total_test,total_predicted_prob,key_order
+
+    for k in range(len(key_order)):
+        print(key_order[k])
+        precision,recall,_ = metrics.precision_recall_curve(y_true=total_test[:,k],probas_pred=total_predicted_prob[:,k])
+        print('PRECISION\tRECALL')
+        for z in range(precision.size):
+            print(str(precision[z]) + '\t' + str(recall[z]))
+
+    return
 
 def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
 
@@ -219,7 +226,7 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
         total_group_noisy_or.append(noisy_or)
     
 
-    return total_group_instances,total_group_instance_results,total_group_pmids,total_group_noisy_or
+    return total_group_instances,total_group_instance_results,total_group_pmids,total_group_noisy_or,key_order
 
 
 def distant_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
@@ -232,56 +239,30 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
                                                                                             distant_entity_b_col,
                                                                                             distant_rel_col)
 
-
+    key_order = sorted(distant_interactions)
     #get pmids,sentences,
     training_pmids,training_forward_sentences,training_reverse_sentences, entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(
         pubtator_file,entity_a,entity_b)
 
-    '''
+    #hidden layer structure
+    hidden_array = [256, 256]
+
     #k-cross val
-    class_labels,probabilities,key_order = k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,
-                            reverse_distant_interactions,entity_a_text,entity_b_text)
+    k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,reverse_distant_interactions,entity_a_text,entity_b_text,hidden_array,key_order)
 
 
-    plt.figure()
-    total_key_order = []
-    for k in range(len(key_order)):
-        print(key_order[k])
-        total_key_order.append(key_order[k])
-        total_key_order.append('')
-        color_val = 'C' + str(k)
-        accuracy = np.count_nonzero(class_labels[:,k]) / float(class_labels[:,k].size)
-        print(100. * accuracy)
-        precision,recall,_ = metrics.precision_recall_curve(y_true=class_labels[:,k],probas_pred=probabilities[:,k])
-        print('PRECISION\tRECALL')
-        for z in range(precision.size):
-            print(str(precision[z]) + '\t' + str(recall[z]))
-        plt.plot(recall, precision,color=color_val)
-        plt.plot((0.0, 1.0), (accuracy, accuracy),color=color_val,linestyle='dashed')
-
-        #plt.fill_between(recall, precision, step='post', alpha=0.2,color='b')
-
-
-    #plt.title(os.path.basename(model_out).split('.')[0])
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.legend(total_key_order, loc='best')
-    plt.ylim([0.0, 1.0])
-    plt.xlim([0.0, 1.0])
-    plt.show()
-
-    '''
+    #training full model
     training_instances, \
     dep_dictionary, \
     dep_word_dictionary, \
     dep_element_dictionary, \
-    between_word_dictionary, \
-    key_order = load_data.build_instances_training(training_forward_sentences,
+    between_word_dictionary = load_data.build_instances_training(training_forward_sentences,
                                                    training_reverse_sentences,
                                                    distant_interactions,
                                                    reverse_distant_interactions,
                                                    entity_a_text,
-                                                   entity_b_text)
+                                                   entity_b_text,
+                                                   key_order)
 
 
 
@@ -300,7 +281,6 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
         shutil.rmtree(model_out)
 
 
-    hidden_array=[256]
     trained_model_path = snn.neural_network_train(X_train,
                                               y_train,
                                               None,
@@ -358,20 +338,22 @@ def main():
         entity_b = sys.argv[5].upper()
         out_pairs_file = sys.argv[6]
 
-        total_group_instances, total_group_instance_results, total_group_pmids, total_group_noisy_or = predict_sentences(model_file, sentence_file, entity_a, entity_b)
-        print(total_group_instance_results)
-        '''
-        outfile = open(out_pairs_file,'w')
+        total_group_instances, total_group_instance_results, total_group_pmids, total_group_noisy_or,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)
+        #print(total_group_instance_results)
 
-        outfile.write('GENE_1\tGENE_2\tGENE_1_SPECIES\tGENE_2_SPECIES\tPUBMED_IDS\n')
-        for i in range(len(predicted_labels)):
-            if predicted_labels[i] == 1:
-                outfile.write(predicted_instances[i].sentence.start_entity_raw_string + '\t' + predicted_instances[i].sentence.end_entity_raw_string +
-                              '\t' + predicted_instances[i].sentence.start_entity_species + '\t' + predicted_instances[i].sentence.end_entity_species +
-                              '\t' + group_pmids[i]+'\n')
+        outfile = open(out_pairs_file,'w')
+        outfile.write('START_GENE\tSTART_GENE_SPECIES\tSTART_GENE_ENTREZ\tEND_GENE\tEND_GENE_SPECIES\tEND_GENE_ENTREZ\t'+'\t'.join(key_order)+'\n')
+        for i in range(len(total_group_instances)):
+            outfile.write(total_group_instances[i][0].sentence.start_entity_raw_string +
+                          '\t' + total_group_instances[i][0].sentence.start_entity_species +
+                          '\t' + total_group_instances[i][0].sentence.start_entity_id +
+                          '\t'+ total_group_instances[i][0].sentence.end_entity_raw_string +
+                          '\t' + total_group_instances[i][0].sentence.end_entity_species +
+                          '\t' + total_group_instances[i][0].sentence.end_entity_id +
+                          '\t' + '\t'.join(str(noise) for noise in total_group_noisy_or[i])+'\n')
 
         outfile.close()
-        '''
+
 
 
 

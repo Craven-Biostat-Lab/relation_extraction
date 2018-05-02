@@ -111,13 +111,12 @@ def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_d
 
 def build_instances_training(
         training_forward_sentences,training_reverse_sentences,distant_interactions,
-        reverse_distant_interactions, entity_a_text, entity_b_text):
+        reverse_distant_interactions, entity_a_text, entity_b_text,key_order):
 
     path_word_vocabulary = []
     words_between_entities_vocabulary = []
     dep_type_vocabulary = []
     dep_type_word_elements_vocabulary = []
-    key_order = sorted(distant_interactions)
     print(key_order)
 
 
@@ -174,7 +173,7 @@ def build_instances_training(
     for ci in candidate_instances:
         ci.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary)
 
-    return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary,key_order
+    return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary
 
 
 def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_species, entity_a_set, entity_b_set):
