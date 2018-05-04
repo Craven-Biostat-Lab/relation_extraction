@@ -342,14 +342,18 @@ def main():
         #print(total_group_instance_results)
 
         outfile = open(out_pairs_file,'w')
-        outfile.write('START_GENE\tSTART_GENE_SPECIES\tSTART_GENE_ENTREZ\tEND_GENE\tEND_GENE_SPECIES\tEND_GENE_ENTREZ\t'+'\t'.join(key_order)+'\n')
+        outfile.write('START_GENE\tSTART_GENE_SPECIES\tSTART_GENE_ENTREZ\tEND_GENE\tEND_GENE_SPECIES\tEND_GENE_ENTREZ\tPMIDS\t'+'\t'.join(key_order)+'\n')
         for i in range(len(total_group_instances)):
+            pmids = set()
+            for j in range(len(total_group_instances[i])):
+                pmids.add(total_group_instances[i][j].sentence.pmid)
             outfile.write(total_group_instances[i][0].sentence.start_entity_raw_string +
                           '\t' + total_group_instances[i][0].sentence.start_entity_species +
                           '\t' + total_group_instances[i][0].sentence.start_entity_id +
                           '\t'+ total_group_instances[i][0].sentence.end_entity_raw_string +
                           '\t' + total_group_instances[i][0].sentence.end_entity_species +
                           '\t' + total_group_instances[i][0].sentence.end_entity_id +
+                          '\tpmids:' + '|'.join(pmids) +
                           '\t' + '\t'.join(str(noise) for noise in total_group_noisy_or[i])+'\n')
 
         outfile.close()
