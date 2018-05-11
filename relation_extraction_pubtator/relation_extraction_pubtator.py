@@ -6,7 +6,6 @@ import itertools
 import collections
 import shutil
 import pickle
-import matplotlib.pyplot as plt
 import time
 
 from machine_learning_models import tf_neural_network as ann
