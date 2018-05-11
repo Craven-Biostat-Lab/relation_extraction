@@ -304,11 +304,13 @@ def load_distant_kb(distant_kb_file, column_a, column_b,distant_rel_col):
     reverse_distant_interactions = set()
     #reads in lines from kb file
     file = open(distant_kb_file,'rU')
+    #print(distant_kb_file)
     lines = file.readlines()
     file.close()
     for l in lines:
         split_line = l.split('\t')
         #column_a is entity_1 column_b is entity 2
+        #print(split_line)
         tuple = (split_line[column_a],split_line[column_b])
         if split_line[distant_rel_col].endswith('by') is False:
             distant_interactions.add(tuple)
@@ -323,12 +325,16 @@ def load_distant_directories(directional_distant_directory,symmetric_distant_dir
     forward_dictionary = {}
     reverse_dictionary = {}
     for filename in os.listdir(directional_distant_directory):
+        if filename.endswith('.txt') is False:
+            continue
         distant_interactions,reverse_distant_interactions = load_distant_kb(directional_distant_directory+'/'+filename,
                                                                             distant_entity_a_col,distant_entity_b_col,distant_rel_col)
         forward_dictionary[filename] = distant_interactions
         reverse_dictionary[filename] = reverse_distant_interactions
 
     for filename in os.listdir(symmetric_distant_directory):
+        if filename.endswith('.txt') is False:
+            continue
         distant_interactions,reverse_distant_interactions = load_distant_kb(symmetric_distant_directory+'/'+filename,
                                                                             distant_entity_a_col,distant_entity_b_col,distant_rel_col)
         forward_dictionary['SYMMETRIC'+filename] = distant_interactions

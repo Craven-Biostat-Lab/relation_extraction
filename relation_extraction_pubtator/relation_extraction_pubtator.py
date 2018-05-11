@@ -7,6 +7,7 @@ import collections
 import shutil
 import pickle
 import matplotlib.pyplot as plt
+import time
 
 from machine_learning_models import tf_neural_network as ann
 from machine_learning_models import tf_sess_neural_network as snn
@@ -114,7 +115,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_train_y = np.array(y)
 
 
-        model_dir = './model_building_meta_data/test' + str(i)
+        model_dir = './model_building_meta_data/test' + str(time.time()).replace('.','')
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
 
@@ -177,6 +178,9 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
 
     for k in range(len(key_order)):
         print(key_order[k])
+        print('ClASS_LABEL\tPROBABILITY')
+        for q in range(total_test[:,k].size):
+            print(str(total_test[q,k]) + '\t' + str(total_predicted_prob[q,k]))
         precision,recall,_ = metrics.precision_recall_curve(y_true=total_test[:,k],probas_pred=total_predicted_prob[:,k])
         print('PRECISION\tRECALL')
         for z in range(precision.size):
@@ -245,7 +249,7 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
         pubtator_file,entity_a,entity_b)
 
     #hidden layer structure
-    hidden_array = [256, 256]
+    hidden_array = [256]
 
     #k-cross val
     k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,reverse_distant_interactions,entity_a_text,entity_b_text,hidden_array,key_order)
