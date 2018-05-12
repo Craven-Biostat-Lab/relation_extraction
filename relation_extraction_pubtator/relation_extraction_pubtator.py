@@ -1,6 +1,7 @@
 import sys
 import os
 import load_data
+import cross_validation as cv
 import numpy as np
 import itertools
 import collections
@@ -16,177 +17,6 @@ from sklearn.externals import joblib
 from sklearn import metrics
 
 
-def create_instance_groupings(all_instances, group_instances):
-
-    instance_to_group_dict = {}
-    group_to_instance_dict = {}
-    instance_dict = {}
-    group = 0
-
-    for i in group_instances:
-        ig = all_instances[i]
-        start_norm = ig.sentence.start_entity_id
-        end_norm = ig.sentence.end_entity_id
-        instance_dict[i] = [start_norm, end_norm]
-        instance_to_group_dict[i] = group
-        group += 1
-
-    for i1 in group_instances:
-        instance_1 = all_instances[i1]
-        for i2 in group_instances:
-            instance_2 = all_instances[i2]
-
-            recent_update = False
-
-            if instance_1 == instance_2:
-                continue
-
-            if instance_dict[i1][0] == instance_dict[i2][0] and \
-                            instance_dict[i1][1] == instance_dict[i2][1]:
-                instance_to_group_dict[i1] = instance_to_group_dict[i2]
-                recent_update = True
-
-
-    for i in instance_to_group_dict:
-        if instance_to_group_dict[i] not in group_to_instance_dict:
-            group_to_instance_dict[instance_to_group_dict[i]] = []
-        group_to_instance_dict[instance_to_group_dict[i]].append(i)
-
-    return instance_to_group_dict, group_to_instance_dict, instance_dict
-
-def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
-                            entity_a_text, entity_b_text,hidden_array,key_order):
-
-    pmids = list(pmids)
-    #split training sentences for cross validation
-    ten_fold_length = len(pmids)/k
-    all_chunks = [pmids[i:i + ten_fold_length] for i in xrange(0, len(pmids), ten_fold_length)]
-    total_test = [] #test_labels
-    total_predicted_prob = [] #test_probability returns
-
-
-
-    for i in range(len(all_chunks)):
-        fold_chunks = all_chunks[:]
-        fold_test_abstracts = set(fold_chunks.pop(i))
-        fold_training_abstracts = set(list(itertools.chain.from_iterable(fold_chunks)))
-
-        fold_training_forward_sentences = {}
-        fold_training_reverse_sentences = {}
-        fold_test_forward_sentences = {}
-        fold_test_reverse_sentences = {}
-
-        for key in forward_sentences:
-            if key.split('|')[0] in fold_training_abstracts:
-                fold_training_forward_sentences[key] = forward_sentences[key]
-            elif key.split('|')[0] in fold_test_abstracts:
-                fold_test_forward_sentences[key] = forward_sentences[key]
-
-        for key in reverse_sentences:
-            if key.split('|')[0] in fold_training_abstracts:
-                fold_training_reverse_sentences[key] = reverse_sentences[key]
-            elif key.split('|')[0] in fold_test_abstracts:
-                fold_test_reverse_sentences[key] = reverse_sentences[key]
-
-
-        fold_training_instances, \
-        fold_dep_dictionary, \
-        fold_dep_word_dictionary, \
-        fold_dep_element_dictionary, \
-        fold_between_word_dictionary = load_data.build_instances_training(fold_training_forward_sentences,
-                                                                          fold_training_reverse_sentences,
-                                                                          distant_interactions,
-                                                                          reverse_distant_interactions,
-                                                                          entity_a_text,
-                                                                          entity_b_text,key_order)
-
-
-
-        #train model
-        X = []
-        y = []
-        for t in fold_training_instances:
-            X.append(t.features)
-            y.append(t.label)
-
-
-        fold_train_X = np.array(X)
-        fold_train_y = np.array(y)
-
-
-        model_dir = './model_building_meta_data/test' + str(time.time()).replace('.','')
-        if os.path.exists(model_dir):
-            shutil.rmtree(model_dir)
-
-        fold_test_instances = load_data.build_instances_testing(fold_test_forward_sentences,
-                                                                fold_test_reverse_sentences,
-                                                                fold_dep_dictionary, fold_dep_word_dictionary,
-                                                                fold_dep_element_dictionary,
-                                                                fold_between_word_dictionary,
-                                                                distant_interactions, reverse_distant_interactions,
-                                                                entity_a_text, entity_b_text,key_order)
-
-
-        # group instances by pmid and build feature array
-        fold_test_features = []
-        fold_test_labels = []
-        pmid_test_instances = {}
-        for test_index in range(len(fold_test_instances)):
-            fti = fold_test_instances[test_index]
-            if fti.sentence.pmid not in pmid_test_instances:
-                pmid_test_instances[fti.sentence.pmid] = []
-            pmid_test_instances[fti.sentence.pmid].append(test_index)
-            fold_test_features.append(fti.features)
-            fold_test_labels.append(fti.label)
-
-        fold_test_X = np.array(fold_test_features)
-        fold_test_y = np.array(fold_test_labels)
-
-
-        test_model = snn.neural_network_train(fold_train_X,
-                                              fold_train_y,
-                                              fold_test_X,
-                                              fold_test_y,
-                                              hidden_array,
-                                              model_dir + '/', key_order)
-
-
-        fold_test_predicted_prob = snn.neural_network_test(fold_test_X,fold_test_y,test_model)
-
-
-        for abstract_pmid in pmid_test_instances:
-            instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(fold_test_instances,
-                                                                                                      pmid_test_instances[abstract_pmid])
-
-            for g in group_to_instance_dict:
-                predicted_prob = []
-                group_labels = []
-                for test_instance_index in group_to_instance_dict[g]:
-                    predicted_prob.append(fold_test_predicted_prob[test_instance_index])
-                    group_labels.append(fold_test_instances[test_instance_index].label)
-
-
-                predicted_prob = np.array(predicted_prob)
-                negation_predicted_prob = 1 - predicted_prob
-                noisy_or = 1 - np.prod(negation_predicted_prob,axis=0)
-                total_predicted_prob.append(noisy_or)
-                total_test.append(np.array(group_labels[0]))
-
-    total_test = np.array(total_test)
-    total_predicted_prob = np.array(total_predicted_prob)
-
-    for k in range(len(key_order)):
-        print(key_order[k])
-        print('ClASS_LABEL\tPROBABILITY')
-        for q in range(total_test[:,k].size):
-            print(str(total_test[q,k]) + '\t' + str(total_predicted_prob[q,k]))
-        precision,recall,_ = metrics.precision_recall_curve(y_true=total_test[:,k],probas_pred=total_predicted_prob[:,k])
-        print('PRECISION\tRECALL')
-        for z in range(precision.size):
-            print(str(precision[z]) + '\t' + str(recall[z]))
-
-    return
-
 def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
 
     predict_pmids, \
@@ -200,7 +30,7 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
                                                           dep_word_dictionary, dep_element_dictionary,
                                                           between_word_dictionary,entity_a_text,entity_b_text,key_order)
 
-    instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(predict_instances, range(len(predict_instances)))
+    instance_to_group_dict, group_to_instance_dict, instance_dict = cv.create_instance_groupings(predict_instances, range(len(predict_instances)))
 
 
 
@@ -232,6 +62,29 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
     return total_group_instances,total_group_instance_results,total_group_pmids,total_group_noisy_or,key_order
 
 
+def parallel_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
+                  distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b,batch_id):
+
+    #get distant_relations from external knowledge base file
+    distant_interactions, reverse_distant_interactions = load_data.load_distant_directories(directional_distant_directory,
+                                                                                            symmetric_distant_directory,
+                                                                                            distant_entity_a_col,
+                                                                                            distant_entity_b_col,
+                                                                                            distant_rel_col)
+
+    key_order = sorted(distant_interactions)
+    #get pmids,sentences,
+    training_pmids,training_forward_sentences,training_reverse_sentences, entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(
+        pubtator_file,entity_a,entity_b)
+
+    #hidden layer structure
+    hidden_array = [256]
+
+    #k-cross val
+    cv.parallel_k_fold_cross_validation(batch_id,10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,reverse_distant_interactions,entity_a_text,entity_b_text,hidden_array,key_order)
+
+    return batch_id
+
 def distant_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
                   distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b):
 
@@ -251,7 +104,7 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
     hidden_array = [256]
 
     #k-cross val
-    k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,reverse_distant_interactions,entity_a_text,entity_b_text,hidden_array,key_order)
+    cv.k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,reverse_distant_interactions,entity_a_text,entity_b_text,hidden_array,key_order)
 
 
     #training full model
@@ -266,8 +119,6 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
                                                    entity_a_text,
                                                    entity_b_text,
                                                    key_order)
-
-
 
     X = []
     y = []
@@ -334,6 +185,25 @@ def main():
 
         print(trained_model_path)
 
+    elif mode.upper() == "PARALLEL_TRAIN":
+        model_out = sys.argv[2]  # location of where model should be saved after training
+        pubtator_file = sys.argv[3]  # xml file of sentences from Stanford Parser
+        directional_distant_directory = sys.argv[4]  # distant supervision knowledge base to use
+        symmetric_distant_directory = sys.argv[5]
+        distant_entity_a_col = int(sys.argv[6])  # entity 1 column
+        distant_entity_b_col = int(sys.argv[7])  # entity 2 column
+        distant_rel_col = int(sys.argv[8])  # relation column
+        entity_a = sys.argv[9].upper()  # entity_a
+        entity_b = sys.argv[10].upper()  # entity_b
+        batch_id = int(sys.argv[11]) #batch to run
+
+        #symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
+
+        trained_model_batch = parallel_train(model_out, pubtator_file, directional_distant_directory,symmetric_distant_directory,
+                      distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b,batch_id)
+
+        print('finished training: ' + str(trained_model_batch))
+
     elif mode.upper() == "PREDICT":
         model_file = sys.argv[2]
         sentence_file = sys.argv[3]
@@ -360,9 +230,6 @@ def main():
                           '\t' + '\t'.join(str(noise) for noise in total_group_noisy_or[i])+'\n')
 
         outfile.close()
-
-
-
 
     else:
         print("usage error")
