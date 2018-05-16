@@ -90,7 +90,7 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
 
         max_accuracy = 0
         save_path = None
-        for epoch in range(250):
+        for epoch in range(1):
             shuffle(values)
             # Train with each example
             for i in values:

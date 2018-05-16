@@ -9,6 +9,21 @@ import time
 from machine_learning_models import tf_sess_neural_network as snn
 from sklearn import metrics
 
+def write_cv_output(filename,labels,predicts,key_order):
+    file = open(filename,'w')
+    for k in range(len(key_order)):
+        file.write(key_order[k]+'\n')
+        file.write('ClASS_LABEL\tPROBABILITY\n')
+        for q in range(labels[:,k].size):
+            file.write(str(labels[q,k]) + '\t' + str(predicts[q,k]) + '\n')
+        precision, recall, _ = metrics.precision_recall_curve(y_true=labels[:, k],probas_pred=predicts[:, k])
+        file.write('PRECISION\tRECALL\n')
+        for z in range(precision.size):
+            file.write(str(precision[z]) + '\t' + str(recall[z]) + '\n')
+
+    file.close()
+
+
 def create_instance_groupings(all_instances, group_instances):
 
     instance_to_group_dict = {}
@@ -54,9 +69,14 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
     #split training sentences for cross validation
     ten_fold_length = len(pmids)/k
     all_chunks = [pmids[i:i + ten_fold_length] for i in xrange(0, len(pmids), ten_fold_length)]
-    total_test = [] #test_labels
-    total_predicted_prob = [] #test_probability returns
+    total_test = [] #test_labels for instances
+    total_predicted_prob = [] #test_probability returns for instances
 
+    corpus_labels = []
+    corpus_predict = []
+
+    abstract_labels = []
+    abstract_predict = []
 
 
     for i in range(len(all_chunks)):
@@ -145,40 +165,61 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
 
 
         fold_test_predicted_prob = snn.neural_network_test(fold_test_X,fold_test_y,test_model)
+        total_predicted_prob = total_predicted_prob + fold_test_predicted_prob.tolist()
+        total_test = total_test + fold_test_y.tolist()
 
 
+        #abstract level grouping
         for abstract_pmid in pmid_test_instances:
             instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(fold_test_instances,
                                                                                                       pmid_test_instances[abstract_pmid])
 
-            for g in group_to_instance_dict:
+            for ag in group_to_instance_dict:
                 predicted_prob = []
                 group_labels = []
-                for test_instance_index in group_to_instance_dict[g]:
-                    predicted_prob.append(fold_test_predicted_prob[test_instance_index])
-                    group_labels.append(fold_test_instances[test_instance_index].label)
+                for a_test_instance_index in group_to_instance_dict[ag]:
+                    predicted_prob.append(fold_test_predicted_prob[a_test_instance_index])
+                    group_labels.append(fold_test_instances[a_test_instance_index].label)
 
 
                 predicted_prob = np.array(predicted_prob)
                 negation_predicted_prob = 1 - predicted_prob
                 noisy_or = 1 - np.prod(negation_predicted_prob,axis=0)
-                total_predicted_prob.append(noisy_or)
-                total_test.append(np.array(group_labels[0]))
+                abstract_predict.append(noisy_or)
+                abstract_labels.append(np.array(group_labels[0]))
+
+        #corpus_level_ grouping
+        instance_to_group_dict, group_to_instance_dict,instance_dict = create_instance_groupings(fold_test_instances,range(len(fold_test_instances)))
+
+        for g in group_to_instance_dict:
+            predicted_prob = []
+            group_labels = []
+            for test_instance_index in group_to_instance_dict[g]:
+                predicted_prob.append(fold_test_predicted_prob[test_instance_index])
+                group_labels.append(fold_test_instances[test_instance_index].label)
+
+            predicted_prob = np.array(predicted_prob)
+            negation_predicted_prob = 1 - predicted_prob
+            noisy_or = 1 - np.prod(negation_predicted_prob, axis=0)
+            corpus_predict.append(noisy_or)
+            corpus_labels.append(np.array(group_labels[0]))
 
     total_test = np.array(total_test)
     total_predicted_prob = np.array(total_predicted_prob)
 
-    for k in range(len(key_order)):
-        print(key_order[k])
-        print('ClASS_LABEL\tPROBABILITY')
-        for q in range(total_test[:,k].size):
-            print(str(total_test[q,k]) + '\t' + str(total_predicted_prob[q,k]))
-        precision,recall,_ = metrics.precision_recall_curve(y_true=total_test[:,k],probas_pred=total_predicted_prob[:,k])
-        print('PRECISION\tRECALL')
-        for z in range(precision.size):
-            print(str(precision[z]) + '\t' + str(recall[z]))
 
-    return
+    abstract_predict = np.array(abstract_predict)
+    abstract_labels = np.array(abstract_labels)
+
+
+
+    corpus_predict = np.array(corpus_predict)
+    corpus_labels = np.array(corpus_labels)
+
+
+
+
+    return total_test,total_predicted_prob,abstract_labels,abstract_predict,corpus_labels,corpus_predict
 
 def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
                             entity_a_text, entity_b_text,hidden_array,key_order):
@@ -187,8 +228,15 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
     #split training sentences for cross validation
     ten_fold_length = len(pmids)/k
     all_chunks = [pmids[i:i + ten_fold_length] for i in xrange(0, len(pmids), ten_fold_length)]
-    total_test = [] #test_labels
-    total_predicted_prob = [] #test_probability returns
+
+    total_test = [] #test_labels for instances
+    total_predicted_prob = [] #test_probability returns for instances
+
+    corpus_labels = []
+    corpus_predict = []
+
+    abstract_labels = []
+    abstract_predict = []
 
     fold_chunks = all_chunks[:]
     fold_test_abstracts = set(fold_chunks.pop(batch_id))
@@ -274,32 +322,52 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
 
     fold_test_predicted_prob = snn.neural_network_test(fold_test_X,fold_test_y,test_model)
 
+    total_predicted_prob = total_predicted_prob + fold_test_predicted_prob.tolist()
+    total_test = total_test + fold_test_y.tolist()
 
+    # abstract level grouping
     for abstract_pmid in pmid_test_instances:
-        instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(fold_test_instances,
-                                                                                                  pmid_test_instances[abstract_pmid])
+        instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(fold_test_instances,pmid_test_instances[abstract_pmid])
 
-        for g in group_to_instance_dict:
+        for ag in group_to_instance_dict:
             predicted_prob = []
             group_labels = []
-            for test_instance_index in group_to_instance_dict[g]:
-                predicted_prob.append(fold_test_predicted_prob[test_instance_index])
-                group_labels.append(fold_test_instances[test_instance_index].label)
-
+            for a_test_instance_index in group_to_instance_dict[ag]:
+                predicted_prob.append(fold_test_predicted_prob[a_test_instance_index])
+                group_labels.append(fold_test_instances[a_test_instance_index].label)
 
             predicted_prob = np.array(predicted_prob)
             negation_predicted_prob = 1 - predicted_prob
-            noisy_or = 1 - np.prod(negation_predicted_prob,axis=0)
-            total_predicted_prob.append(noisy_or)
-            total_test.append(np.array(group_labels[0]))
+            noisy_or = 1 - np.prod(negation_predicted_prob, axis=0)
+            abstract_predict.append(noisy_or)
+            abstract_labels.append(np.array(group_labels[0]))
+
+    # corpus_level_ grouping
+    instance_to_group_dict, group_to_instance_dict, instance_dict = create_instance_groupings(fold_test_instances,range(len(fold_test_instances)))
+
+    for g in group_to_instance_dict:
+        predicted_prob = []
+        group_labels = []
+        for test_instance_index in group_to_instance_dict[g]:
+            predicted_prob.append(fold_test_predicted_prob[test_instance_index])
+            group_labels.append(fold_test_instances[test_instance_index].label)
+
+        predicted_prob = np.array(predicted_prob)
+        negation_predicted_prob = 1 - predicted_prob
+        noisy_or = 1 - np.prod(negation_predicted_prob, axis=0)
+        corpus_predict.append(noisy_or)
+        corpus_labels.append(np.array(group_labels[0]))
 
     total_test = np.array(total_test)
     total_predicted_prob = np.array(total_predicted_prob)
 
-    for k in range(len(key_order)):
-        print(key_order[k])
-        print('ClASS_LABEL\tPROBABILITY')
-        for q in range(total_test[:,k].size):
-            print(str(total_test[q,k]) + '\t' + str(total_predicted_prob[q,k]))
 
-    return
+    abstract_predict = np.array(abstract_predict)
+    abstract_labels = np.array(abstract_labels)
+
+
+
+    corpus_predict = np.array(corpus_predict)
+    corpus_labels = np.array(corpus_labels)
+
+    return total_test,total_predicted_prob,abstract_labels,abstract_predict,corpus_labels,corpus_predict
