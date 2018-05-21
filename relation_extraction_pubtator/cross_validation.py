@@ -236,9 +236,9 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
     fold_test_predicted_prob = snn.neural_network_test(fold_test_X,fold_test_y,test_model)
 
     #instance level grouping
-    total_predicted_prob = total_predicted_prob + fold_test_predicted_prob.tolist()
-    total_test = total_test + fold_test_y.tolist()
-    total_instances = total_instances + fold_test_instances
+    total_predicted_prob = fold_test_predicted_prob.tolist()
+    total_test = fold_test_y.tolist()
+    total_instances = fold_test_instances
 
     total_test = np.array(total_test)
     total_predicted_prob = np.array(total_predicted_prob)
