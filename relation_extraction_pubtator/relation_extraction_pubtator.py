@@ -81,12 +81,16 @@ def parallel_train(model_out, pubtator_file, directional_distant_directory, symm
     hidden_array = [256]
 
     #k-cross val
-    instance_labels,instance_predicts,abstract_labels,abstract_predicts,corpus_labels,corpus_predicts=\
-        cv.parallel_k_fold_cross_validation(batch_id, 10, training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,reverse_distant_interactions,entity_a_text,entity_b_text,hidden_array,key_order)
+    instance_predicts,single_instances = cv.parallel_k_fold_cross_validation(batch_id, 10, training_pmids,
+                                                                             training_forward_sentences,
+                                                                             training_reverse_sentences,
+                                                                             distant_interactions,
+                                                                             reverse_distant_interactions,
+                                                                             entity_a_text,entity_b_text,hidden_array,
+                                                                             key_order)
 
-    cv.write_cv_output(model_out + '_' +str(batch_id)+'_instance_data.txt',instance_labels,instance_predicts,key_order)
-    cv.write_cv_output(model_out + '_' +str(batch_id)+'_abstract_data.txt', abstract_labels, abstract_predicts,key_order)
-    cv.write_cv_output(model_out + '_' +str(batch_id)+'_corpus_data.txt', corpus_labels, corpus_predicts,key_order)
+    cv.write_cv_output(model_out + '_' +str(batch_id)+'_instance_data.txt',instance_predicts,single_instances,key_order)
+
 
     return batch_id
 
@@ -109,12 +113,13 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
     hidden_array = [256]
 
     #k-cross val
-    instance_labels,instance_predicts,abstract_labels,abstract_predicts,corpus_labels,corpus_predicts=\
-        cv.k_fold_cross_validation(10,training_pmids,training_forward_sentences,training_reverse_sentences,distant_interactions,reverse_distant_interactions,entity_a_text,entity_b_text,hidden_array,key_order)
+    instance_predicts, single_instances= cv.k_fold_cross_validation(10,training_pmids,training_forward_sentences,
+                                                                    training_reverse_sentences,distant_interactions,
+                                                                    reverse_distant_interactions,entity_a_text,
+                                                                    entity_b_text,hidden_array,key_order)
 
-    cv.write_cv_output(model_out+'_instance_data.txt',instance_labels,instance_predicts,key_order)
-    cv.write_cv_output(model_out + '_abstract_data.txt', abstract_labels, abstract_predicts,key_order)
-    cv.write_cv_output(model_out + '_corpus_data.txt', corpus_labels, corpus_predicts,key_order)
+    cv.write_cv_output(model_out+'_instance_data.txt',instance_predicts,single_instances,key_order)
+
 
 
     #training full model
