@@ -225,7 +225,7 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
                 end_entity_species = entity_b_species
             else:
                 if len(end_entity_norm_split) > 1:
-                    end_entity_species = start_entity_norm_split[1][:-1]
+                    end_entity_species = end_entity_norm_split[1][:-1]
 
 
             if pmid+'|'+sentence_no not in entity_a_texts:

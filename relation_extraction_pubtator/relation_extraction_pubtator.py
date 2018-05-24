@@ -30,36 +30,19 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
                                                           dep_word_dictionary, dep_element_dictionary,
                                                           between_word_dictionary,entity_a_text,entity_b_text,key_order)
 
-    instance_to_group_dict, group_to_instance_dict, instance_dict = cv.create_instance_groupings(predict_instances, range(len(predict_instances)))
 
 
 
-    total_group_instances = []
-    total_group_instance_results = []
-    total_group_pmids = []
-    total_group_noisy_or = []
-    for g in group_to_instance_dict:
-        group_X = []
-        group_instances = []
-        pmid_set = set()
-        for predict_index in group_to_instance_dict[g]:
-            pi = predict_instances[predict_index]
-            group_X.append(pi.features)
-            pmid_set.add(pi.sentence.pmid)
-            group_instances.append(pi)
+    predict_features = []
 
-        group_predict_X = np.array(group_X)
-        predicted_prob = snn.neural_network_predict(group_predict_X,model_file + '/')
-        negation_predicted_prob = 1 - predicted_prob
-        noisy_or = 1 - np.prod(negation_predicted_prob, axis=0)
+    for predict_index in range(len(predict_instances)):
+        pi = predict_instances[predict_index]
+        predict_features.append(pi.features)
 
-        total_group_instances.append(group_instances)
-        total_group_instance_results.append(predicted_prob)
-        total_group_pmids.append(pmid_set)
-        total_group_noisy_or.append(noisy_or)
-    
 
-    return total_group_instances,total_group_instance_results,total_group_pmids,total_group_noisy_or,key_order
+    predicted_prob = snn.neural_network_predict(predict_features,model_file + '/')
+
+    return predict_instances,predicted_prob,key_order
 
 
 def parallel_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
@@ -89,7 +72,7 @@ def parallel_train(model_out, pubtator_file, directional_distant_directory, symm
                                                                              entity_a_text,entity_b_text,hidden_array,
                                                                              key_order)
 
-    cv.write_cv_output(model_out + '_' +str(batch_id)+'_instance_data.txt',instance_predicts,single_instances,key_order)
+    cv.write_cv_output(model_out + '_' +str(batch_id)+'_predictions',instance_predicts,single_instances,key_order)
 
 
     return batch_id
@@ -118,7 +101,7 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
                                                                     reverse_distant_interactions,entity_a_text,
                                                                     entity_b_text,hidden_array,key_order)
 
-    cv.write_cv_output(model_out+'_instance_data.txt',instance_predicts,single_instances,key_order)
+    cv.write_cv_output(model_out+'_predictions',instance_predicts,single_instances,key_order)
 
 
 
@@ -226,25 +209,21 @@ def main():
         entity_b = sys.argv[5].upper()
         out_pairs_file = sys.argv[6]
 
-        total_group_instances, total_group_instance_results, total_group_pmids, total_group_noisy_or,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)
+        prediction_instances, predict_probs,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)
         #print(total_group_instance_results)
 
-        outfile = open(out_pairs_file,'w')
-        outfile.write('START_GENE\tSTART_GENE_SPECIES\tSTART_GENE_ENTREZ\tEND_GENE\tEND_GENE_SPECIES\tEND_GENE_ENTREZ\tPMIDS\t'+'\t'.join(key_order)+'\n')
-        for i in range(len(total_group_instances)):
-            pmids = set()
-            for j in range(len(total_group_instances[i])):
-                pmids.add(total_group_instances[i][j].sentence.pmid)
-            outfile.write(total_group_instances[i][0].sentence.start_entity_raw_string +
-                          '\t' + total_group_instances[i][0].sentence.start_entity_species +
-                          '\t' + total_group_instances[i][0].sentence.start_entity_id +
-                          '\t'+ total_group_instances[i][0].sentence.end_entity_raw_string +
-                          '\t' + total_group_instances[i][0].sentence.end_entity_species +
-                          '\t' + total_group_instances[i][0].sentence.end_entity_id +
-                          '\tpmids:' + '|'.join(pmids) +
-                          '\t' + '\t'.join(str(noise) for noise in total_group_noisy_or[i])+'\n')
 
-        outfile.close()
+        for key_index in range(len(key_order)):
+            key = key_order[key_index]
+            outfile = open(out_pairs_file + '_' + key, 'w')
+            outfile.write('PMID\tENTITY_1\tENTITY_2\tPROBABILITY\tENTITY_1_SPECIES\tENTITY_2_SPECIES\n')
+            for i in range(len(prediction_instances)):
+                pi = prediction_instances[i]
+                outfile.write(str(pi.sentence.pmid) + '\t' + str(pi.sentence.start_entity_id) + '\t' +str(pi.sentence.end_entity_id)
+                              + '\t' + str(predict_probs[i,key_index]) + '\t'
+                              + str(pi.sentence.start_entity_species) + '\t' + str(pi.sentence.end_entity_species) +'\n')
+
+            outfile.close()
 
     else:
         print("usage error")

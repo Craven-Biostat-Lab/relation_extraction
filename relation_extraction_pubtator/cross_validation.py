@@ -10,10 +10,11 @@ from machine_learning_models import tf_sess_neural_network as snn
 from sklearn import metrics
 
 def write_cv_output(filename, predicts, instances,key_order):
-    file = open(filename,'w')
     for k in range(len(key_order)):
+        key = key_order[k]
         labels = []
-        file.write(key_order[k]+'\n')
+        file = open(filename+'_'+key,'w')
+        #file.write(key_order[k]+'\n')
         file.write('PMID\tE1\tE2\tClASS_LABEL\tPROBABILITY\n')
         for q in range(predicts[:,k].size):
             instance_label = instances[q].label[k]
@@ -25,8 +26,9 @@ def write_cv_output(filename, predicts, instances,key_order):
         #for z in range(precision.size):
         #    file.write(str(precision[z]) + '\t' + str(recall[z]) + '\n')
 
-    file.close()
+        file.close()
 
+    return
 
 def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
                             entity_a_text, entity_b_text,hidden_array,key_order):
