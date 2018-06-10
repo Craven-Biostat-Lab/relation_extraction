@@ -1,4 +1,5 @@
 import itertools
+import string
 
 def list_correction(checklist,entity_a_text,entity_b_text):
     for i in range(len(checklist)):
@@ -87,13 +88,29 @@ class Instance(object):
         right_pairs = (-1, -1)
         for p in pairs:
             if p[0] < p[1]:
-                between_length = len(''.join(sentence_words[p[0] + 1:p[1]]))
+                between_string = ' '.join(sentence_words[p[0]+1:p[1]])
+                between_string = between_string.replace('-LRB-','')
+                between_string = between_string.replace('-RRB-','')
+                between_string = between_string.replace('-LCB-','')
+                between_string = between_string.replace('-RCB-','')
+                between_string = between_string.replace('-LSB-','')
+                between_string = between_string.replace('-RSB-','')
+                between_string = between_string.translate(None,string.punctuation)
+                between_length = len(between_string)
                 difference = abs(true_char_difference - between_length)
                 if difference < smallest_distance:
                     smallest_distance = difference
                     right_pairs = (p[0], p[1])
             else:
-                between_length = len(''.join(sentence_words[p[1] + 1:p[0]]))
+                between_string = ' '.join(sentence_words[p[1]+1:p[0]])
+                between_string = between_string.replace('-LRB-','')
+                between_string = between_string.replace('-RRB-','')
+                between_string = between_string.replace('-LCB-','')
+                between_string = between_string.replace('-RCB-','')
+                between_string = between_string.replace('-LSB-','')
+                between_string = between_string.replace('-RSB-','')
+                between_string = between_string.translate(None,string.punctuation)
+                between_length = len(between_string)
                 difference = abs(true_char_difference - between_length)
                 if difference < smallest_distance:
                     smallest_distance = difference

@@ -96,12 +96,12 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
     hidden_array = [256]
 
     #k-cross val
-    instance_predicts, single_instances= cv.k_fold_cross_validation(10,training_pmids,training_forward_sentences,
-                                                                    training_reverse_sentences,distant_interactions,
-                                                                    reverse_distant_interactions,entity_a_text,
-                                                                    entity_b_text,hidden_array,key_order)
+    #instance_predicts, single_instances= cv.k_fold_cross_validation(10,training_pmids,training_forward_sentences,
+    #                                                                training_reverse_sentences,distant_interactions,
+    #                                                                reverse_distant_interactions,entity_a_text,
+    #                                                                entity_b_text,hidden_array,key_order)
 
-    cv.write_cv_output(model_out+'_predictions',instance_predicts,single_instances,key_order)
+    #cv.write_cv_output(model_out+'_predictions',instance_predicts,single_instances,key_order)
 
 
 
