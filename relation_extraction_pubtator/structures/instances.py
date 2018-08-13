@@ -18,6 +18,7 @@ class Instance(object):
         self.sentence = sentence
         self.label = label
         self.between_words = []
+        self.entity_pair = ()
         self.build_words_between_features()
         self.dependency_elements = sentence.dep_parse
         self.dependency_path =  ''
@@ -117,7 +118,7 @@ class Instance(object):
                     right_pairs = (p[1], p[0])
 
         self.between_words = sentence_words[right_pairs[0] + 1:right_pairs[1]]
-
+        self.entity_pair = right_pairs
 
     def fix_word_lists(self,entity_a_text_dict,entity_b_text_dict):
         #fix dependency_word_list

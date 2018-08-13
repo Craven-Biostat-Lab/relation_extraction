@@ -34,12 +34,17 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
 
 
     predict_features = []
-
+    outfile = open(model_file + 'hsv1-instances.txt','w')
     for predict_index in range(len(predict_instances)):
-        pi = predict_instances[predict_index]
+        if predict_index%1 == 0:
+            pi = predict_instances[predict_index]
+            sentence_format = pi.sentence.sentence_words
+            sentence_format[pi.entity_pair[0]] = '***' + sentence_format[pi.entity_pair[0]] + '***'
+            sentence_format[pi.entity_pair[1]] = '***'  + sentence_format[pi.entity_pair[1]] + '***'
+            outfile.write(pi.sentence.pmid + '\t' + pi.sentence.start_entity_text + '\t' + pi.sentence.end_entity_text + '\t' + ' '.join(sentence_format))
         predict_features.append(pi.features)
 
-
+    outfile.close()
     predicted_prob = snn.neural_network_predict(predict_features,model_file + '/')
 
     return predict_instances,predicted_prob,key_order
@@ -216,17 +221,16 @@ def main():
         for key_index in range(len(key_order)):
             key = key_order[key_index]
             outfile = open(out_pairs_file + '_' + key, 'w')
-            outfile.write('PMID\tENTITY_1\tENTITY_1_SPECIES\tENTITY_2\tENTITY_2_SPECIES\tPROBABILITY\tENTITY_1_NAME\tENTITY_2_NAME\n')
+            outfile.write('PMID\tENTITY_1\tENTITY_2\tCLASS_LABEL\tPROBABILITY\tSENTENCE\n')
             for i in range(len(prediction_instances)):
                 pi = prediction_instances[i]
                 outfile.write(str(pi.sentence.pmid) + '\t'
                               + str(pi.sentence.start_entity_id) + '\t'
-                              + str(pi.sentence.start_entity_species) + '\t'
                               + str(pi.sentence.end_entity_id) + '\t'
-                              + str(pi.sentence.end_entity_species) + '\t'
+                              + str(pi.label[key_index]) + '\t'
                               + str(predict_probs[i,key_index])+'\t'
                               + str(pi.sentence.start_entity_text) + '\t'
-                              + str(pi.sentence.end_entity_text) + '\n')
+                              + ' '.join(pi.sentence.sentence_words) + '\n')
 
             outfile.close()
 
