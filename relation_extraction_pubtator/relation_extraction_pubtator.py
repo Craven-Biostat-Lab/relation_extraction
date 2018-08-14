@@ -229,7 +229,7 @@ def main():
                               + str(pi.sentence.end_entity_id) + '\t'
                               + str(pi.label[key_index]) + '\t'
                               + str(predict_probs[i,key_index])+'\t'
-                              + ' '.join(pi.sentence.sentence_words) + '\n')
+                              + ' '.join(pi.sentence.sentence_words).strip() + '\n')
 
             outfile.close()
 
