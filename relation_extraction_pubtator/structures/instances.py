@@ -21,7 +21,8 @@ class Instance(object):
         self.entity_pair = ()
         self.build_words_between_features()
         self.dependency_elements = sentence.dep_parse
-        self.dependency_path =  ''
+        self.dependency_path_string = ''
+        self.dependency_path_list = []
         self.dependency_words = []
         self.features = []
         self.build_dep_path_and_words()
@@ -62,7 +63,8 @@ class Instance(object):
         dep_words.remove('START_ENTITY')
         dep_words.remove('END_ENTITY')
         self.dependency_words=list(dep_words)
-        self.dependency_path = ' '.join(dep_path)
+        self.dependency_path_string = ' '.join(dep_path)
+        self.dependency_path_list = dep_path
 
     def build_words_between_features(self):
         start_entity = self.sentence.start_entity_text
@@ -159,7 +161,7 @@ class Instance(object):
         for i in between_intersection_set:
             between_features[between_word_dictionary[i]] = 1
 
-        dep_path_string = self.dependency_path
+        dep_path_string = self.dependency_path_string
         if dep_path_string in dep_dictionary:
             dep_features[dep_dictionary[dep_path_string]] = 1
 

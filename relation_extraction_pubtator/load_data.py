@@ -152,8 +152,8 @@ def build_instances_training(
             words_between_entities_vocabulary += reverse_train_instance.between_words
             dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
             dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
-            dep_type_vocabulary.append(forward_train_instance.dependency_path)
-            dep_type_vocabulary.append(reverse_train_instance.dependency_path)
+            dep_type_vocabulary.append(forward_train_instance.dependency_path_string)
+            dep_type_vocabulary.append(reverse_train_instance.dependency_path_string)
             candidate_instances.append(forward_train_instance)
             candidate_instances.append(reverse_train_instance)
 
