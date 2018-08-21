@@ -11,6 +11,7 @@ import time
 
 from machine_learning_models import tf_neural_network as ann
 from machine_learning_models import tf_sess_neural_network as snn
+from machine_learning_models import tf_lstm as lstm
 
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.externals import joblib
@@ -81,6 +82,68 @@ def parallel_train(model_out, pubtator_file, directional_distant_directory, symm
 
 
     return batch_id
+
+def train_lstm(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
+                  distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b):
+
+    #get distant_relations from external knowledge base file
+    distant_interactions, reverse_distant_interactions = load_data.load_distant_directories(directional_distant_directory,
+                                                                                            symmetric_distant_directory,
+                                                                                            distant_entity_a_col,
+                                                                                            distant_entity_b_col,
+                                                                                            distant_rel_col)
+
+    key_order = sorted(distant_interactions)
+    #get pmids,sentences,
+    training_pmids,training_forward_sentences,training_reverse_sentences, entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(
+        pubtator_file,entity_a,entity_b)
+
+    #training full model
+    training_instances, \
+    dep_path_list_dictionary, \
+    dep_word_dictionary  = load_data.build_instances_training(training_forward_sentences,
+                                                   training_reverse_sentences,
+                                                   distant_interactions,
+                                                   reverse_distant_interactions,
+                                                   entity_a_text,
+                                                   entity_b_text,
+                                                   key_order,True)
+
+    dep_path_list_features = []
+    dep_word_features = []
+    dep_type_path_length = []
+    dep_word_path_length = []
+    labels = []
+    instance_sentences = set()
+    for t in training_instances:
+        #instance_sentences.add(' '.join(t.sentence.sentence_words))
+        dep_path_list_features.append(t.features[0:20])
+        dep_word_features.append(t.features[20:40])
+        dep_type_path_length.append(t.features[40])
+        dep_word_path_length.append(t.features[41])
+        labels.append(t.label)
+
+    dep_path_list_features = np.array(dep_path_list_features)
+    dep_word_features = np.array(dep_word_features)
+    dep_type_path_length = np.array(dep_type_path_length)
+    dep_word_path_length = np.array(dep_word_path_length)
+    labels = np.array(labels)
+
+
+    if os.path.exists(model_out):
+        shutil.rmtree(model_out)
+
+    
+    trained_model_path = lstm.lstm_train(dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length,
+                                         labels,len(dep_path_list_dictionary),len(dep_word_dictionary),model_out + '/', key_order)
+    
+
+
+    pickle.dump([dep_path_list_dictionary, dep_word_dictionary,key_order], open(model_out + 'a.pickle','wb'))
+    print("trained model")
+
+
+    return trained_model_path
 
 def distant_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
                   distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b):
@@ -187,6 +250,22 @@ def main():
                       distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b)
 
         print(trained_model_path)
+
+    elif mode.upper() == "TRAIN_LSTM":
+        model_out = sys.argv[2]  # location of where model should be saved after training
+        pubtator_file = sys.argv[3]  # xml file of sentences from Stanford Parser
+        directional_distant_directory = sys.argv[4]  # distant supervision knowledge base to use
+        symmetric_distant_directory = sys.argv[5]
+        distant_entity_a_col = int(sys.argv[6])  # entity 1 column
+        distant_entity_b_col = int(sys.argv[7])  # entity 2 column
+        distant_rel_col = int(sys.argv[8])  # relation column
+        entity_a = sys.argv[9].upper()  # entity_a
+        entity_b = sys.argv[10].upper()  # entity_b
+
+        #symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
+
+        trained_model_path = train_lstm(model_out, pubtator_file, directional_distant_directory,symmetric_distant_directory,
+                      distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b)
 
     elif mode.upper() == "PARALLEL_TRAIN":
         model_out = sys.argv[2]  # location of where model should be saved after training

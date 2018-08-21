@@ -40,28 +40,29 @@ class Instance(object):
     def build_dep_path_and_words(self):
         previous_word = 'START_ENTITY'
         dep_path = []
-        dep_words = set()
+        dep_words = []
+        dep_words.append(previous_word)
         for element in self.dependency_elements:
             split_element = element.split('|')
             word_1 = split_element[0]
             type = split_element[1]
             word_2 = split_element[2]
-            dep_words.add(word_1)
-            dep_words.add(word_2)
             reverse = False
             if word_2 == previous_word:
                 reverse = True
 
             if reverse is False:
                 dep_path.append(type)
+                dep_words.append(word_2)
                 previous_word = word_2
+
             else:
                 dep_path.append('-' + type)
+                dep_words.append(word_1)
                 previous_word = word_1
 
 
-        dep_words.remove('START_ENTITY')
-        dep_words.remove('END_ENTITY')
+        dep_words = dep_words[1:-1]
         self.dependency_words=list(dep_words)
         self.dependency_path_string = ' '.join(dep_path)
         self.dependency_path_list = dep_path
@@ -166,5 +167,34 @@ class Instance(object):
             dep_features[dep_dictionary[dep_path_string]] = 1
 
         self.features = dep_features + dep_word_features + dep_type_word_element_features + between_features
+
+    def build_features_lstm(self,dep_path_list_dictionary,dep_word_dictionary):
+        dep_path_features = [-1]* 20
+        dep_word_features = [-1] * 20
+
+        unknown_dep_path_feature = len(dep_path_list_dictionary)
+        unknown_word_feature = len(dep_word_dictionary)
+
+
+
+        for i in range(len(self.dependency_path_list)):
+            if self.dependency_path_list[i] not in dep_path_list_dictionary:
+                dep_path_features[i] = unknown_dep_path_feature
+            else:
+                dep_path_features[i] = dep_path_list_dictionary[self.dependency_path_list[i]]
+
+        for i in range(len(self.dependency_words)):
+            if self.dependency_words[i] not in dep_word_dictionary:
+                dep_word_features[i]=unknown_word_feature
+            else:
+                dep_word_features[i] = dep_word_dictionary[self.dependency_words[i]]
+
+        self.features =dep_path_features + dep_word_features + [len(self.dependency_path_list)] + [len(self.dependency_words)]
+
+
+
+
+
+
 
 

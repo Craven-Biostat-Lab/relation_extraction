@@ -109,13 +109,16 @@ def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_d
 
     return test_instances
 
+
+
 def build_instances_training(
         training_forward_sentences,training_reverse_sentences,distant_interactions,
-        reverse_distant_interactions, entity_a_text, entity_b_text,key_order):
+        reverse_distant_interactions, entity_a_text, entity_b_text,key_order,LSTM=False):
 
     path_word_vocabulary = []
     words_between_entities_vocabulary = []
     dep_type_vocabulary = []
+    dep_type_list_vocabulary = []
     dep_type_word_elements_vocabulary = []
     print(key_order)
 
@@ -154,6 +157,8 @@ def build_instances_training(
             dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
             dep_type_vocabulary.append(forward_train_instance.dependency_path_string)
             dep_type_vocabulary.append(reverse_train_instance.dependency_path_string)
+            dep_type_list_vocabulary += forward_train_instance.dependency_path_list
+            dep_type_list_vocabulary += reverse_train_instance.dependency_path_list
             candidate_instances.append(forward_train_instance)
             candidate_instances.append(reverse_train_instance)
 
@@ -167,14 +172,22 @@ def build_instances_training(
         dep_type_word_elements_vocabulary,5)
     between_data, between_count, between_word_dictionary, between_reversed_dictionary = build_dataset(
         words_between_entities_vocabulary,5)
+    dep_type_list_data, dep_type_list_count,dep_type_list_dictionary,dep_type_list_reversed_dictionary = build_dataset(dep_type_list_vocabulary,5)
 
 
+    if LSTM is False:
+        for ci_index in range(len(candidate_instances)):
+            ci = candidate_instances[ci_index]
+            ci.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary)
 
-    for ci in candidate_instances:
-        ci.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary)
+        return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary
+    else:
+        path_length_list = []
+        for ci_index in range(len(candidate_instances)):
+            ci = candidate_instances[ci_index]
+            ci.build_features_lstm(dep_type_list_dictionary,dep_path_word_dictionary)
 
-    return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary
-
+        return candidate_instances,dep_type_list_dictionary,dep_path_word_dictionary
 
 def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_species, entity_a_set, entity_b_set):
     entity_a_texts = {}
