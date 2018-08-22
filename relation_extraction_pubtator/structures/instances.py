@@ -4,13 +4,16 @@ import string
 def list_correction(checklist,entity_a_text,entity_b_text):
     for i in range(len(checklist)):
         word = checklist[i]
+        if word in entity_a_text or word in entity_b_text:
+            checklist[i] = 'GENE'
+        '''
         if word in entity_a_text and word in entity_b_text:
             checklist[i] = 'ENTITY_A_B'
         elif word in entity_a_text:
             checklist[i] = 'ENTITY_A'
         elif word in entity_b_text:
                 checklist[i] = 'ENTITY_B'
-
+        '''
     return checklist
 class Instance(object):
 
@@ -169,25 +172,27 @@ class Instance(object):
         self.features = dep_features + dep_word_features + dep_type_word_element_features + between_features
 
     def build_features_lstm(self,dep_path_list_dictionary,dep_word_dictionary):
-        dep_path_features = [-1]* 20
-        dep_word_features = [-1] * 20
+        dep_path_features = [0]* 20
+        dep_word_features = [0] * 20
 
-        unknown_dep_path_feature = len(dep_path_list_dictionary)
-        unknown_word_feature = len(dep_word_dictionary)
+        unknown_dep_path_feature = len(dep_path_list_dictionary)+1
+        unknown_word_feature = len(dep_word_dictionary)+1
 
 
 
         for i in range(len(self.dependency_path_list)):
             if self.dependency_path_list[i] not in dep_path_list_dictionary:
+                print(self.dependency_path_list[i])
                 dep_path_features[i] = unknown_dep_path_feature
             else:
-                dep_path_features[i] = dep_path_list_dictionary[self.dependency_path_list[i]]
+                dep_path_features[i] = dep_path_list_dictionary[self.dependency_path_list[i]]+1
 
         for i in range(len(self.dependency_words)):
             if self.dependency_words[i] not in dep_word_dictionary:
+                print(self.dependency_words[i])
                 dep_word_features[i]=unknown_word_feature
             else:
-                dep_word_features[i] = dep_word_dictionary[self.dependency_words[i]]
+                dep_word_features[i] = dep_word_dictionary[self.dependency_words[i]]+1
 
         self.features =dep_path_features + dep_word_features + [len(self.dependency_path_list)] + [len(self.dependency_words)]
 

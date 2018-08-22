@@ -126,7 +126,9 @@ def train_lstm(model_out, pubtator_file, directional_distant_directory, symmetri
     dep_path_list_features = np.array(dep_path_list_features)
     dep_word_features = np.array(dep_word_features)
     dep_type_path_length = np.array(dep_type_path_length)
+    print(dep_type_path_length)
     dep_word_path_length = np.array(dep_word_path_length)
+    print(dep_word_path_length)
     labels = np.array(labels)
 
 
@@ -135,7 +137,7 @@ def train_lstm(model_out, pubtator_file, directional_distant_directory, symmetri
 
     
     trained_model_path = lstm.lstm_train(dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length,
-                                         labels,len(dep_path_list_dictionary),len(dep_word_dictionary),model_out + '/', key_order)
+                                         labels,len(dep_path_list_dictionary)+2,len(dep_word_dictionary)+2,model_out + '/', key_order)
     
 
 
