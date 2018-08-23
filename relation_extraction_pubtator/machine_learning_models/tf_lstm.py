@@ -143,11 +143,32 @@ def lstm_train(dep_path_list_features,dep_word_features,dep_type_path_length,dep
                     #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
                     _, loss, step = sess.run([optimizer, total_loss, global_step], feed_dict={iterator_handle: train_handle,keep_prob: 0.5})
                     print("Step:", step, "loss:", loss)
-
                 except tf.errors.OutOfRangeError:
                     break
 
+            train_handle = sess.run(train_iter.string_handle())
+            sess.run(train_iter.initializer, feed_dict={dependency_ids: dep_path_list_features,
+                                                        word_ids: dep_word_features,
+                                                        dependency_type_sequence_length: dep_type_path_length,
+                                                        dependency_word_sequence_length: dep_word_path_length,
+                                                        output_tensor: labels})
+            total_predicted_prob = np.array([])
+
+            while True:
+                try:
+                    predicted_val = sess.run([prob_yhat],
+                                             feed_dict={iterator_handle: train_handle, keep_prob: 1.0})
+                    # print(predicted_val)
+                    # total_labels = np.append(total_labels, batch_labels)
+                    total_predicted_prob = np.append(total_predicted_prob, predicted_val)
+                except tf.errors.OutOfRangeError:
+                    break
+            total_predicted_prob=total_predicted_prob.reshape(labels.shape)
+            print(labels.shape)
+            print(total_predicted_prob)
+            print(total_predicted_prob.shape)
             save_path = saver.save(sess, model_dir)
+
 def lstm_test(test_dep_path_list_features, test_dep_word_features,test_dep_type_path_length,
                                                   test_dep_word_path_length,test_labels,model_file):
     dependency_ids = tf.placeholder(test_dep_path_list_features.dtype, test_dep_path_list_features.shape,
@@ -237,16 +258,19 @@ def lstm_predict(predict_dep_path_list_features, predict_dep_word_features, pred
         keep_prob_tensor = graph.get_tensor_by_name('keep_prob:0')
         #predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
-        total_predicted_prob = []
+        total_predicted_prob = np.array([])
         while True:
             try:
                 predicted_val = sess.run([predict_prob],feed_dict={iterator_handle: new_handle,keep_prob_tensor: 1.0})
+                #print(predicted_val)
                 #total_labels = np.append(total_labels, batch_labels)
-                total_predicted_prob.append(predicted_val)
+                total_predicted_prob = np.append(total_predicted_prob,predicted_val)
             except tf.errors.OutOfRangeError:
                 break
 
-    total_predicted_prob = np.array(total_predicted_prob)
+    print(predict_labels.shape)
+    total_predicted_prob = total_predicted_prob.reshape(predict_labels.shape)
+    print(total_predicted_prob)
     return total_predicted_prob
 
 

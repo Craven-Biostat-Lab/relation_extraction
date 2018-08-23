@@ -56,6 +56,7 @@ def predict_sentences_lstm(model_file, pubtator_file, entity_a, entity_b):
     print(dep_type_path_length)
     dep_word_path_length = np.array(dep_word_path_length)
     labels = np.array(labels)
+    print(labels.shape)
     print(dep_word_path_length)
     predicted_prob = lstm.lstm_predict(dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length,labels,model_file + '/')
 
