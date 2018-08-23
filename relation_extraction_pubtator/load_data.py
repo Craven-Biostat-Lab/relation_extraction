@@ -372,3 +372,28 @@ def load_entity_set(filename,column):
             entity_set.add(splitline[column])
 
     return entity_set
+
+
+def build_lstm_arrays(instances):
+    dep_path_list_features = []
+    dep_word_features = []
+    dep_type_path_length = []
+    dep_word_path_length = []
+    labels = []
+    instance_sentences = set()
+    for i in range(len(instances)):
+        t = instances[i]
+        # instance_sentences.add(' '.join(t.sentence.sentence_words))
+        dep_path_list_features.append(t.features[0:20])
+        dep_word_features.append(t.features[20:40])
+        dep_type_path_length.append(t.features[40])
+        dep_word_path_length.append(t.features[41])
+        labels.append(t.label)
+
+    dep_path_list_features = np.array(dep_path_list_features)
+    dep_word_features = np.array(dep_word_features)
+    dep_type_path_length = np.array(dep_type_path_length)
+    dep_word_path_length = np.array(dep_word_path_length)
+    labels = np.array(labels)
+
+    return dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels

@@ -259,27 +259,8 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
                                                                           entity_a_text,
                                                                           entity_b_text, key_order,True)
 
-        dep_path_list_features = []
-        dep_word_features = []
-        dep_type_path_length = []
-        dep_word_path_length = []
-        labels = []
-        instance_sentences = set()
-        for t in fold_training_instances:
-            # instance_sentences.add(' '.join(t.sentence.sentence_words))
-            dep_path_list_features.append(t.features[0:20])
-            dep_word_features.append(t.features[20:40])
-            dep_type_path_length.append(t.features[40])
-            dep_word_path_length.append(t.features[41])
-            labels.append(t.label)
-
-        dep_path_list_features = np.array(dep_path_list_features)
-        dep_word_features = np.array(dep_word_features)
-        dep_type_path_length = np.array(dep_type_path_length)
-        print(dep_type_path_length)
-        dep_word_path_length = np.array(dep_word_path_length)
-        print(dep_word_path_length)
-        labels = np.array(labels)
+        dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_lstm_arrays(
+            fold_training_instances)
 
         model_dir = './model_building_meta_data/test' + str(batch_id) + str(time.time()).replace('.', '')
         if os.path.exists(model_dir):
@@ -299,30 +280,8 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
                                                                 entity_a_text, entity_b_text, key_order,fold_dep_path_list_dictionary)
 
         # group instances by pmid and build feature array
-        test_dep_path_list_features = []
-        test_dep_word_features = []
-        test_dep_type_path_length = []
-        test_dep_word_path_length = []
-        test_labels = []
-        pmid_test_instances = {}
-        for test_index in range(len(fold_test_instances)):
-            fti = fold_test_instances[test_index]
-            if fti.sentence.pmid not in pmid_test_instances:
-                pmid_test_instances[fti.sentence.pmid] = []
-            pmid_test_instances[fti.sentence.pmid].append(test_index)
-            test_dep_path_list_features.append(fti.features[0:20])
-            test_dep_word_features.append(fti.features[20:40])
-            test_dep_type_path_length.append(fti.features[40])
-            test_dep_word_path_length.append(fti.features[41])
-            test_labels.append(fti.label)
-
-        test_dep_path_list_features = np.array(test_dep_path_list_features)
-        test_dep_word_features = np.array(test_dep_word_features)
-        test_dep_type_path_length = np.array(test_dep_type_path_length)
-        print(dep_type_path_length)
-        test_dep_word_path_length = np.array(test_dep_word_path_length)
-        print(dep_word_path_length)
-        test_labels = np.array(test_labels)
+        test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length, test_dep_word_path_length, test_labels = load_data.build_lstm_arrays(
+            fold_test_instances)
 
         fold_test_predicted_prob = lstm.lstm_test(test_dep_path_list_features, test_dep_word_features,test_dep_type_path_length,
                                                   test_dep_word_path_length,test_labels,trained_model_path)

@@ -9,6 +9,8 @@ tf.set_random_seed(10)
 def lstm_train(dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length,
                                          labels,num_dep_types,num_path_words,model_dir,key_order):
 
+
+
     print(dep_path_list_features.shape)
     print(dep_word_features.shape)
     print(dep_type_path_length)

@@ -18,6 +18,8 @@ from sklearn.externals import joblib
 from sklearn import metrics
 
 
+
+
 def predict_sentences_lstm(model_file, pubtator_file, entity_a, entity_b):
 
     predict_pmids, \
@@ -31,6 +33,7 @@ def predict_sentences_lstm(model_file, pubtator_file, entity_a, entity_b):
                                                           dep_word_dictionary, None,
                                                           None,entity_a_text,entity_b_text,key_order,dep_path_list_dictionary)
 
+    '''
     dep_path_list_features = []
     dep_word_features = []
     dep_type_path_length = []
@@ -50,14 +53,10 @@ def predict_sentences_lstm(model_file, pubtator_file, entity_a, entity_b):
         dep_word_path_length.append(pi.features[41])
         labels.append(pi.label)
     outfile.close()
-    dep_path_list_features = np.array(dep_path_list_features)
-    dep_word_features = np.array(dep_word_features)
-    dep_type_path_length = np.array(dep_type_path_length)
-    print(dep_type_path_length)
-    dep_word_path_length = np.array(dep_word_path_length)
-    labels = np.array(labels)
-    print(labels.shape)
-    print(dep_word_path_length)
+    '''
+
+    dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_lstm_arrays(predict_instances)
+
     predicted_prob = lstm.lstm_predict(dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length,labels,model_file + '/')
 
     return predict_instances,predicted_prob,key_order
@@ -153,28 +152,7 @@ def train_lstm(model_out, pubtator_file, directional_distant_directory, symmetri
                                                    entity_b_text,
                                                    key_order,True)
 
-    dep_path_list_features = []
-    dep_word_features = []
-    dep_type_path_length = []
-    dep_word_path_length = []
-    labels = []
-    instance_sentences = set()
-    for t in training_instances:
-        #instance_sentences.add(' '.join(t.sentence.sentence_words))
-        dep_path_list_features.append(t.features[0:20])
-        dep_word_features.append(t.features[20:40])
-        dep_type_path_length.append(t.features[40])
-        dep_word_path_length.append(t.features[41])
-        labels.append(t.label)
-
-    dep_path_list_features = np.array(dep_path_list_features)
-    dep_word_features = np.array(dep_word_features)
-    dep_type_path_length = np.array(dep_type_path_length)
-    print(dep_type_path_length)
-    dep_word_path_length = np.array(dep_word_path_length)
-    print(dep_word_path_length)
-    labels = np.array(labels)
-
+    dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_lstm_arrays(training_instances)
 
     if os.path.exists(model_out):
         shutil.rmtree(model_out)
