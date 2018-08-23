@@ -175,8 +175,8 @@ class Instance(object):
         dep_path_features = [0]* 20
         dep_word_features = [0] * 20
 
-        unknown_dep_path_feature = len(dep_path_list_dictionary)+1
-        unknown_word_feature = len(dep_word_dictionary)+1
+        unknown_dep_path_feature = len(dep_path_list_dictionary)
+        unknown_word_feature = len(dep_word_dictionary)
 
 
 
@@ -185,14 +185,14 @@ class Instance(object):
                 print(self.dependency_path_list[i])
                 dep_path_features[i] = unknown_dep_path_feature
             else:
-                dep_path_features[i] = dep_path_list_dictionary[self.dependency_path_list[i]]+1
+                dep_path_features[i] = dep_path_list_dictionary[self.dependency_path_list[i]]
 
         for i in range(len(self.dependency_words)):
             if self.dependency_words[i] not in dep_word_dictionary:
                 print(self.dependency_words[i])
                 dep_word_features[i]=unknown_word_feature
             else:
-                dep_word_features[i] = dep_word_dictionary[self.dependency_words[i]]+1
+                dep_word_features[i] = dep_word_dictionary[self.dependency_words[i]]
 
         self.features =dep_path_features + dep_word_features + [len(self.dependency_path_list)] + [len(self.dependency_words)]
 

@@ -160,7 +160,7 @@ def train_lstm(model_out, pubtator_file, directional_distant_directory, symmetri
         shutil.rmtree(model_out)
 
     
-    trained_model_path = lstm.lstm_train(features,labels,len(dep_path_list_dictionary)+2,len(dep_word_dictionary)+2,model_out + '/', key_order)
+    trained_model_path = lstm.lstm_train(features,labels,len(dep_path_list_dictionary)+1,len(dep_word_dictionary)+1,model_out + '/', key_order)
     
 
 
