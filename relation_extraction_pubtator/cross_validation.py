@@ -262,12 +262,13 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
         dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_lstm_arrays(
             fold_training_instances)
 
+        features = [dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length]
+
         model_dir = './model_building_meta_data/test' + str(batch_id) + str(time.time()).replace('.', '')
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
 
-        trained_model_path = lstm.lstm_train(dep_path_list_features, dep_word_features, dep_type_path_length,
-                                             dep_word_path_length,
+        trained_model_path = lstm.lstm_train(features,
                                              labels, len(fold_dep_path_list_dictionary) + 2, len(fold_dep_word_dictionary) + 2,
                                              model_dir + '/', key_order)
 
@@ -283,8 +284,10 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
         test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length, test_dep_word_path_length, test_labels = load_data.build_lstm_arrays(
             fold_test_instances)
 
-        fold_test_predicted_prob = lstm.lstm_test(test_dep_path_list_features, test_dep_word_features,test_dep_type_path_length,
-                                                  test_dep_word_path_length,test_labels,trained_model_path)
+        test_features = [test_dep_path_list_features, test_dep_word_features,test_dep_type_path_length,
+                                                  test_dep_word_path_length]
+
+        fold_test_predicted_prob = lstm.lstm_test(test_features,test_labels,trained_model_path)
 
         total_predicted_prob = fold_test_predicted_prob.tolist()
         total_test = test_labels.tolist()

@@ -6,9 +6,11 @@ from sklearn import metrics
 seed(10)
 tf.set_random_seed(10)
 
-def lstm_train(dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length,
-                                         labels,num_dep_types,num_path_words,model_dir,key_order):
-
+def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order):
+    dep_path_list_features = features[0]
+    dep_word_features = features[1]
+    dep_type_path_length = features[2]
+    dep_word_path_length = features[3]
 
 
     print(dep_path_list_features.shape)
@@ -23,7 +25,7 @@ def lstm_train(dep_path_list_features,dep_word_features,dep_type_path_length,dep
     dep_embedding_dimension = 50
     dep_state_size = 50
     num_labels = labels.shape[1]
-    num_epochs = 5
+    num_epochs = 250
     maximum_length_path = dep_path_list_features.shape[1]
 
     tf.reset_default_graph()
@@ -105,6 +107,7 @@ def lstm_train(dep_path_list_features,dep_word_features,dep_type_path_length,dep
         b = tf.Variable(tf.zeros([num_labels]), name="b")
         logits = tf.matmul(y_hidden_layer_drop, W) + b
     prob_yhat = tf.nn.sigmoid(logits, name='predict_prob')
+    class_yhat = tf.to_int32(prob_yhat > 0.5,name='class_predict')
 
     tv_all = tf.trainable_variables()
     tv_regu = []
@@ -143,8 +146,7 @@ def lstm_train(dep_path_list_features,dep_word_features,dep_type_path_length,dep
             while True:
                 try:
                     #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
-                    _, loss, step = sess.run([optimizer, total_loss, global_step], feed_dict={iterator_handle: train_handle,keep_prob: 0.5})
-                    print("Step:", step, "loss:", loss)
+                    u = sess.run([optimizer], feed_dict={iterator_handle: train_handle,keep_prob: 0.5})
                 except tf.errors.OutOfRangeError:
                     break
 
@@ -155,24 +157,34 @@ def lstm_train(dep_path_list_features,dep_word_features,dep_type_path_length,dep
                                                         dependency_word_sequence_length: dep_word_path_length,
                                                         output_tensor: labels})
             total_predicted_prob = np.array([])
-
+            total_labels = np.array([])
             while True:
                 try:
-                    predicted_val = sess.run([prob_yhat],
+                    predicted_class,b_labels = sess.run([class_yhat,batch_labels],
                                              feed_dict={iterator_handle: train_handle, keep_prob: 1.0})
                     # print(predicted_val)
                     # total_labels = np.append(total_labels, batch_labels)
-                    total_predicted_prob = np.append(total_predicted_prob, predicted_val)
+                    total_predicted_prob = np.append(total_predicted_prob, predicted_class)
+                    total_labels = np.append(total_labels,b_labels)
                 except tf.errors.OutOfRangeError:
                     break
             total_predicted_prob=total_predicted_prob.reshape(labels.shape)
-            print(labels.shape)
-            print(total_predicted_prob)
-            print(total_predicted_prob.shape)
+            total_labels = total_labels.reshape(labels.shape)
+            for l in range(len(key_order)):
+                column_l = total_predicted_prob[:, l]
+                column_true = total_labels[:, l]
+                label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
+                print("Epoch = %d,Label = %s: %.2f%% "
+                  % (epoch + 1, key_order[l], 100. * label_accuracy))
             save_path = saver.save(sess, model_dir)
 
-def lstm_test(test_dep_path_list_features, test_dep_word_features,test_dep_type_path_length,
-                                                  test_dep_word_path_length,test_labels,model_file):
+def lstm_test(test_features,test_labels,model_file):
+
+    test_dep_path_list_features = test_features[0]
+    test_dep_word_features=test_features[1]
+    test_dep_type_path_length = test_features[2]
+    test_dep_word_path_length = test_features[3]
+
     dependency_ids = tf.placeholder(test_dep_path_list_features.dtype, test_dep_path_list_features.shape,
                                     name="dependency_ids")
     dependency_type_sequence_length = tf.placeholder(test_dep_type_path_length.dtype,
@@ -225,8 +237,12 @@ def lstm_test(test_dep_path_list_features, test_dep_word_features,test_dep_type_
     return total_predicted_prob, total_labels
 
 
-def lstm_predict(predict_dep_path_list_features, predict_dep_word_features, predict_dep_type_path_length,
-                 predict_dep_word_path_length,predict_labels, model_file):
+def lstm_predict(predict_features,predict_labels, model_file):
+    predict_dep_path_list_features = predict_features[0]
+    predict_dep_word_features = predict_features[1]
+    predict_dep_type_path_length = predict_features[2]
+    predict_dep_word_path_length = predict_features[3]
+
     dependency_ids = tf.placeholder(predict_dep_path_list_features.dtype, predict_dep_path_list_features.shape,
                                     name="dependency_ids")
     dependency_type_sequence_length = tf.placeholder(predict_dep_type_path_length.dtype,

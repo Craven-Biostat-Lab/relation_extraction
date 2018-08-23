@@ -2,6 +2,7 @@ import collections
 import os
 import itertools
 import cPickle as pickle
+import numpy as np
 
 from structures.sentences import Sentence
 from structures.instances import Instance

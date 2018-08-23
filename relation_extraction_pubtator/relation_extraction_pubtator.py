@@ -56,8 +56,9 @@ def predict_sentences_lstm(model_file, pubtator_file, entity_a, entity_b):
     '''
 
     dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_lstm_arrays(predict_instances)
+    predict_features = [dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length]
 
-    predicted_prob = lstm.lstm_predict(dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length,labels,model_file + '/')
+    predicted_prob = lstm.lstm_predict(predict_features,labels,model_file + '/')
 
     return predict_instances,predicted_prob,key_order
 
@@ -153,13 +154,13 @@ def train_lstm(model_out, pubtator_file, directional_distant_directory, symmetri
                                                    key_order,True)
 
     dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_lstm_arrays(training_instances)
+    features = [dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length]
 
     if os.path.exists(model_out):
         shutil.rmtree(model_out)
 
     
-    trained_model_path = lstm.lstm_train(dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length,
-                                         labels,len(dep_path_list_dictionary)+2,len(dep_word_dictionary)+2,model_out + '/', key_order)
+    trained_model_path = lstm.lstm_train(features,labels,len(dep_path_list_dictionary)+2,len(dep_word_dictionary)+2,model_out + '/', key_order)
     
 
 
