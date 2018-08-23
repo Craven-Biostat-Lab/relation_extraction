@@ -4,6 +4,7 @@ import itertools
 import cPickle as pickle
 import numpy as np
 
+from machine_learning_models import tf_lstm as lstm
 from structures.sentences import Sentence
 from structures.instances import Instance
 from collections import Counter
@@ -190,12 +191,21 @@ def build_instances_training(
 
         return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary
     else:
+        dep_type_list_dictionary['UNKNOWN_WORD'] = len(dep_type_list_dictionary)
+        dep_path_word_dictionary['UNKNOWN_WORD'] = len(dep_path_word_dictionary)
+        word2vec_embeddings = None
+        if os.path.exists('./machine_learning_models/PubMed-w2v.bin'):
+            print('embeddings exist')
+            word2vec_words, word2vec_vectors = lstm.load_bin_vec('./machine_learning_models/PubMed-w2v.bin')
+            dep_path_word_dictionary = {k: v for v, k in enumerate(word2vec_words)}
+            word2vec_embeddings = np.array(word2vec_vectors)
+            print('finished fetching embeddings')
         path_length_list = []
         for ci_index in range(len(candidate_instances)):
             ci = candidate_instances[ci_index]
             ci.build_features_lstm(dep_type_list_dictionary,dep_path_word_dictionary)
 
-        return candidate_instances,dep_type_list_dictionary,dep_path_word_dictionary
+        return candidate_instances,dep_type_list_dictionary,dep_path_word_dictionary,word2vec_embeddings
 
 def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_species, entity_a_set, entity_b_set):
     entity_a_texts = {}

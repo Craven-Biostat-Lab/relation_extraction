@@ -1,12 +1,38 @@
+import os
 import tensorflow as tf
 import numpy as np
+import pickle
 from random import shuffle, seed
 from sklearn import metrics
+
 
 seed(10)
 tf.set_random_seed(10)
 
-def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order):
+def load_bin_vec(fname):
+    word_vecs = []
+    words = []
+    with open(fname,"rb") as f:
+        header = f.readline()
+        vocab_size,layer_size = map(int,header.split())
+        binary_len = np.dtype('float32').itemsize*layer_size
+        for line in range(vocab_size):
+            word = []
+            while True:
+                ch = f.read(1)
+                if ch == ' ':
+                    word = ''.join(word)
+                    break
+                if ch != '\n':
+                    word.append(ch)
+            word_vecs.append(np.fromstring(f.read(binary_len), dtype='float32'))
+            words.append(word)
+    words.append('UNKNOWN_WORD')
+    last_vector = word_vecs[-1]
+    word_vecs.append(np.zeros(last_vector.shape, dtype='float32'))
+    return words, word_vecs
+
+def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,word2vec_embeddings = None):
     dep_path_list_features = features[0]
     dep_word_features = features[1]
     dep_type_path_length = features[2]
@@ -15,12 +41,10 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order)
 
     print(dep_path_list_features.shape)
     print(dep_word_features.shape)
-    print(dep_type_path_length)
-    print(dep_word_path_length)
     print(labels.shape)
 
     lambda_l2 = 0.00001
-    word_embedding_dimension = 100
+    word_embedding_dimension = 200
     word_state_size = 100
     dep_embedding_dimension = 50
     dep_state_size = 50
@@ -63,10 +87,22 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order)
         embedded_dep = tf.nn.embedding_lookup(W, batch_dependency_ids)
         dep_embedding_saver = tf.train.Saver({"dep_embedding/W": W})
 
-    with tf.name_scope("dependency_word_embedding"):
-        W = tf.Variable(tf.random_uniform([num_path_words, word_embedding_dimension]), name="W")
-        embedded_word = tf.nn.embedding_lookup(W, batch_word_ids)
-        word_embedding_saver = tf.train.Saver({"word_embedding/W": W})
+
+    if word2vec_embeddings is not None:
+        with tf.name_scope("word_embedding"):
+            print('bionlp_word_embedding')
+            W = tf.Variable(tf.constant(0.0, shape=[num_path_words, word_embedding_dimension]), name="W")
+            embedding_placeholder = tf.placeholder(tf.float32, [num_path_words, word_embedding_dimension])
+            embedding_init = W.assign(embedding_placeholder)
+            embedded_word = tf.nn.embedding_lookup(W, batch_word_ids)
+            word_embedding_saver = tf.train.Saver({"word_embedding/W": W})
+
+
+    else:
+        with tf.name_scope("dependency_word_embedding"):
+            W = tf.Variable(tf.random_uniform([num_path_words, word_embedding_dimension]), name="W")
+            embedded_word = tf.nn.embedding_lookup(W, batch_word_ids)
+            word_embedding_saver = tf.train.Saver({"word_embedding/W": W})
 
     with tf.name_scope("word_dropout"):
         embedded_word_drop = tf.nn.dropout(embedded_word, keep_prob)
@@ -135,6 +171,9 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order)
         sess.run(init)
         saver = tf.train.Saver()
         writer = tf.summary.FileWriter(model_dir, graph=tf.get_default_graph())
+        if word2vec_embeddings is not None:
+            print('using word2vec embeddings')
+            sess.run(embedding_init, feed_dict={embedding_placeholder: word2vec_embeddings})
         for epoch in range(num_epochs):
             train_handle = sess.run(train_iter.string_handle())
             sess.run(train_iter.initializer,feed_dict={dependency_ids:dep_path_list_features,

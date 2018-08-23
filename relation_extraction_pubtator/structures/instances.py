@@ -56,12 +56,12 @@ class Instance(object):
 
             if reverse is False:
                 dep_path.append(type)
-                dep_words.append(word_2)
+                dep_words.append(word_2.lower())
                 previous_word = word_2
 
             else:
                 dep_path.append('-' + type)
-                dep_words.append(word_1)
+                dep_words.append(word_1.lower())
                 previous_word = word_1
 
 
@@ -175,24 +175,22 @@ class Instance(object):
         dep_path_features = [0]* 20
         dep_word_features = [0] * 20
 
-        unknown_dep_path_feature = len(dep_path_list_dictionary)
-        unknown_word_feature = len(dep_word_dictionary)
+        unknown_dep_path_feature = dep_path_list_dictionary['UNKNOWN_WORD']
+        unknown_word_feature = dep_word_dictionary['UNKNOWN_WORD']
 
 
 
         for i in range(len(self.dependency_path_list)):
             if self.dependency_path_list[i] not in dep_path_list_dictionary:
-                print(self.dependency_path_list[i])
                 dep_path_features[i] = unknown_dep_path_feature
             else:
                 dep_path_features[i] = dep_path_list_dictionary[self.dependency_path_list[i]]
 
         for i in range(len(self.dependency_words)):
-            if self.dependency_words[i] not in dep_word_dictionary:
-                print(self.dependency_words[i])
+            if self.dependency_words[i].lower() not in dep_word_dictionary:
                 dep_word_features[i]=unknown_word_feature
             else:
-                dep_word_features[i] = dep_word_dictionary[self.dependency_words[i]]
+                dep_word_features[i] = dep_word_dictionary[self.dependency_words[i].lower()]
 
         self.features =dep_path_features + dep_word_features + [len(self.dependency_path_list)] + [len(self.dependency_words)]
 

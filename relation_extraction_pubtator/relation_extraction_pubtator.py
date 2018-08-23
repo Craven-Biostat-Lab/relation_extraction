@@ -145,13 +145,16 @@ def train_lstm(model_out, pubtator_file, directional_distant_directory, symmetri
     #training full model
     training_instances, \
     dep_path_list_dictionary, \
-    dep_word_dictionary  = load_data.build_instances_training(training_forward_sentences,
+    dep_word_dictionary,word2vec_embeddings  = load_data.build_instances_training(training_forward_sentences,
                                                    training_reverse_sentences,
                                                    distant_interactions,
                                                    reverse_distant_interactions,
                                                    entity_a_text,
                                                    entity_b_text,
                                                    key_order,True)
+
+
+
 
     dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_lstm_arrays(training_instances)
     features = [dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length]
@@ -160,7 +163,7 @@ def train_lstm(model_out, pubtator_file, directional_distant_directory, symmetri
         shutil.rmtree(model_out)
 
     
-    trained_model_path = lstm.lstm_train(features,labels,len(dep_path_list_dictionary)+1,len(dep_word_dictionary)+1,model_out + '/', key_order)
+    trained_model_path = lstm.lstm_train(features,labels,len(dep_path_list_dictionary),len(dep_word_dictionary),model_out + '/', key_order,word2vec_embeddings)
     
 
 
