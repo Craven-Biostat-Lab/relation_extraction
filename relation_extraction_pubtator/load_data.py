@@ -42,7 +42,7 @@ def feature_pruning(feature_dict,feature_count_tuples,prune_val):
 
 def build_instances_predict(predict_forward_sentences, predict_reverse_sentences, dep_dictionary,
                                                           dep_word_dictionary, dep_element_dictionary,
-                                                          between_word_dictionary,entity_a_text,entity_b_text,key_order):
+                                                          between_word_dictionary,entity_a_text,entity_b_text,key_order,dep_path_list_dictionary=None):
     """Builds the instances for the predict function"""
     predict_instances = []
     for key in predict_forward_sentences:
@@ -61,14 +61,18 @@ def build_instances_predict(predict_forward_sentences, predict_reverse_sentences
         else:
             continue
 
-    for instance in predict_instances:
-        instance.build_features(dep_dictionary, dep_word_dictionary, dep_element_dictionary,  between_word_dictionary)
+    if dep_path_list_dictionary is False:
+        for instance in predict_instances:
+            instance.build_features(dep_dictionary, dep_word_dictionary, dep_element_dictionary,  between_word_dictionary)
 
+    else:
+        for instance in predict_instances:
+            instance.build_features_lstm(dep_path_list_dictionary,dep_word_dictionary)
     return predict_instances
 
 
 def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary,
-                            distant_interactions,reverse_distant_interactions, entity_a_text, entity_b_text,key_order):
+                            distant_interactions,reverse_distant_interactions, entity_a_text, entity_b_text,key_order,dep_path_type_list_dictionary=None):
 
     test_instances = []
 
@@ -104,9 +108,12 @@ def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_d
         else:
             continue
 
-    for instance in test_instances:
-        instance.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary,  between_word_dictionary)
-
+    if dep_path_type_list_dictionary is None:
+        for instance in test_instances:
+            instance.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary,  between_word_dictionary)
+    else:
+        for instance in test_instances:
+            instance.build_features_lstm(dep_path_type_list_dictionary,dep_path_word_dictionary)
     return test_instances
 
 
