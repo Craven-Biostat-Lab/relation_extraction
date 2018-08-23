@@ -88,32 +88,33 @@ def lstm_train(dep_path_list_features,dep_word_features,dep_type_path_length,dep
     state_series = tf.concat([state_series_dep, state_series_word], 1)
 
     with tf.name_scope("hidden_layer"):
-        W = tf.Variable(tf.truncated_normal([dep_state_size + word_state_size, 100], -0.1, 0.1), name="W")
-        b = tf.Variable(tf.zeros([100]), name="b")
+        W = tf.Variable(tf.truncated_normal([dep_state_size + word_state_size, 256], -0.1, 0.1), name="W")
+        b = tf.Variable(tf.zeros([256]), name="b")
         y_hidden_layer = tf.matmul(state_series, W) + b
 
 
     with tf.name_scope("dropout"):
         y_hidden_layer_drop = tf.nn.dropout(y_hidden_layer, 0.3)
 
-    with tf.name_scope("softmax_layer"):
-        W = tf.Variable(tf.truncated_normal([100, num_labels], -0.1, 0.1), name="W")
+    with tf.name_scope("sigmoid_layer"):
+        W = tf.Variable(tf.truncated_normal([256, num_labels], -0.1, 0.1), name="W")
         b = tf.Variable(tf.zeros([num_labels]), name="b")
         logits = tf.matmul(y_hidden_layer_drop, W) + b
+        prob_yhat = tf.nn.sigmoid(logits, name='predict_prob')
 
     tv_all = tf.trainable_variables()
     tv_regu = []
     non_reg = ["dependency_word_embedding/W:0", 'dependency_type_embedding/W:0', "global_step:0", 'hidden_layer/b:0',
-               'softmax_layer/b:0']
+               'sigmoid_layer/b:0']
     for t in tv_all:
         if t.name not in non_reg:
             if (t.name.find('biases') == -1):
                 tv_regu.append(t)
 
     with tf.name_scope("loss"):
-        l2_loss = lambda_l2 * tf.reduce_sum([tf.nn.l2_loss(v) for v in tv_regu])
+        #l2_loss = lambda_l2 * tf.reduce_sum([tf.nn.l2_loss(v) for v in tv_regu])
         loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=batch_labels))
-        total_loss = loss + l2_loss
+        total_loss = loss #+ l2_loss
 
     global_step = tf.Variable(0, name="global_step")
 
