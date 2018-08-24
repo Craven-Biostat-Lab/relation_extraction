@@ -252,7 +252,7 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
     else:
         fold_training_instances, \
         fold_dep_path_list_dictionary, \
-        fold_dep_word_dictionary =  load_data.build_instances_training(fold_training_forward_sentences,
+        fold_dep_word_dictionary,word2vec_embeddings =  load_data.build_instances_training(fold_training_forward_sentences,
                                                                           fold_training_reverse_sentences,
                                                                           distant_interactions,
                                                                           reverse_distant_interactions,
@@ -270,7 +270,7 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
 
         trained_model_path = lstm.lstm_train(features,
                                              labels, len(fold_dep_path_list_dictionary) + 2, len(fold_dep_word_dictionary) + 2,
-                                             model_dir + '/', key_order)
+                                             model_dir + '/', key_order,word2vec_embeddings)
 
         fold_test_instances = load_data.build_instances_testing(fold_test_forward_sentences,
                                                                 fold_test_reverse_sentences,
