@@ -194,11 +194,11 @@ def build_instances_training(
         dep_type_list_dictionary['UNKNOWN_WORD'] = len(dep_type_list_dictionary)
         dep_path_word_dictionary['UNKNOWN_WORD'] = len(dep_path_word_dictionary)
         word2vec_embeddings = None
-        print(os.getcwd())
-        print(os.getcwd() + '/machine_learning_models/PubMed-w2v.bin')
-        if os.path.exists(os.getcwd()+'/machine_learning_models/PubMed-w2v.bin'):
+        word2vec_path = os.getcwd() + '/machine_learning_models/PubMed-w2v.bin'
+        print(word2vec_path)
+        if os.path.exists(word2vec_path):
             print('embeddings exist')
-            word2vec_words, word2vec_vectors = lstm.load_bin_vec('./machine_learning_models/PubMed-w2v.bin')
+            word2vec_words, word2vec_vectors = lstm.load_bin_vec(word2vec_path)
             dep_path_word_dictionary = {k: v for v, k in enumerate(word2vec_words)}
             word2vec_embeddings = np.array(word2vec_vectors)
             print('finished fetching embeddings')
