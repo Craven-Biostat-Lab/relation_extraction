@@ -194,7 +194,7 @@ def build_instances_training(
         dep_type_list_dictionary['UNKNOWN_WORD'] = len(dep_type_list_dictionary)
         dep_path_word_dictionary['UNKNOWN_WORD'] = len(dep_path_word_dictionary)
         word2vec_embeddings = None
-        word2vec_path = os.path.realpath(__file__) + '/machine_learning_models/PubMed-w2v.bin'
+        word2vec_path = os.path.dirname(os.path.realpath(__file__)) + '/machine_learning_models/PubMed-w2v.bin'
         print(word2vec_path)
         if os.path.exists(word2vec_path):
             print('embeddings exist')
