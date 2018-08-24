@@ -200,7 +200,7 @@ def build_instances_training(
             dep_path_word_dictionary = {k: v for v, k in enumerate(word2vec_words)}
             word2vec_embeddings = np.array(word2vec_vectors)
             print('finished fetching embeddings')
-    
+
         for ci_index in range(len(candidate_instances)):
             ci = candidate_instances[ci_index]
             ci.build_features_lstm(dep_type_list_dictionary,dep_path_word_dictionary)
