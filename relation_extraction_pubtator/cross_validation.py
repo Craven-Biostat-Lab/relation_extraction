@@ -287,10 +287,10 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
         test_features = [test_dep_path_list_features, test_dep_word_features,test_dep_type_path_length,
                                                   test_dep_word_path_length]
 
-        fold_test_predicted_prob = lstm.lstm_test(test_features,test_labels,trained_model_path)
+        fold_test_predicted_prob, fold_test_labels = lstm.lstm_test(test_features,test_labels,trained_model_path)
 
         total_predicted_prob = fold_test_predicted_prob.tolist()
-        total_test = test_labels.tolist()
+        total_test = fold_test_labels.tolist()
         total_instances = fold_test_instances
 
         total_test = np.array(total_test)

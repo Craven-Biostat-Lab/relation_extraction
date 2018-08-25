@@ -55,7 +55,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
     dep_embedding_dimension = 50
     dep_state_size = 50
     num_labels = labels.shape[1]
-    num_epochs = 250
+    num_epochs = 1
     maximum_length_path = dep_path_list_features.shape[1]
 
     tf.reset_default_graph()
@@ -243,6 +243,9 @@ def lstm_test(test_features,test_labels,model_file):
     dataset = tf.data.Dataset.from_tensor_slices((dependency_ids, word_ids, dependency_type_sequence_length,
                                                   dependency_word_sequence_length, output_tensor))
     dataset = dataset.batch(32)
+
+    total_labels = np.array([])
+    total_predicted_prob = np.aray([])
     with tf.Session() as sess:
         restored_model = tf.train.import_meta_graph(model_file + '.meta')
         restored_model.restore(sess,model_file)
