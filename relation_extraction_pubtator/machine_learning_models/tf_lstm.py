@@ -27,6 +27,7 @@ def load_bin_vec(fname):
                     word.append(ch)
             word_vecs.append(np.fromstring(f.read(binary_len), dtype='float32'))
             words.append(word)
+            print(word)
     words.append('UNKNOWN_WORD')
     last_vector = word_vecs[-1]
     word_vecs.append(np.zeros(last_vector.shape, dtype='float32'))
