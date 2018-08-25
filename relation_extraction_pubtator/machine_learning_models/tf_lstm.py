@@ -12,6 +12,8 @@ tf.set_random_seed(10)
 def load_bin_vec(fname):
     word_vecs = []
     words = []
+    word_dict = {}
+    index = 0
     with open(fname,"rb") as f:
         header = f.readline()
         vocab_size,layer_size = map(int,header.split())
@@ -27,12 +29,15 @@ def load_bin_vec(fname):
                     word.append(ch)
             word_vecs.append(np.fromstring(f.read(binary_len), dtype='float32'))
             words.append(word)
+            word_dict[word] = index
             print(word)
+            index+=1
     words.append('UNKNOWN_WORD')
+    word_dict['UNKNOWN_WORD'] = index
     last_vector = word_vecs[-1]
     word_vecs.append(np.zeros(last_vector.shape, dtype='float32'))
     print('finished loading embeddings')
-    return words, word_vecs
+    return words, word_vecs, word_dict
 
 def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,word2vec_embeddings = None):
     dep_path_list_features = features[0]

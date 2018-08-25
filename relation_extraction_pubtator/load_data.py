@@ -198,8 +198,8 @@ def build_instances_training(
         print(word2vec_path)
         if os.path.exists(word2vec_path):
             print('embeddings exist')
-            word2vec_words, word2vec_vectors = lstm.load_bin_vec(word2vec_path)
-            dep_path_word_dictionary = {k: v for v, k in enumerate(word2vec_words)}
+            word2vec_words, word2vec_vectors,dep_path_word_dictionary = lstm.load_bin_vec(word2vec_path)
+            #dep_path_word_dictionary = {k: v for v, k in enumerate(word2vec_words)}
             word2vec_embeddings = np.array(word2vec_vectors)
             print('finished fetching embeddings and placing in dictionary')
 
