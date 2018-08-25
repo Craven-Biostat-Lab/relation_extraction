@@ -38,9 +38,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
     #split training sentences for cross validation
     ten_fold_length = len(pmids)/k
     all_chunks = [pmids[i:i + ten_fold_length] for i in xrange(0, len(pmids), ten_fold_length)]
-    total_test = [] #test_labels for instances
-    total_predicted_prob = [] #test_probability returns for instances
-    total_instances = []
+
 
     for i in range(len(all_chunks)):
         fold_chunks = all_chunks[:]
@@ -286,8 +284,11 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
 
         test_features = [test_dep_path_list_features, test_dep_word_features,test_dep_type_path_length,
                                                   test_dep_word_path_length]
-
+        print(trained_model_path)
         fold_test_predicted_prob, fold_test_labels = lstm.lstm_test(test_features,test_labels,trained_model_path)
+
+        assert(np.array_equal(fold_test_labels,test_labels))
+
 
         total_predicted_prob = fold_test_predicted_prob.tolist()
         total_test = fold_test_labels.tolist()

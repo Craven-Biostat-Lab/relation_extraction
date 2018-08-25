@@ -55,7 +55,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
     dep_embedding_dimension = 50
     dep_state_size = 50
     num_labels = labels.shape[1]
-    num_epochs = 1
+    num_epochs = 250
     maximum_length_path = dep_path_list_features.shape[1]
 
     tf.reset_default_graph()
@@ -95,20 +95,20 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
 
 
     if word2vec_embeddings is not None:
-        with tf.name_scope("word_embedding"):
+        with tf.name_scope("dependency_word_embedding"):
             print('bionlp_word_embedding')
             W = tf.Variable(tf.constant(0.0, shape=[num_path_words, word_embedding_dimension]), name="W")
             embedding_placeholder = tf.placeholder(tf.float32, [num_path_words, word_embedding_dimension])
             embedding_init = W.assign(embedding_placeholder)
             embedded_word = tf.nn.embedding_lookup(W, batch_word_ids)
-            word_embedding_saver = tf.train.Saver({"word_embedding/W": W})
+            word_embedding_saver = tf.train.Saver({"dependency_word_embedding/W": W})
 
 
     else:
         with tf.name_scope("dependency_word_embedding"):
             W = tf.Variable(tf.random_uniform([num_path_words, word_embedding_dimension]), name="W")
             embedded_word = tf.nn.embedding_lookup(W, batch_word_ids)
-            word_embedding_saver = tf.train.Saver({"word_embedding/W": W})
+            word_embedding_saver = tf.train.Saver({"dependency_word_embedding/W": W})
 
     with tf.name_scope("word_dropout"):
         embedded_word_drop = tf.nn.dropout(embedded_word, keep_prob)
@@ -223,6 +223,8 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
                   % (epoch + 1, key_order[l], 100. * label_accuracy))
             save_path = saver.save(sess, model_dir)
 
+    return save_path
+
 def lstm_test(test_features,test_labels,model_file):
 
     test_dep_path_list_features = test_features[0]
@@ -245,7 +247,7 @@ def lstm_test(test_features,test_labels,model_file):
     dataset = dataset.batch(32)
 
     total_labels = np.array([])
-    total_predicted_prob = np.aray([])
+    total_predicted_prob = np.array([])
     with tf.Session() as sess:
         restored_model = tf.train.import_meta_graph(model_file + '.meta')
         restored_model.restore(sess,model_file)
@@ -273,7 +275,7 @@ def lstm_test(test_features,test_labels,model_file):
 
         while True:
             try:
-                predicted_val,batch_features,batch_labels= sess.run([predict_prob,batch_labels_tensor],feed_dict={iterator_handle: new_handle,keep_prob_tensor:1.0})
+                predicted_val,batch_labels= sess.run([predict_prob,batch_labels_tensor],feed_dict={iterator_handle: new_handle,keep_prob_tensor:1.0})
                 total_labels = np.append(total_labels,batch_labels)
                 total_predicted_prob = np.append(total_predicted_prob,predicted_val)
             except tf.errors.OutOfRangeError:
