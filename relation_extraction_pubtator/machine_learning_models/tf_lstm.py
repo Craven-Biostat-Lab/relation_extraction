@@ -30,7 +30,6 @@ def load_bin_vec(fname):
             word_vecs.append(np.fromstring(f.read(binary_len), dtype='float32'))
             words.append(word)
             word_dict[word] = index
-            print(word)
             index+=1
     words.append('UNKNOWN_WORD')
     word_dict['UNKNOWN_WORD'] = index
