@@ -31,6 +31,7 @@ def load_bin_vec(fname):
     words.append('UNKNOWN_WORD')
     last_vector = word_vecs[-1]
     word_vecs.append(np.zeros(last_vector.shape, dtype='float32'))
+    print('finished loading embeddings')
     return words, word_vecs
 
 def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,word2vec_embeddings = None):
