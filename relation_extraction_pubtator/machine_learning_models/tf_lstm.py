@@ -107,13 +107,13 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
     with tf.name_scope("word_dropout"):
         embedded_word_drop = tf.nn.dropout(embedded_word, keep_prob)
 
-    dependency_hidden_states = tf.zeros([tf.shape(batch_dependency_ids)[0], dep_state_size], name="dep_hidden_state")
-    dependency_cell_states = tf.zeros([tf.shape(batch_dependency_ids)[0], dep_state_size], name="dep_cell_state")
-    dependency_init_states = tf.nn.rnn_cell.LSTMStateTuple(dependency_hidden_states, dependency_cell_states)
+    dependency_initial_hidden_states = tf.zeros([tf.shape(batch_dependency_ids)[0], dep_state_size], name="dep_hidden_state")
+    dependency_initial_cell_states = tf.zeros([tf.shape(batch_dependency_ids)[0], dep_state_size], name="dep_cell_state")
+    dependency_init_states = tf.nn.rnn_cell.LSTMStateTuple(dependency_initial_hidden_states, dependency_initial_cell_states)
 
-    word_hidden_state = tf.zeros([tf.shape(batch_word_ids)[0], word_state_size], name='word_hidden_state')
-    word_cell_state = tf.zeros([tf.shape(batch_word_ids)[0], word_state_size], name='word_cell_state')
-    word_init_state = tf.nn.rnn_cell.LSTMStateTuple(word_hidden_state, word_cell_state)
+    word_initial_hidden_state = tf.zeros([tf.shape(batch_word_ids)[0], word_state_size], name='word_hidden_state')
+    word_initial_cell_state = tf.zeros([tf.shape(batch_word_ids)[0], word_state_size], name='word_cell_state')
+    word_init_state = tf.nn.rnn_cell.LSTMStateTuple(word_initial_hidden_state, word_initial_cell_state)
 
     with tf.variable_scope("dependency_lstm"):
         cell = tf.contrib.rnn.BasicLSTMCell(dep_state_size)
