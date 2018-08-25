@@ -328,7 +328,7 @@ def main():
             #print(total_group_instance_results)
 
         else:
-            prediction_instances,predict_probs,key_order = predict_sentences_lstm(model_file,sentence_file,entity_a,entity_b)
+            prediction_instances,predict_probs,key_order = predict_sentences_lstm(model_file,sentence_file,entity_a,entity_b,LSTM)
 
         print(predict_probs)
         for key_index in range(len(key_order)):
