@@ -26,6 +26,8 @@ def predict_sentences_lstm(model_file, pubtator_file, entity_a, entity_b):
     predict_forward_sentences,\
     predict_reverse_sentences,\
     entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(pubtator_file,entity_a,entity_b)
+    print(len(predict_forward_sentences))
+    print(len(predict_reverse_sentences))
 
     dep_path_list_dictionary, dep_word_dictionary, key_order = pickle.load(open(model_file + 'a.pickle','rb'))
 
