@@ -71,6 +71,9 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
     predict_reverse_sentences,\
     entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(pubtator_file,entity_a,entity_b)
 
+    print(predict_forward_sentences)
+    print(predict_reverse_sentences)
+
     dep_dictionary, dep_word_dictionary, dep_element_dictionary, between_word_dictionary, key_order = pickle.load(open(model_file + 'a.pickle','rb'))
 
     predict_instances = load_data.build_instances_predict(predict_forward_sentences, predict_reverse_sentences,dep_dictionary,
