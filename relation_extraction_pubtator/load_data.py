@@ -326,8 +326,8 @@ def load_pubtator_abstract_sentences(pubtator_file, entity_a, entity_b):
     entity_b_type = entity_b_elements[1]
 
     if entity_a_type == 'GENE' and entity_b_type == 'GENE':
-        entity_a_set = load_entity_set('./entity_ids/gene_ids/'+entity_a_specific +'.txt',2)
-        entity_b_set = load_entity_set('./entity_ids/gene_ids/'+entity_b_specific +'.txt',2)
+        entity_a_set = load_entity_set(os.path.dirname(os.path.realpath(__file__)) +'/entity_ids/gene_ids/'+entity_a_specific +'.txt',2)
+        entity_b_set = load_entity_set(os.path.dirname(os.path.realpath(__file__)) +'/entity_ids/gene_ids/'+entity_b_specific +'.txt',2)
         return load_gene_gene_abstract_sentences(pubtator_file, entity_a_specific, entity_b_specific, entity_a_set, entity_b_set)
 
 
