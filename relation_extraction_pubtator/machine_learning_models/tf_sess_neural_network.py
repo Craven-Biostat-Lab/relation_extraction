@@ -100,10 +100,19 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
 
             save_path = saver.save(sess, model_dir)
 
+            train_y_pred = sess.run(class_yhat,feed_dict={input_tensor: train_X, output_tensor: train_y, keep_prob: 1.0})
+            #train_accuracy = metrics.f1_score(y_true=train_y, y_pred=train_y_pred)
+
+            for l in range(len(key_order)):
+                column_l = train_y_pred[:, l]
+                column_true = train_y[:, l]
+                label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
+                print("Epoch = %d,Label = %s: %.2f%% "
+                  % (epoch + 1, key_order[l], 100. * label_accuracy))
+
+
             if test_X is not None and test_y is not None:
-                train_y_pred = sess.run(class_yhat,feed_dict={input_tensor: train_X, output_tensor: train_y,keep_prob: 1.0})
                 test_y_pred =  sess.run(class_yhat,feed_dict={input_tensor: test_X, output_tensor: test_y,keep_prob: 1.0})
-                train_accuracy = metrics.accuracy_score(y_true=train_y,y_pred=train_y_pred)
                 test_accuracy = metrics.accuracy_score(y_true=test_y, y_pred=test_y_pred)
                 for l in range(len(key_order)):
                     column_l = test_y_pred[:,l]
