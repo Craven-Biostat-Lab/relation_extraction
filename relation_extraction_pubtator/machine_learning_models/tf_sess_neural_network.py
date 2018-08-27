@@ -117,10 +117,10 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
                 for l in range(len(key_order)):
                     column_l = test_y_pred[:,l]
                     column_true = test_y[:,l]
-                    label_accuracy = metrics.accuracy_score(y_true=column_true,y_pred=column_l)
+                    label_accuracy = metrics.f1_score(y_true=column_true,y_pred=column_l)
 
-                    print("Epoch = %d,Label = %s: %.2f%%, train accuracy = %.2f%%, test accuracy = %.2f%%"
-                        % (epoch + 1, key_order[l],100. * label_accuracy, 100. * train_accuracy, 100. * test_accuracy))
+                    print("Test Epoch = %d,Label = %s: %.2f%% "
+                          % (epoch + 1, key_order[l], 100. * label_accuracy))
 
     return save_path
 
