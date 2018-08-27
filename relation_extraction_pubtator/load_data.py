@@ -397,10 +397,10 @@ def build_lstm_arrays(instances):
     for i in range(len(instances)):
         t = instances[i]
         # instance_sentences.add(' '.join(t.sentence.sentence_words))
-        dep_path_list_features.append(t.features[0:20])
-        dep_word_features.append(t.features[20:40])
-        dep_type_path_length.append(t.features[40])
-        dep_word_path_length.append(t.features[41])
+        dep_path_list_features.append(t.features[0:100])
+        dep_word_features.append(t.features[100:200])
+        dep_type_path_length.append(t.features[200])
+        dep_word_path_length.append(t.features[201])
         labels.append(t.label)
 
     dep_path_list_features = np.array(dep_path_list_features)
