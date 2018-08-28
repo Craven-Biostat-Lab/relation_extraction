@@ -62,15 +62,15 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
 
     keep_prob = tf.placeholder(tf.float32, name='keep_prob')
 
-    dependency_ids = tf.placeholder(dep_path_list_features.dtype, dep_path_list_features.shape, name="dependency_ids")
-    dependency_type_sequence_length = tf.placeholder(dep_type_path_length.dtype, dep_type_path_length.shape,
+    dependency_ids = tf.placeholder(dep_path_list_features.dtype, [None,dep_path_list_features.shape[1]], name="dependency_ids")
+    dependency_type_sequence_length = tf.placeholder(dep_type_path_length.dtype, [None,dep_type_path_length.shape[1]],
                                                      name="dependency_type_sequence_length")
 
-    word_ids = tf.placeholder(dep_word_features.dtype, dep_word_features.shape, name="word_ids")
-    dependency_word_sequence_length = tf.placeholder(dep_word_path_length.dtype, dep_word_path_length.shape,
+    word_ids = tf.placeholder(dep_word_features.dtype, [None,dep_word_features.shape[1]], name="word_ids")
+    dependency_word_sequence_length = tf.placeholder(dep_word_path_length.dtype, [None,dep_word_path_length.shape[1]],
                                                      name="dependency_word_sequence_length")
 
-    output_tensor = tf.placeholder(tf.float32, labels.shape, name='output')
+    output_tensor = tf.placeholder(tf.float32, [None,labels.shape[1]], name='output')
 
     dataset = tf.data.Dataset.from_tensor_slices((dependency_ids,word_ids,dependency_type_sequence_length,
                                                   dependency_word_sequence_length,output_tensor))
