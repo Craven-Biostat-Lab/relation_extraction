@@ -171,36 +171,72 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
     return save_path
 
 def neural_network_test(test_features,test_labels,model_file):
-
-
+    total_labels = np.array([])
+    total_predicted_prob = np.array([])
     with tf.Session() as sess:
         restored_model = tf.train.import_meta_graph(model_file + '.meta')
-        restored_model.restore(sess,model_file)
+        restored_model.restore(sess, model_file)
         graph = tf.get_default_graph()
-        input_tensor = graph.get_tensor_by_name('input:0')
-        output_tensor = graph.get_tensor_by_name('output:0')
+
+        input_tensor = tf.get_tensor_by_name("input:0")
+        output_tensor = tf.get_tensor_by_name('output:0')
+        dataset = tf.data.Dataset.from_tensor_slices((input_tensor, output_tensor))
+        dataset = dataset.batch(32)
+
+        iterator_handle = graph.get_tensor_by_name('iterator_handle:0')
+        test_iterator = dataset.make_initializable_iterator()
+        new_handle = sess.run(test_iterator.string_handle())
+        sess.run(test_iterator.initializer, feed_dict={input_tensor: test_features,
+                                                       output_tensor: test_labels})
+        batch_features_tensor = graph.get_tensor_by_name('IteratorGetNext:0')
+        batch_labels_tensor = graph.get_tensor_by_name('IteratorGetNext:1')
         keep_prob_tensor = graph.get_tensor_by_name('keep_prob:0')
         predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
-        predicted_val,predict_class = sess.run([predict_prob,predict_tensor],feed_dict={input_tensor:test_features,output_tensor:test_labels,keep_prob_tensor:1.0})
-        test_accuracy = metrics.accuracy_score(y_true=test_labels, y_pred=predict_class)
-        print(test_accuracy)
-    return predicted_val
+        while True:
+            try:
+                predicted_val, batch_labels = sess.run([predict_prob, batch_labels_tensor],
+                                                       feed_dict={iterator_handle: new_handle, keep_prob_tensor: 1.0})
+                total_labels = np.append(total_labels, batch_labels)
+                total_predicted_prob = np.append(total_predicted_prob, predicted_val)
+            except tf.errors.OutOfRangeError:
+                break
+
+    print(total_predicted_prob.shape)
+    total_predicted_prob = total_predicted_prob.reshape(test_labels.shape)
+    total_labels = total_labels.reshape(test_labels.shape)
+    return total_predicted_prob, total_labels
 
 def neural_network_predict(predict_features,model_file):
-
-
+    total_labels = np.array([])
+    total_predicted_prob = np.array([])
     with tf.Session() as sess:
         restored_model = tf.train.import_meta_graph(model_file + '.meta')
-        restored_model.restore(sess,model_file)
+        restored_model.restore(sess, model_file)
         graph = tf.get_default_graph()
-        input_tensor = graph.get_tensor_by_name('input:0')
-        output_tensor = graph.get_tensor_by_name('output:0')
+
+        input_tensor = tf.get_tensor_by_name("input:0")
+        dataset = tf.data.Dataset.from_tensor_slices((input_tensor))
+        dataset = dataset.batch(32)
+
+        iterator_handle = graph.get_tensor_by_name('iterator_handle:0')
+        test_iterator = dataset.make_initializable_iterator()
+        new_handle = sess.run(test_iterator.string_handle())
+        sess.run(test_iterator.initializer, feed_dict={input_tensor: predict_features})
+        batch_features_tensor = graph.get_tensor_by_name('IteratorGetNext:0')
         keep_prob_tensor = graph.get_tensor_by_name('keep_prob:0')
         predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
-        predicted_val,predict_class = sess.run([predict_prob,predict_tensor],feed_dict={input_tensor:predict_features,keep_prob_tensor:1.0})
+        while True:
+            try:
+                predicted_val = sess.run([predict_prob],
+                                                       feed_dict={iterator_handle: new_handle, keep_prob_tensor: 1.0})
+                total_predicted_prob = np.append(total_predicted_prob, predicted_val)
+            except tf.errors.OutOfRangeError:
+                break
 
-    return predicted_val
+    print(total_predicted_prob.shape)
+    total_predicted_prob = total_predicted_prob.reshape(predict_features.shape)
+    return total_predicted_prob

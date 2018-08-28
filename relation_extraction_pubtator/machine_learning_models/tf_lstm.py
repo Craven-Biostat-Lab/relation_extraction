@@ -233,28 +233,21 @@ def lstm_test(test_features,test_labels,model_file):
     test_dep_type_path_length = test_features[2]
     test_dep_word_path_length = test_features[3]
 
-    dependency_ids = tf.placeholder(test_dep_path_list_features.dtype, test_dep_path_list_features.shape,
-                                    name="dependency_ids")
-    dependency_type_sequence_length = tf.placeholder(test_dep_type_path_length.dtype,
-                                                     test_dep_type_path_length.shape,
-                                                     name="dependency_type_sequence_length")
-    word_ids = tf.placeholder(test_dep_word_features.dtype, test_dep_word_features.shape, name="word_ids")
-    dependency_word_sequence_length = tf.placeholder(test_dep_word_path_length.dtype,
-                                                     test_dep_word_path_length.shape,
-                                                     name="dependency_word_sequence_length")
-    output_tensor = tf.placeholder(tf.float32, test_labels.shape, name='output')
-    dataset = tf.data.Dataset.from_tensor_slices((dependency_ids, word_ids, dependency_type_sequence_length,
-                                                  dependency_word_sequence_length, output_tensor))
-    dataset = dataset.batch(32)
-
     total_labels = np.array([])
     total_predicted_prob = np.array([])
     with tf.Session() as sess:
         restored_model = tf.train.import_meta_graph(model_file + '.meta')
-        restored_model.restore(sess,model_file)
+        restored_model.restore(sess, model_file)
         graph = tf.get_default_graph()
 
-
+        dependency_ids = tf.get_tensor_by_name("dependency_ids:0")
+        dependency_type_sequence_length = tf.get_tensor_by_name("dependency_type_sequence_length:0")
+        word_ids = tf.get_tensor_by_name("word_ids:0")
+        dependency_word_sequence_length = tf.get_tensor_by_name("dependency_word_sequence_length:0")
+        output_tensor = tf.get_tensor_by_name('output:0')
+        dataset = tf.data.Dataset.from_tensor_slices((dependency_ids, word_ids, dependency_type_sequence_length,
+                                                      dependency_word_sequence_length, output_tensor))
+        dataset = dataset.batch(32)
 
 
         iterator_handle = graph.get_tensor_by_name('iterator_handle:0')
@@ -294,23 +287,21 @@ def lstm_predict(predict_features,predict_labels, model_file):
     predict_dep_type_path_length = predict_features[2]
     predict_dep_word_path_length = predict_features[3]
 
-    dependency_ids = tf.placeholder(predict_dep_path_list_features.dtype, predict_dep_path_list_features.shape,
-                                    name="dependency_ids")
-    dependency_type_sequence_length = tf.placeholder(predict_dep_type_path_length.dtype,
-                                                     predict_dep_type_path_length.shape,
-                                                     name="dependency_type_sequence_length")
-    word_ids = tf.placeholder(predict_dep_word_features.dtype, predict_dep_word_features.shape, name="word_ids")
-    dependency_word_sequence_length = tf.placeholder(predict_dep_word_path_length.dtype,
-                                                     predict_dep_word_path_length.shape,
-                                                     name="dependency_word_sequence_length")
-    output_tensor = tf.placeholder(tf.float32, predict_labels.shape, name='output')
-    dataset = tf.data.Dataset.from_tensor_slices((dependency_ids, word_ids, dependency_type_sequence_length,
-                                                  dependency_word_sequence_length, output_tensor))
-    dataset = dataset.batch(32)
+
     with tf.Session() as sess:
         restored_model = tf.train.import_meta_graph(model_file + '.meta')
         restored_model.restore(sess, model_file)
         graph = tf.get_default_graph()
+
+        dependency_ids = tf.get_tensor_by_name("dependency_ids:0")
+        dependency_type_sequence_length = tf.get_tensor_by_name("dependency_type_sequence_length:0")
+        word_ids = tf.get_tensor_by_name("word_ids:0")
+        dependency_word_sequence_length = tf.get_tensor_by_name("dependency_word_sequence_length:0")
+        output_tensor = tf.get_tensor_by_name('output:0')
+        dataset = tf.data.Dataset.from_tensor_slices((dependency_ids, word_ids, dependency_type_sequence_length,
+                                                      dependency_word_sequence_length, output_tensor))
+        dataset = dataset.batch(32)
+
         iterator_handle = graph.get_tensor_by_name('iterator_handle:0')
         test_iterator = dataset.make_initializable_iterator()
         new_handle = sess.run(test_iterator.string_handle())
