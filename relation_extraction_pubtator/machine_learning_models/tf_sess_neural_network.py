@@ -49,6 +49,24 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
     output_tensor = tf.placeholder(tf.float32, [None, num_labels], name='output')
     keep_prob = tf.placeholder(tf.float32,name='keep_prob')
 
+    dataset = tf.data.Dataset.from_tensor_slices((input_tensor, output_tensor))
+    dataset = dataset.batch(1)
+
+    iterator_handle = tf.placeholder(tf.string, shape=[], name='iterator_handle')
+    iterator = tf.data.Iterator.from_string_handle(
+        iterator_handle,
+        dataset.output_types,
+        dataset.output_shapes)
+
+    batch_features, batch_labels = iterator.get_next()
+
+    train_iter = dataset.make_initializable_iterator()
+
+    if test_X is not None:
+        test_dataset = tf.data.Dataset.from_tensor_slices((input_tensor, output_tensor))
+        test_dataset = test_dataset.batch(1024)
+        test_iter = test_dataset.make_initializable_iterator()
+
     #with tf.name_scope('weights'):
     weights = {}
     biases = {}
@@ -61,21 +79,16 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
     weights['out'] = tf.Variable(tf.random_normal([previous_layer_size, num_labels], stddev=0.1),name='out_weights')
     biases['out'] = tf.Variable(tf.random_normal([num_labels], stddev=0.1), name='out_bias')
 
-    #with tf.name_scope('biases'):
-    #    biases = {}
-    #    for i in range(num_hidden_layers):
-    #        num_hidden_units = hidden_array[i]
-    #        biases[i] = tf.Variable(tf.random_normal([num_hidden_units], stddev=0.1), name='biases' + str(i))
-    #    biases['out'] = tf.Variable(tf.random_normal([num_labels], stddev=0.1), name='out_bias')
+
 
     # Forward propagation
-    yhat = feed_forward(input_tensor, num_hidden_layers, weights, biases, keep_prob)
+    yhat = feed_forward(batch_features, num_hidden_layers, weights, biases, keep_prob)
     prob_yhat = tf.nn.sigmoid(yhat,name='predict_prob')
     class_yhat = tf.to_int32(prob_yhat > 0.5,name='class_predict')
     #predict = tf.argmax(prob_yhat, axis=1,name='predict_tensor')
 
     # Backward propagation
-    cost = tf.nn.sigmoid_cross_entropy_with_logits(labels=output_tensor, logits=yhat)
+    cost = tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat)
     updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
 
     saver = tf.train.Saver()
@@ -86,41 +99,74 @@ def neural_network_train(train_X,train_y,test_X,test_y,hidden_array,model_dir,ke
 
         writer = tf.summary.FileWriter(model_dir, graph=tf.get_default_graph())
 
-        values = range(len(train_X))
 
         max_accuracy = 0
         save_path = None
         for epoch in range(250):
-            shuffle(values)
+            train_handle = sess.run(train_iter.string_handle())
+            sess.run(train_iter.initializer, feed_dict={input_tensor: train_X,
+                                                        output_tensor: train_y})
             # Train with each example
-            for i in values:
-                u = sess.run([updates],
-                                   feed_dict={input_tensor: train_X[i: i + 1], output_tensor: train_y[i: i + 1],
-                                              keep_prob: 0.5})
 
-            save_path = saver.save(sess, model_dir)
+            while True:
+                try:
+                    # print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
+                    u = sess.run([updates], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
+                except tf.errors.OutOfRangeError:
+                    break
 
-            train_y_pred = sess.run(class_yhat,feed_dict={input_tensor: train_X, output_tensor: train_y, keep_prob: 1.0})
-            #train_accuracy = metrics.f1_score(y_true=train_y, y_pred=train_y_pred)
 
+            train_handle = sess.run(train_iter.string_handle())
+            sess.run(train_iter.initializer, feed_dict={input_tensor: train_X,
+                                                        output_tensor: train_y})
+            total_predicted_prob = np.array([])
+            total_labels = np.array([])
+            while True:
+                try:
+                    predicted_class, b_labels = sess.run([class_yhat, batch_labels],
+                                                         feed_dict={iterator_handle: train_handle, keep_prob: 1.0})
+                    # print(predicted_val)
+                    # total_labels = np.append(total_labels, batch_labels)
+                    total_predicted_prob = np.append(total_predicted_prob, predicted_class)
+                    total_labels = np.append(total_labels, b_labels)
+                except tf.errors.OutOfRangeError:
+                    break
+            total_predicted_prob = total_predicted_prob.reshape(train_y.shape)
+            total_labels = total_labels.reshape(train_y.shape)
             for l in range(len(key_order)):
-                column_l = train_y_pred[:, l]
-                column_true = train_y[:, l]
+                column_l = total_predicted_prob[:, l]
+                column_true = total_labels[:, l]
                 label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
                 print("Epoch = %d,Label = %s: %.2f%% "
-                  % (epoch + 1, key_order[l], 100. * label_accuracy))
+                      % (epoch + 1, key_order[l], 100. * label_accuracy))
 
 
-            if test_X is not None and test_y is not None:
-                test_y_pred =  sess.run(class_yhat,feed_dict={input_tensor: test_X, output_tensor: test_y,keep_prob: 1.0})
-                test_accuracy = metrics.accuracy_score(y_true=test_y, y_pred=test_y_pred)
+            if test_X is not None:
+                test_handle = sess.run(test_iter.string_handle())
+                sess.run(test_iter.initializer, feed_dict={input_tensor: test_X,
+                                                            output_tensor: test_y})
+                test_y_predict_total = np.array([])
+                test_y_label_total = np.array([])
+                while True:
+                    try:
+                        batch_test_predict, batch_test_labels = sess.run([class_yhat, batch_labels],
+                                                                         feed_dict={iterator_handle: test_handle,
+                                                                                    keep_prob: 1.0})
+                        test_y_predict_total = np.append(test_y_predict_total, batch_test_predict)
+                        test_y_label_total = np.append(test_y_label_total, batch_test_labels)
+                    except tf.errors.OutOfRangeError:
+                        break
+                test_y_predict_total = test_y_predict_total.reshape(test_y.shape)
+                test_y_label_total = test_y_label_total.reshape(test_y.shape)
                 for l in range(len(key_order)):
-                    column_l = test_y_pred[:,l]
-                    column_true = test_y[:,l]
-                    label_accuracy = metrics.f1_score(y_true=column_true,y_pred=column_l)
-
-                    print("Test Epoch = %d,Label = %s: %.2f%% "
+                    column_l = test_y_predict_total[:, l]
+                    column_true = test_y_label_total[:, l]
+                    label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
+                    print("Epoch = %d,Test Label = %s: %.2f%% "
                           % (epoch + 1, key_order[l], 100. * label_accuracy))
+            save_path = saver.save(sess, model_dir)
+
+
 
     return save_path
 

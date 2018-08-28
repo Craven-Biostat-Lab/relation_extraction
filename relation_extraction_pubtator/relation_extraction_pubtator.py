@@ -103,6 +103,8 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
 def parallel_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
                   distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b,batch_id,LSTM):
 
+    print(LSTM)
+
     #get distant_relations from external knowledge base file
     distant_interactions, reverse_distant_interactions = load_data.load_distant_directories(directional_distant_directory,
                                                                                             symmetric_distant_directory,
@@ -116,7 +118,7 @@ def parallel_train(model_out, pubtator_file, directional_distant_directory, symm
         pubtator_file,entity_a,entity_b)
 
     #hidden layer structure
-    hidden_array = [256]
+    hidden_array = []
 
     #k-cross val
     instance_predicts,single_instances = cv.parallel_k_fold_cross_validation(batch_id, 10, training_pmids,
@@ -311,7 +313,8 @@ def main():
         entity_a = sys.argv[9].upper()  # entity_a
         entity_b = sys.argv[10].upper()  # entity_b
         batch_id = int(sys.argv[11]) #batch to run
-        LSTM = bool(sys.argv[12])
+        LSTM = sys.argv[12]
+        LSTM = LSTM == 'True'
 
         #symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
 
