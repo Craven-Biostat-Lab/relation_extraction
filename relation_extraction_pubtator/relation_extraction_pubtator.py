@@ -194,7 +194,7 @@ def train_feed_forward(model_out, pubtator_file, directional_distant_directory, 
         pubtator_file,entity_a,entity_b)
 
     #hidden layer structure
-    hidden_array = []
+    hidden_array = [256]
 
     #k-cross val
     #instance_predicts, single_instances= cv.k_fold_cross_validation(10,training_pmids,training_forward_sentences,
