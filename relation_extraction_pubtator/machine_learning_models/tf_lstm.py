@@ -124,7 +124,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
     word_init_state = tf.nn.rnn_cell.LSTMStateTuple(word_initial_hidden_state, word_initial_cell_state)
 
     with tf.variable_scope("dependency_lstm"):
-        cell = tf.contirb.cudnn_rnn.CudnnLSTM(dep_state_size)
+        cell = tf.contrib.cudnn_rnn.CudnnLSTM(dep_state_size)
         state_series, current_state = tf.nn.dynamic_rnn(cell, embedded_dep, sequence_length=batch_dependency_type_length,
                                                         initial_state=dependency_init_states)
         state_series_dep = tf.reduce_max(state_series, axis=1)
