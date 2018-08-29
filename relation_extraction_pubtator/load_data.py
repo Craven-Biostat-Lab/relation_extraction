@@ -63,7 +63,7 @@ def build_instances_predict(predict_forward_sentences, predict_reverse_sentences
         else:
             continue
 
-    if dep_path_list_dictionary is False:
+    if dep_path_list_dictionary is None:
         for instance in predict_instances:
             instance.build_features(dep_dictionary, dep_word_dictionary, dep_element_dictionary,  between_word_dictionary)
 

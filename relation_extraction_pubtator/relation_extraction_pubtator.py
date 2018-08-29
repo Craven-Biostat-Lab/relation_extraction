@@ -10,7 +10,7 @@ import pickle
 import time
 
 from machine_learning_models import tf_neural_network as ann
-from machine_learning_models import tf_sess_neural_network as snn
+from machine_learning_models import tf_feed_forward as ffnn
 from machine_learning_models import tf_lstm as lstm
 
 from sklearn.linear_model import LogisticRegression, SGDClassifier
@@ -84,18 +84,16 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
 
 
     predict_features = []
-    outfile = open(model_file + 'hsv1-instances.txt','w')
+    predict_labels = []
     for predict_index in range(len(predict_instances)):
-        if predict_index%1 == 0:
-            pi = predict_instances[predict_index]
-            sentence_format = pi.sentence.sentence_words
-            sentence_format[pi.entity_pair[0]] = '***' + sentence_format[pi.entity_pair[0]] + '***'
-            sentence_format[pi.entity_pair[1]] = '***'  + sentence_format[pi.entity_pair[1]] + '***'
-            outfile.write(pi.sentence.pmid + '\t' + pi.sentence.start_entity_text + '\t' + pi.sentence.end_entity_text + '\t' + ' '.join(sentence_format))
+        pi = predict_instances[predict_index]
         predict_features.append(pi.features)
+        predict_labels.append(pi.label)
 
-    outfile.close()
-    predicted_prob = snn.neural_network_predict(predict_features,model_file + '/')
+    predict_features = np.array(predict_features)
+    predict_labels = np.array(predict_labels)
+
+    predicted_prob = ffnn.neural_network_predict(predict_features, predict_labels,model_file + '/')
 
     return predict_instances,predicted_prob,key_order
 
@@ -180,8 +178,8 @@ def train_lstm(model_out, pubtator_file, directional_distant_directory, symmetri
 
     return trained_model_path
 
-def distant_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
-                  distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b):
+def train_feed_forward(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
+                       distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b):
 
     #get distant_relations from external knowledge base file
     distant_interactions, reverse_distant_interactions = load_data.load_distant_directories(directional_distant_directory,
@@ -196,7 +194,7 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
         pubtator_file,entity_a,entity_b)
 
     #hidden layer structure
-    hidden_array = [256]
+    hidden_array = []
 
     #k-cross val
     #instance_predicts, single_instances= cv.k_fold_cross_validation(10,training_pmids,training_forward_sentences,
@@ -236,12 +234,12 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
         shutil.rmtree(model_out)
 
 
-    trained_model_path = snn.neural_network_train(X_train,
-                                              y_train,
-                                              None,
-                                              None,
-                                              hidden_array,
-                                              model_out + '/', key_order)
+    trained_model_path = ffnn.feed_forward_train(X_train,
+                                                 y_train,
+                                                 None,
+                                                 None,
+                                                 hidden_array,
+                                                 model_out + '/', key_order)
 
 
     print('Number of Sentences')
@@ -268,7 +266,7 @@ def distant_train(model_out, pubtator_file, directional_distant_directory, symme
 def main():
     ''' Main method, mode determines whether program runs training, testing, or prediction'''
     mode = sys.argv[1]  # what option
-    if mode.upper() == "DISTANT_TRAIN":
+    if mode.upper() == "TRAIN_FEED_FORWARD":
         model_out = sys.argv[2]  # location of where model should be saved after training
         pubtator_file = sys.argv[3]  # xml file of sentences from Stanford Parser
         directional_distant_directory = sys.argv[4]  # distant supervision knowledge base to use
@@ -281,8 +279,9 @@ def main():
 
         #symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
 
-        trained_model_path = distant_train(model_out, pubtator_file, directional_distant_directory,symmetric_distant_directory,
-                      distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b)
+        trained_model_path = train_feed_forward(model_out, pubtator_file, directional_distant_directory,
+                                                symmetric_distant_directory, distant_entity_a_col, distant_entity_b_col,
+                                                distant_rel_col, entity_a, entity_b)
 
         print(trained_model_path)
 
@@ -316,7 +315,6 @@ def main():
         LSTM = sys.argv[12]
         LSTM = LSTM == 'True'
 
-        #symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
 
         trained_model_batch = parallel_train(model_out, pubtator_file, directional_distant_directory,symmetric_distant_directory,
                       distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b,batch_id,LSTM)
@@ -330,6 +328,7 @@ def main():
         entity_b = sys.argv[5].upper()
         out_pairs_file = sys.argv[6]
         LSTM = bool(sys.argv[7])
+        LSTM =LSTM == 'True'
 
         if LSTM is False:
             prediction_instances, predict_probs,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)

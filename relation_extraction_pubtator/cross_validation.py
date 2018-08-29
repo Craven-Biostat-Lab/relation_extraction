@@ -6,7 +6,7 @@ import itertools
 import load_data
 import time
 
-from machine_learning_models import tf_sess_neural_network as snn
+from machine_learning_models import tf_feed_forward as snn
 from machine_learning_models import tf_lstm as lstm
 from sklearn import metrics
 
@@ -119,15 +119,15 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
         fold_test_y = np.array(fold_test_labels)
 
 
-        test_model = snn.neural_network_train(fold_train_X,
-                                              fold_train_y,
-                                              fold_test_X,
-                                              fold_test_y,
-                                              hidden_array,
-                                              model_dir + '/', key_order)
+        test_model = snn.feed_forward_train(fold_train_X,
+                                            fold_train_y,
+                                            fold_test_X,
+                                            fold_test_y,
+                                            hidden_array,
+                                            model_dir + '/', key_order)
 
 
-        fold_test_predicted_prob = snn.neural_network_test(fold_test_X,fold_test_y,test_model)
+        fold_test_predicted_prob = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
         total_predicted_prob = total_predicted_prob + fold_test_predicted_prob.tolist()
         total_test = total_test + fold_test_y.tolist()
         total_instances = total_instances + fold_test_instances
@@ -228,15 +228,15 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
         fold_test_y = np.array(fold_test_labels)
 
 
-        test_model = snn.neural_network_train(fold_train_X,
-                                          fold_train_y,
-                                          fold_test_X,
-                                          fold_test_y,
-                                          hidden_array,
-                                          model_dir + '/', key_order)
+        test_model = snn.feed_forward_train(fold_train_X,
+                                            fold_train_y,
+                                            fold_test_X,
+                                            fold_test_y,
+                                            hidden_array,
+                                            model_dir + '/', key_order)
 
 
-        fold_test_predicted_prob = snn.neural_network_test(fold_test_X,fold_test_y,test_model)
+        fold_test_predicted_prob = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
 
         total_predicted_prob = fold_test_predicted_prob.tolist()
         total_test = fold_test_y.tolist()
