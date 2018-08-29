@@ -1,5 +1,4 @@
 import os
-import sys
 import shutil
 import numpy as np
 import itertools
@@ -8,28 +7,7 @@ import time
 
 from machine_learning_models import tf_feed_forward as snn
 from machine_learning_models import tf_lstm as lstm
-from sklearn import metrics
 
-def write_cv_output(filename, predicts, instances,key_order):
-    for k in range(len(key_order)):
-        key = key_order[k]
-        labels = []
-        file = open(filename+'_'+key,'w')
-        #file.write(key_order[k]+'\n')
-        file.write('PMID\tE1\tE2\tClASS_LABEL\tPROBABILITY\n')
-        for q in range(predicts[:,k].size):
-            instance_label = instances[q].label[k]
-            labels.append(instance_label)
-            file.write(str(instances[q].sentence.pmid) + '\t' + str(instances[q].sentence.start_entity_id) + '\t' +str(instances[q].sentence.end_entity_id) + '\t'+str(instance_label) + '\t' + str(predicts[q,k]) + '\n')
-        #labels = np.array(labels)
-        #precision, recall, _ = metrics.precision_recall_curve(y_true=labels,probas_pred=predicts[:, k])
-        #file.write('PRECISION\tRECALL\n')
-        #for z in range(precision.size):
-        #    file.write(str(precision[z]) + '\t' + str(recall[z]) + '\n')
-
-        file.close()
-
-    return
 
 def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
                             entity_a_text, entity_b_text,hidden_array,key_order):

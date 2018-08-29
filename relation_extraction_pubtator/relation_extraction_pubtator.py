@@ -19,8 +19,36 @@ from sklearn import metrics
 
 
 
+def write_output(filename, predicts, instances, key_order):
+    for k in range(len(key_order)):
+        key = key_order[k]
+        labels = []
+        file = open(filename+'_'+key,'w')
+        #file.write(key_order[k]+'\n')
+        file.write('PMID\tE1\tE2\tClASS_LABEL\tPROBABILITY\n')
+        for q in range(predicts[:,k].size):
+            instance_label = instances[q].label[k]
+            labels.append(instance_label)
+            file.write(str(instances[q].sentence.pmid) + '\t' + str(instances[q].sentence.start_entity_id) + '\t' +str(instances[q].sentence.end_entity_id) + '\t'+str(instance_label) + '\t' + str(predicts[q,k]) + '\n')
+        #labels = np.array(labels)
+        #precision, recall, _ = metrics.precision_recall_curve(y_true=labels,probas_pred=predicts[:, k])
+        #file.write('PRECISION\tRECALL\n')
+        #for z in range(precision.size):
+        #    file.write(str(precision[z]) + '\t' + str(recall[z]) + '\n')
+
+        file.close()
+
+    return
 
 def predict_sentences_lstm(model_file, pubtator_file, entity_a, entity_b):
+    """
+    predict instances using LSTM
+    :param model_file:
+    :param pubtator_file:
+    :param entity_a:
+    :param entity_b:
+    :return:
+    """
 
     predict_pmids, \
     predict_forward_sentences,\
@@ -35,27 +63,7 @@ def predict_sentences_lstm(model_file, pubtator_file, entity_a, entity_b):
                                                           dep_word_dictionary, None,
                                                           None,entity_a_text,entity_b_text,key_order,dep_path_list_dictionary)
 
-    '''
-    dep_path_list_features = []
-    dep_word_features = []
-    dep_type_path_length = []
-    dep_word_path_length = []
-    labels = []
-    outfile = open(model_file + 'hsv1-instances.txt','w')
-    for predict_index in range(len(predict_instances)):
-        pi = predict_instances[predict_index]
-        if predict_index%1 == 0:
-            sentence_format = pi.sentence.sentence_words
-            sentence_format[pi.entity_pair[0]] = '***' + sentence_format[pi.entity_pair[0]] + '***'
-            sentence_format[pi.entity_pair[1]] = '***'  + sentence_format[pi.entity_pair[1]] + '***'
-            outfile.write(pi.sentence.pmid + '\t' + pi.sentence.start_entity_text + '\t' + pi.sentence.end_entity_text + '\t' + ' '.join(sentence_format))
-        dep_path_list_features.append(pi.features[0:20])
-        dep_word_features.append(pi.features[20:40])
-        dep_type_path_length.append(pi.features[40])
-        dep_word_path_length.append(pi.features[41])
-        labels.append(pi.label)
-    outfile.close()
-    '''
+
 
     dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_lstm_arrays(predict_instances)
     predict_features = [dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length]
@@ -127,7 +135,7 @@ def parallel_train(model_out, pubtator_file, directional_distant_directory, symm
                                                                              entity_a_text,entity_b_text,hidden_array,
                                                                              key_order,LSTM)
 
-    cv.write_cv_output(model_out + '_' +str(batch_id)+'_predictions',instance_predicts,single_instances,key_order)
+    write_output(model_out + '_' + str(batch_id) + '_predictions', instance_predicts, single_instances, key_order)
 
 
     return batch_id
@@ -362,3 +370,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
