@@ -102,7 +102,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
 
         max_accuracy = 0
         save_path = None
-        for epoch in range(10):
+        for epoch in range(250):
             train_handle = sess.run(train_iter.string_handle())
             sess.run(train_iter.initializer, feed_dict={input_tensor: train_X,
                                                         output_tensor: train_y})
