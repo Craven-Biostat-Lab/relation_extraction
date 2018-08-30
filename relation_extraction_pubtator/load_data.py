@@ -191,8 +191,12 @@ def build_instances_training(
 
         return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary
     else:
-        dep_type_list_dictionary['UNKNOWN_WORD'] = len(dep_type_list_dictionary)
-        dep_path_word_dictionary['UNKNOWN_WORD'] = len(dep_path_word_dictionary)
+        unk_pad_dep = len(dep_type_list_dictionary)
+        unk_pad_word = len(dep_path_word_dictionary)
+        dep_type_list_dictionary['UNKNOWN_WORD'] = unk_pad_dep
+        dep_path_word_dictionary['UNKNOWN_WORD'] = unk_pad_word
+        dep_type_list_dictionary['PADDING_WORD'] = unk_pad_dep +1
+        dep_path_word_dictionary['PADDING_WORD'] = unk_pad_word +1
         word2vec_embeddings = None
         word2vec_path = os.path.dirname(os.path.realpath(__file__)) + '/machine_learning_models/PubMed-w2v.bin'
         print(word2vec_path)
