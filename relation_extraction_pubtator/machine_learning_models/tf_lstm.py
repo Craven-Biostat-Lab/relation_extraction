@@ -36,7 +36,7 @@ def load_bin_vec(fname):
     word_dict['UNKNOWN_WORD'] = index
     word_dict['PADDING_WORD'] = index+1
     last_vector = word_vecs[-1]
-    word_vecs.append(np.random.rand(last_vector.shape))
+    word_vecs.append(np.random.rand(last_vector.shape[0],last_vector.shape[1]))
     word_vecs.append(np.zeros(last_vector.shape, dtype='float32'))
     print('finished loading embeddings')
     return words, word_vecs, word_dict
