@@ -51,6 +51,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
     print(dep_path_list_features.shape)
     print(dep_word_features.shape)
     print(dep_type_path_length.shape)
+    print(dep_type_path_length.dtype)
     print(labels.shape)
 
     lambda_l2 = 0.00001
@@ -128,16 +129,18 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
 
     with tf.variable_scope("dependency_lstm"):
 
-        cell = tf.contrib.cudnn_rnn.CudnnLSTM(1, dep_state_size)
-        state_series, current_state = cell(tf.transpose(embedded_dep,[1,0,2]))#, initial_state=dependency_init_states)
+        cell = tf.contrib.rnn.LSTMBlockFusedCell(dep_state_size)
+        state_series, current_state = cell(tf.transpose(embedded_dep,[1,0,2]),initial_state=dependency_init_states,
+                                           sequence_length=batch_dependency_type_length)
         state_series_dep = tf.reduce_max(state_series, axis=0)
 
 
 
     with tf.variable_scope("word_lstm"):
 
-        cell = tf.contrib.cudnn_rnn.CudnnLSTM(1,word_state_size)
-        state_series, current_state = cell(tf.transpose(embedded_word_drop,[1,0,2]))#, initial_state=word_init_state)
+        cell = tf.contrib.rnn.LSTMBlockFusedCell(word_state_size)
+        state_series, current_state = cell(tf.transpose(embedded_word_drop,[1,0,2]), initial_state=word_init_state,
+                                           sequence_length=batch_dep_word_length)
         state_series_word = tf.reduce_max(state_series, axis=0)
         '''
         cell = tf.contrib.cudnn_rnn.CudnnCompatibleLSTMCell(word_state_size)

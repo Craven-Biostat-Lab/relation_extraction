@@ -409,8 +409,8 @@ def build_lstm_arrays(instances):
 
     dep_path_list_features = np.array(dep_path_list_features)
     dep_word_features = np.array(dep_word_features)
-    dep_type_path_length = np.array(dep_type_path_length)
-    dep_word_path_length = np.array(dep_word_path_length)
+    dep_type_path_length = np.array(dep_type_path_length,dtype=np.int32)
+    dep_word_path_length = np.array(dep_word_path_length,dtype=np.int32)
     labels = np.array(labels)
 
     return dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels
