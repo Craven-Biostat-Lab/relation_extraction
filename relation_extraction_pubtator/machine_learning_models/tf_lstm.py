@@ -151,8 +151,8 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
     state_series = tf.concat([state_series_dep, state_series_word], 1)
 
     with tf.name_scope("hidden_layer"):
-        W = tf.Variable(tf.truncated_normal([dep_state_size + word_state_size, 256], -0.1, 0.1), name="W")
-        b = tf.Variable(tf.zeros([256]), name="b")
+        W = tf.Variable(tf.truncated_normal([dep_state_size + word_state_size, 100], -0.1, 0.1), name="W")
+        b = tf.Variable(tf.zeros([100]), name="b")
         y_hidden_layer = tf.matmul(state_series, W) + b
 
 
@@ -160,7 +160,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
         y_hidden_layer_drop = tf.nn.dropout(y_hidden_layer, keep_prob)
 
     with tf.name_scope("sigmoid_layer"):
-        W = tf.Variable(tf.truncated_normal([256, num_labels], -0.1, 0.1), name="W")
+        W = tf.Variable(tf.truncated_normal([100, num_labels], -0.1, 0.1), name="W")
         b = tf.Variable(tf.zeros([num_labels]), name="b")
         logits = tf.matmul(y_hidden_layer_drop, W) + b
     prob_yhat = tf.nn.sigmoid(logits, name='predict_prob')
