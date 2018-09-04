@@ -80,6 +80,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
 
     dataset = tf.data.Dataset.from_tensor_slices((dependency_ids,word_ids,dependency_type_sequence_length,
                                                   dependency_word_sequence_length,output_tensor))
+    dataset = dataset.shuffle(10000)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1)
 
