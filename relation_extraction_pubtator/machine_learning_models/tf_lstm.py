@@ -82,7 +82,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
                                                   dependency_word_sequence_length,output_tensor))
 
     dataset = dataset.prefetch(buffer_size=batch_size * 100)
-    dataset = dataset.repeat(num_epochs)
+    dataset = dataset.repeat(num_epochs).prefetch(batch_size*100)
     dataset = dataset.shuffle(batch_size*50).prefetch(buffer_size=batch_size * 100)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1)
