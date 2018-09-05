@@ -78,11 +78,15 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
 
     output_tensor = tf.placeholder(tf.float32, [None,labels.shape[1]], name='output')
 
-    dataset = tf.data.Dataset.from_tensor_slices((dependency_ids,word_ids,dependency_type_sequence_length,
-                                                  dependency_word_sequence_length,output_tensor))
-    dataset = dataset.shuffle(10000)
+    training_accuracy_dataset = tf.data.Dataset.from_tensor_slices((dependency_ids,word_ids,dependency_type_sequence_length,
+                                                  dependency_word_sequence_length,output_tensor)).prefetch(1000)
+
+    dataset = training_accuracy_dataset.repeat(num_epochs)
+    #dataset = dataset.shuffle(10000)
     dataset = dataset.batch(batch_size)
+    training_accuracy_dataset = training_accuracy_dataset.batch(batch_size*1000)
     dataset = dataset.prefetch(1)
+    training_accuracy_dataset = training_accuracy_dataset.prefetch(1)
 
     iterator_handle = tf.placeholder(tf.string, shape=[], name='iterator_handle')
     iterator = tf.data.Iterator.from_string_handle(
@@ -93,6 +97,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
     batch_dependency_ids, batch_word_ids,batch_dependency_type_length,batch_dep_word_length, batch_labels = iterator.get_next()
 
     train_iter = dataset.make_initializable_iterator()
+    train_accuracy_iter = training_accuracy_dataset.make_initializable_iterator()
 
     with tf.name_scope("dependency_type_embedding"):
         W = tf.Variable(tf.random_uniform([num_dep_types, dep_embedding_dimension]), name="W")
@@ -196,48 +201,59 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
         if word2vec_embeddings is not None:
             print('using word2vec embeddings')
             sess.run(embedding_init, feed_dict={embedding_placeholder: word2vec_embeddings})
-        for epoch in range(num_epochs):
-            train_handle = sess.run(train_iter.string_handle())
-            sess.run(train_iter.initializer,feed_dict={dependency_ids:dep_path_list_features,
+
+        train_handle = sess.run(train_iter.string_handle())
+        sess.run(train_iter.initializer,feed_dict={dependency_ids:dep_path_list_features,
                                                        word_ids:dep_word_features,
                                                        dependency_type_sequence_length:dep_type_path_length,
                                                        dependency_word_sequence_length:dep_word_path_length,
                                                        output_tensor:labels})
-            print("epoch: ", epoch)
-            while True:
-                try:
-                    #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
-                    u = sess.run([optimizer], feed_dict={iterator_handle: train_handle,keep_prob: 0.5})
 
-                except tf.errors.OutOfRangeError:
-                    break
+        instance_count = 0
+        epoch = 0
+        while True:
+            try:
+                #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
+                u = sess.run([optimizer], feed_dict={iterator_handle: train_handle,keep_prob: 0.5})
+                instance_count += batch_size
+                print(instance_count)
+                if instance_count > labels.shape[0]:
+                    train_accuracy_handle = sess.run(train_accuracy_iter.string_handle())
+                    sess.run(train_accuracy_iter.initializer, feed_dict={dependency_ids: dep_path_list_features,
+                                                                word_ids: dep_word_features,
+                                                                dependency_type_sequence_length: dep_type_path_length,
+                                                                dependency_word_sequence_length: dep_word_path_length,
+                                                                output_tensor: labels})
+                    total_predicted_prob = np.array([])
+                    total_labels = np.array([])
+                    while True:
+                        try:
+                            predicted_class, b_labels = sess.run([class_yhat, batch_labels],
+                                                                 feed_dict={iterator_handle: train_accuracy_handle,
+                                                                            keep_prob: 1.0})
+                            # print(predicted_val)
+                            # total_labels = np.append(total_labels, batch_labels)
+                            total_predicted_prob = np.append(total_predicted_prob, predicted_class)
+                            total_labels = np.append(total_labels, b_labels)
+                        except tf.errors.OutOfRangeError:
+                            break
+                    total_predicted_prob = total_predicted_prob.reshape(labels.shape)
+                    total_labels = total_labels.reshape(labels.shape)
+                    for l in range(len(key_order)):
+                        column_l = total_predicted_prob[:, l]
+                        column_true = total_labels[:, l]
+                        label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
+                        print("Epoch = %d,Label = %s: %.2f%% "
+                              % (epoch, key_order[l], 100. * label_accuracy))
+                    epoch += 1
+                    instance_count = 0
+                    train_handle = sess.run(train_iter.string_handle())
 
-            train_handle = sess.run(train_iter.string_handle())
-            sess.run(train_iter.initializer, feed_dict={dependency_ids: dep_path_list_features,
-                                                        word_ids: dep_word_features,
-                                                        dependency_type_sequence_length: dep_type_path_length,
-                                                        dependency_word_sequence_length: dep_word_path_length,
-                                                        output_tensor: labels})
-            total_predicted_prob = np.array([])
-            total_labels = np.array([])
-            while True:
-                try:
-                    predicted_class,b_labels = sess.run([class_yhat,batch_labels],
-                                             feed_dict={iterator_handle: train_handle, keep_prob: 1.0})
-                    # print(predicted_val)
-                    # total_labels = np.append(total_labels, batch_labels)
-                    total_predicted_prob = np.append(total_predicted_prob, predicted_class)
-                    total_labels = np.append(total_labels,b_labels)
-                except tf.errors.OutOfRangeError:
-                    break
-            total_predicted_prob=total_predicted_prob.reshape(labels.shape)
-            total_labels = total_labels.reshape(labels.shape)
-            for l in range(len(key_order)):
-                column_l = total_predicted_prob[:, l]
-                column_true = total_labels[:, l]
-                label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
-                print("Epoch = %d,Label = %s: %.2f%% "
-                  % (epoch + 1, key_order[l], 100. * label_accuracy))
+            except tf.errors.OutOfRangeError:
+                break
+
+
+
             save_path = saver.save(sess, model_dir)
 
     return save_path
