@@ -80,7 +80,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
 
     dataset = tf.data.Dataset.from_tensor_slices((dependency_ids,word_ids,dependency_type_sequence_length,
                                                   dependency_word_sequence_length,output_tensor))
-    
+
     dataset = dataset.prefetch(buffer_size=batch_size * 100)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1)
@@ -205,12 +205,10 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
                                                        dependency_word_sequence_length:dep_word_path_length,
                                                        output_tensor:labels})
             print("epoch: ", epoch)
-            instance_count = 0
             while True:
                 try:
                     #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
                     u = sess.run([optimizer], feed_dict={iterator_handle: train_handle,keep_prob: 0.5})
-                    print('batch')
                 except tf.errors.OutOfRangeError:
                     break
 
