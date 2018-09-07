@@ -222,7 +222,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
                 #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
                 u = sess.run([optimizer], feed_dict={iterator_handle: train_handle,keep_prob: 0.5})
                 instance_count += batch_size
-                print(instance_count)
+                #print(instance_count)
                 if instance_count > labels.shape[0]:
                     train_accuracy_handle = sess.run(train_accuracy_iter.string_handle())
                     sess.run(train_accuracy_iter.initializer, feed_dict={dependency_ids: dep_path_list_features,
