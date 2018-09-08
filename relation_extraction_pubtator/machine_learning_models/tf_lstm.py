@@ -85,7 +85,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
     dataset = dataset.repeat(num_epochs).prefetch(batch_size*100)
     dataset = dataset.shuffle(batch_size*50).prefetch(buffer_size=batch_size * 100)
     dataset = dataset.batch(batch_size)
-    dataset = dataset.prefetch(1)
+    dataset = dataset.prefetch(5)
 
     training_accuracy_dataset = tf.data.Dataset.from_tensor_slices((dependency_ids, word_ids, dependency_type_sequence_length,
                                                   dependency_word_sequence_length, output_tensor))
