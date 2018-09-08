@@ -178,7 +178,7 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
         fold_train_y = np.array(y)
 
 
-        model_dir = './model_building_meta_data/test' +str(batch_id) + str(time.time()).replace('.','')
+        model_dir = os.path.dirname(os.path.realpath(__file__))+'/model_building_meta_data/test' +str(batch_id) + str(time.time()).replace('.','')
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
 
@@ -240,7 +240,7 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
 
         features = [dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length]
 
-        model_dir = './model_building_meta_data/test' + str(batch_id) + str(time.time()).replace('.', '')
+        model_dir = os.path.dirname(os.path.realpath(__file__))+'/model_building_meta_data/test' + str(batch_id) + str(time.time()).replace('.', '')
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
 
