@@ -335,7 +335,7 @@ def main():
         entity_a = sys.argv[4].upper()
         entity_b = sys.argv[5].upper()
         out_pairs_file = sys.argv[6]
-        LSTM = bool(sys.argv[7])
+        LSTM = sys.argv[7]
         LSTM =LSTM == 'True'
 
         if LSTM is False:
