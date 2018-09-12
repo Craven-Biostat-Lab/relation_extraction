@@ -8,6 +8,7 @@ from sklearn import metrics
 
 seed(10)
 tf.set_random_seed(10)
+tf.contrib.summary
 
 def load_bin_vec(fname):
     word_vecs = []
@@ -272,7 +273,7 @@ def lstm_test(test_features,test_labels,model_file):
     total_labels = np.array([])
     total_predicted_prob = np.array([])
     with tf.Session() as sess:
-        restored_model = tf.train.import_meta_graph(model_file + '.meta')
+        restored_model = tf.train.import_meta_graph(model_file + '.meta',clear_devices=True)
         restored_model.restore(sess, model_file)
         graph = tf.get_default_graph()
 
@@ -325,7 +326,7 @@ def lstm_predict(predict_features,predict_labels, model_file):
 
 
     with tf.Session() as sess:
-        restored_model = tf.train.import_meta_graph(model_file + '.meta')
+        restored_model = tf.train.import_meta_graph(model_file + '.meta',clear_devices=True)
         restored_model.restore(sess, model_file)
         graph = tf.get_default_graph()
 
