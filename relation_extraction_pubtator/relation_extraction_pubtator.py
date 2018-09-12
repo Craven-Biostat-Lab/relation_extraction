@@ -336,8 +336,8 @@ def main():
         entity_b = sys.argv[5].upper()
         out_pairs_file = sys.argv[6]
         LSTM = sys.argv[7]
-        LSTM =LSTM == 'True'
-
+        LSTM = LSTM == 'True'
+        print(LSTM)
         if LSTM is False:
             prediction_instances, predict_probs,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)
             #print(total_group_instance_results)
