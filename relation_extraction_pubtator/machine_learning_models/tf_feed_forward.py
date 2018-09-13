@@ -98,11 +98,18 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
 
     # Backward propagation
     cost = tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat)
+    #tf.summary.scalar('cost', cost)
     updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
+
+    correct_prediction = tf.equal(tf.round(prob_yhat), tf.round(batch_labels))
+    accuracy = tf.cast(correct_prediction, tf.float32)
+    #tf.summary.scalar('accuracy', accuracy)
 
     saver = tf.train.Saver()
     # Run SGD
     save_path = None
+
+    merged = tf.summary.merge_all()
     with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
         init = tf.global_variables_initializer()
         sess.run(init)
@@ -134,6 +141,8 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
                                                                             keep_prob: 1.0})
                             # print(predicted_val)
                             # total_labels = np.append(total_labels, batch_labels)
+
+
                             total_predicted_prob = np.append(total_predicted_prob, predicted_class)
                             total_labels = np.append(total_labels, b_labels)
                         except tf.errors.OutOfRangeError:
