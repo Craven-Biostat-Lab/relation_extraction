@@ -61,7 +61,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
     dep_embedding_dimension = 50
     dep_state_size = 50
     num_labels = labels.shape[1]
-    num_epochs = 1000
+    num_epochs = 250
     batch_size=32
     maximum_length_path = dep_path_list_features.shape[1]
 
