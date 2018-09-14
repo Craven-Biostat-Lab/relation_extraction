@@ -98,12 +98,12 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
 
     # Backward propagation
     cost = tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat)
-    #tf.summary.scalar('cost', cost)
+    tf.summary.tensor_summary('cost', cost)
     updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
 
     correct_prediction = tf.equal(tf.round(prob_yhat), tf.round(batch_labels))
     accuracy = tf.cast(correct_prediction, tf.float32)
-    #tf.summary.scalar('accuracy', accuracy)
+    tf.summary.tensor_summary('accuracy', accuracy)
 
     saver = tf.train.Saver()
     # Run SGD
@@ -114,7 +114,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
         init = tf.global_variables_initializer()
         sess.run(init)
         saver = tf.train.Saver()
-        writer = tf.summary.FileWriter(model_dir, graph=tf.get_default_graph())
+        train_writer = tf.summary.FileWriter(model_dir, graph=tf.get_default_graph())
 
 
         train_handle = sess.run(train_iter.string_handle())
@@ -136,12 +136,12 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
                     total_labels = np.array([])
                     while True:
                         try:
-                            predicted_class, b_labels = sess.run([class_yhat, batch_labels],
+                            summary,predicted_class, b_labels = sess.run([merged,class_yhat, batch_labels],
                                                                  feed_dict={iterator_handle: train_accuracy_handle,
                                                                             keep_prob: 1.0})
                             # print(predicted_val)
                             # total_labels = np.append(total_labels, batch_labels)
-
+                            train_writer.add_summary(summary)
 
                             total_predicted_prob = np.append(total_predicted_prob, predicted_class)
                             total_labels = np.append(total_labels, b_labels)

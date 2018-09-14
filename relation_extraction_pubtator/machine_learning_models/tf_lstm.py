@@ -154,15 +154,10 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
         state_series, current_state = cell(tf.transpose(embedded_word_drop,[1,0,2]), initial_state=word_init_state,
                                            sequence_length=batch_dep_word_length)
         state_series_word = tf.reduce_max(state_series, axis=0)
-        '''
-        cell = tf.contrib.cudnn_rnn.CudnnCompatibleLSTMCell(word_state_size)
-        state_series, current_state = tf.nn.dynamic_rnn(cell, embedded_word_drop, sequence_length=batch_dep_word_length,
-                                                        initial_state=word_init_state)
-        state_series_word = tf.reduce_max(state_series, axis=1)
-        '''
+
     state_series = tf.concat([state_series_dep, state_series_word], 1)
 
-    '''
+
     with tf.name_scope("hidden_layer"):
         W = tf.Variable(tf.truncated_normal([dep_state_size + word_state_size, 100], -0.1, 0.1), name="W")
         b = tf.Variable(tf.zeros([100]), name="b")
@@ -179,13 +174,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
         logits = tf.matmul(y_hidden_layer_drop, W) + b
     prob_yhat = tf.nn.sigmoid(logits, name='predict_prob')
     class_yhat = tf.to_int32(prob_yhat > 0.5,name='class_predict')
-    '''
-    with tf.name_scope("sigmoid_layer"):
-        W = tf.Variable(tf.truncated_normal([dep_state_size+word_state_size, num_labels], -0.1, 0.1), name="W")
-        b = tf.Variable(tf.zeros([num_labels]), name="b")
-        logits = tf.matmul(state_series, W) + b
-    prob_yhat = tf.nn.sigmoid(logits, name='predict_prob')
-    class_yhat = tf.to_int32(prob_yhat > 0.5, name='class_predict')
+
 
     tv_all = tf.trainable_variables()
     tv_regu = []
