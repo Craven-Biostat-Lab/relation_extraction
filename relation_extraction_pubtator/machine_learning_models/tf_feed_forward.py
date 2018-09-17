@@ -5,6 +5,7 @@ from sklearn import metrics
 
 seed(10)
 tf.set_random_seed(10)
+tf.contrib.summary
 
 def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
     """Performs feed forward portion of neural network training"""
@@ -169,7 +170,7 @@ def feed_forward_test(test_features, test_labels, model_file):
     total_labels = np.array([])
     total_predicted_prob = np.array([])
     with tf.Session() as sess:
-        restored_model = tf.train.import_meta_graph(model_file + '.meta')
+        restored_model = tf.train.import_meta_graph(model_file + '.meta',clear_devices=True)
         restored_model.restore(sess, model_file)
         graph = tf.get_default_graph()
 
@@ -207,7 +208,7 @@ def neural_network_predict(predict_features, predict_labels, model_file):
     total_labels = np.array([])
     total_predicted_prob = np.array([])
     with tf.Session() as sess:
-        restored_model = tf.train.import_meta_graph(model_file + '.meta')
+        restored_model = tf.train.import_meta_graph(model_file + '.meta',clear_devices=True)
         restored_model.restore(sess, model_file)
         graph = tf.get_default_graph()
 
