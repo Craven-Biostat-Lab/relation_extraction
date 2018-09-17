@@ -97,13 +97,13 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     #predict = tf.argmax(prob_yhat, axis=1,name='predict_tensor')
 
     # Backward propagation
-    cost = tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat)
-    tf.summary.tensor_summary('cost', cost)
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat))
+    tf.summary.scalar('cost', cost)
     updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
 
     correct_prediction = tf.equal(tf.round(prob_yhat), tf.round(batch_labels))
-    accuracy = tf.cast(correct_prediction, tf.float32)
-    tf.summary.tensor_summary('accuracy', accuracy)
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    tf.summary.scalar('accuracy', accuracy)
 
     saver = tf.train.Saver()
     # Run SGD
@@ -125,15 +125,15 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
         while True:
             try:
                 # print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
-                u = sess.run([updates], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
+                u,tl = sess.run([updates,cost], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
                 instance_count += batch_size
                 # print(instance_count)
                 if instance_count > train_y.shape[0]:
                     train_accuracy_handle = sess.run(train_accuracy_iter.string_handle())
                     sess.run(train_accuracy_iter.initializer, feed_dict={input_tensor: train_X,output_tensor: train_y})
-
                     total_predicted_prob = np.array([])
                     total_labels = np.array([])
+                    print('loss: %f', tl)
                     while True:
                         try:
                             summary,predicted_class, b_labels = sess.run([merged,class_yhat, batch_labels],
@@ -142,7 +142,6 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
                             # print(predicted_val)
                             # total_labels = np.append(total_labels, batch_labels)
                             train_writer.add_summary(summary)
-
                             total_predicted_prob = np.append(total_predicted_prob, predicted_class)
                             total_labels = np.append(total_labels, b_labels)
                         except tf.errors.OutOfRangeError:

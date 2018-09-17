@@ -187,9 +187,13 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
 
     with tf.name_scope("loss"):
         l2_loss = lambda_l2 * tf.reduce_sum([tf.nn.l2_loss(v) for v in tv_regu])
-        #loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=batch_labels))
-        loss = tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=batch_labels)
-        total_loss = loss #+ l2_loss
+        loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=batch_labels))
+        total_loss = loss + l2_loss
+        tf.summary.scalar('total_loss',total_loss)
+
+    correct_prediction = tf.equal(tf.round(prob_yhat), tf.round(batch_labels))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    tf.summary.scalar('accuracy', accuracy)
 
     global_step = tf.Variable(0, name="global_step")
 
@@ -219,7 +223,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
         while True:
             try:
                 #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
-                u = sess.run([optimizer], feed_dict={iterator_handle: train_handle,keep_prob: 0.5})
+                u, tl = sess.run([optimizer, total_loss], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
                 instance_count += batch_size
                 #print(instance_count)
                 if instance_count > labels.shape[0]:
@@ -231,6 +235,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
                                                                 output_tensor: labels})
                     total_predicted_prob = np.array([])
                     total_labels = np.array([])
+                    print('loss: %f', tl)
                     while True:
                         try:
                             predicted_class, b_labels = sess.run([class_yhat, batch_labels],
