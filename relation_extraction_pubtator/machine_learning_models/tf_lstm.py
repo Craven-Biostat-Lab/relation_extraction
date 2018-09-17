@@ -206,7 +206,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
         init = tf.global_variables_initializer()
         sess.run(init)
         saver = tf.train.Saver()
-        writer = tf.summary.FileWriter(model_dir, graph=tf.get_default_graph())
+        train_writer = tf.summary.FileWriter(model_dir + '/train', graph=tf.get_default_graph())
         if word2vec_embeddings is not None:
             print('using word2vec embeddings')
             sess.run(embedding_init, feed_dict={embedding_placeholder: word2vec_embeddings})
@@ -220,6 +220,8 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
 
         instance_count = 0
         epoch = 0
+
+        merged = tf.summary.merge_all()
         while True:
             try:
                 #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
@@ -238,13 +240,15 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
                     print('loss: %f', tl)
                     while True:
                         try:
-                            predicted_class, b_labels = sess.run([class_yhat, batch_labels],
+                            summary,predicted_class, b_labels = sess.run([merged,class_yhat, batch_labels],
                                                                  feed_dict={iterator_handle: train_accuracy_handle,
                                                                             keep_prob: 1.0})
                             # print(predicted_val)
                             # total_labels = np.append(total_labels, batch_labels)
                             total_predicted_prob = np.append(total_predicted_prob, predicted_class)
                             total_labels = np.append(total_labels, b_labels)
+                            train_writer.add_summary(summary)
+
                         except tf.errors.OutOfRangeError:
                             break
                     total_predicted_prob = total_predicted_prob.reshape(labels.shape)
