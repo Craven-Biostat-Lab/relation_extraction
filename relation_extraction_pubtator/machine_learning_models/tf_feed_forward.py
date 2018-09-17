@@ -98,7 +98,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     #predict = tf.argmax(prob_yhat, axis=1,name='predict_tensor')
 
     # Backward propagation
-    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat))
+    cost = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat))
     tf.summary.scalar('cost', cost)
     updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
 
