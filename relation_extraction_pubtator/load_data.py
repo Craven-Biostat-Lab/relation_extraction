@@ -4,7 +4,7 @@ import itertools
 import cPickle as pickle
 import numpy as np
 
-from machine_learning_models import tf_lstm as lstm
+from machine_learning_models import tf_recurrent as rnn
 from structures.sentences import Sentence
 from structures.instances import Instance
 from collections import Counter
@@ -69,7 +69,7 @@ def build_instances_predict(predict_forward_sentences, predict_reverse_sentences
 
     else:
         for instance in predict_instances:
-            instance.build_features_lstm(dep_path_list_dictionary,dep_word_dictionary)
+            instance.build_features_recurrent(dep_path_list_dictionary, dep_word_dictionary)
     return predict_instances
 
 
@@ -115,14 +115,14 @@ def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_d
             instance.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary,  between_word_dictionary)
     else:
         for instance in test_instances:
-            instance.build_features_lstm(dep_path_type_list_dictionary,dep_path_word_dictionary)
+            instance.build_features_recurrent(dep_path_type_list_dictionary, dep_path_word_dictionary)
     return test_instances
 
 
 
 def build_instances_training(
         training_forward_sentences,training_reverse_sentences,distant_interactions,
-        reverse_distant_interactions, entity_a_text, entity_b_text,key_order,LSTM=False):
+        reverse_distant_interactions, entity_a_text, entity_b_text,key_order,recurrent=False):
 
     path_word_vocabulary = []
     words_between_entities_vocabulary = []
@@ -184,7 +184,7 @@ def build_instances_training(
     dep_type_list_data, dep_type_list_count,dep_type_list_dictionary,dep_type_list_reversed_dictionary = build_dataset(dep_type_list_vocabulary,0)
 
 
-    if LSTM is False:
+    if recurrent is False:
         for ci_index in range(len(candidate_instances)):
             ci = candidate_instances[ci_index]
             ci.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary)
@@ -202,14 +202,14 @@ def build_instances_training(
         print(word2vec_path)
         if os.path.exists(word2vec_path):
             print('embeddings exist')
-            word2vec_words, word2vec_vectors,dep_path_word_dictionary = lstm.load_bin_vec(word2vec_path)
+            word2vec_words, word2vec_vectors,dep_path_word_dictionary = rnn.load_bin_vec(word2vec_path)
             #dep_path_word_dictionary = {k: v for v, k in enumerate(word2vec_words)}
             word2vec_embeddings = np.array(word2vec_vectors)
             print('finished fetching embeddings and placing in dictionary')
 
         for ci_index in range(len(candidate_instances)):
             ci = candidate_instances[ci_index]
-            ci.build_features_lstm(dep_type_list_dictionary,dep_path_word_dictionary)
+            ci.build_features_recurrent(dep_type_list_dictionary, dep_path_word_dictionary)
 
         return candidate_instances,dep_type_list_dictionary,dep_path_word_dictionary,word2vec_embeddings
 
@@ -391,7 +391,7 @@ def load_entity_set(filename,column):
     return entity_set
 
 
-def build_lstm_arrays(instances):
+def build_recurrent_arrays(instances):
     dep_path_list_features = []
     dep_word_features = []
     dep_type_path_length = []

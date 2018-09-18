@@ -11,7 +11,7 @@ import time
 
 from machine_learning_models import tf_neural_network as ann
 from machine_learning_models import tf_feed_forward as ffnn
-from machine_learning_models import tf_lstm as lstm
+from machine_learning_models import tf_recurrent as rnn
 
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.externals import joblib
@@ -40,9 +40,9 @@ def write_output(filename, predicts, instances, key_order):
 
     return
 
-def predict_sentences_lstm(model_file, pubtator_file, entity_a, entity_b):
+def predict_sentences_recurrent(model_file, pubtator_file, entity_a, entity_b):
     """
-    predict instances using LSTM
+    predict instances using recurrent
     :param model_file:
     :param pubtator_file:
     :param entity_a:
@@ -65,10 +65,10 @@ def predict_sentences_lstm(model_file, pubtator_file, entity_a, entity_b):
 
 
 
-    dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_lstm_arrays(predict_instances)
+    dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_recurrent_arrays(predict_instances)
     predict_features = [dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length]
 
-    predicted_prob = lstm.lstm_predict(predict_features,labels,model_file + '/')
+    predicted_prob = rnn.recurrent_predict(predict_features, labels, model_file + '/')
 
     return predict_instances,predicted_prob,key_order
 
@@ -107,9 +107,9 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
 
 
 def parallel_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
-                  distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b,batch_id,LSTM):
+                   distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b, batch_id, recurrent):
 
-    print(LSTM)
+    print(recurrent)
 
     #get distant_relations from external knowledge base file
     distant_interactions, reverse_distant_interactions = load_data.load_distant_directories(directional_distant_directory,
@@ -132,16 +132,16 @@ def parallel_train(model_out, pubtator_file, directional_distant_directory, symm
                                                                              training_reverse_sentences,
                                                                              distant_interactions,
                                                                              reverse_distant_interactions,
-                                                                             entity_a_text,entity_b_text,hidden_array,
-                                                                             key_order,LSTM)
+                                                                             entity_a_text, entity_b_text, hidden_array,
+                                                                             key_order, recurrent)
 
     write_output(model_out + '_' + str(batch_id) + '_predictions', instance_predicts, single_instances, key_order)
 
 
     return batch_id
 
-def train_lstm(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
-                  distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b):
+def train_recurrent(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
+                    distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b):
 
     #get distant_relations from external knowledge base file
     distant_interactions, reverse_distant_interactions = load_data.load_distant_directories(directional_distant_directory,
@@ -169,14 +169,14 @@ def train_lstm(model_out, pubtator_file, directional_distant_directory, symmetri
 
 
 
-    dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_lstm_arrays(training_instances)
+    dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_recurrent_arrays(training_instances)
     features = [dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length]
 
     if os.path.exists(model_out):
         shutil.rmtree(model_out)
 
     
-    trained_model_path = lstm.lstm_train(features,labels,len(dep_path_list_dictionary),len(dep_word_dictionary),model_out + '/', key_order,word2vec_embeddings)
+    trained_model_path = rnn.recurrent_train(features, labels, len(dep_path_list_dictionary), len(dep_word_dictionary), model_out + '/', key_order, word2vec_embeddings)
     
 
 
@@ -293,7 +293,7 @@ def main():
 
         print(trained_model_path)
 
-    elif mode.upper() == "TRAIN_LSTM":
+    elif mode.upper() == "TRAIN_RECURRENT":
         model_out = sys.argv[2]  # location of where model should be saved after training
         pubtator_file = sys.argv[3]  # xml file of sentences from Stanford Parser
         directional_distant_directory = sys.argv[4]  # distant supervision knowledge base to use
@@ -306,8 +306,8 @@ def main():
 
         #symmetric = sys.argv[10].upper() in ['TRUE', 'Y', 'YES']  # is the relation symmetrical (i.e. binds)
 
-        trained_model_path = train_lstm(model_out, pubtator_file, directional_distant_directory,symmetric_distant_directory,
-                      distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b)
+        trained_model_path = train_recurrent(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
+                                             distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b)
 
     elif mode.upper() == "PARALLEL_TRAIN":
         model_out = sys.argv[2]  # location of where model should be saved after training
@@ -320,12 +320,12 @@ def main():
         entity_a = sys.argv[9].upper()  # entity_a
         entity_b = sys.argv[10].upper()  # entity_b
         batch_id = int(sys.argv[11]) #batch to run
-        LSTM = sys.argv[12]
-        LSTM = LSTM == 'True'
+        recurrent = sys.argv[12]
+        recurrent = recurrent == 'True'
 
 
         trained_model_batch = parallel_train(model_out, pubtator_file, directional_distant_directory,symmetric_distant_directory,
-                      distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b,batch_id,LSTM)
+                      distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b,batch_id,recurrent)
 
         print('finished training: ' + str(trained_model_batch))
 
@@ -335,15 +335,15 @@ def main():
         entity_a = sys.argv[4].upper()
         entity_b = sys.argv[5].upper()
         out_pairs_file = sys.argv[6]
-        LSTM = sys.argv[7]
-        LSTM = LSTM == 'True'
-        print(LSTM)
-        if LSTM is False:
+        recurrent = sys.argv[7]
+        recurrent = recurrent == 'True'
+        print(recurrent)
+        if recurrent is False:
             prediction_instances, predict_probs,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)
             #print(total_group_instance_results)
 
         else:
-            prediction_instances,predict_probs,key_order = predict_sentences_lstm(model_file,sentence_file,entity_a,entity_b)
+            prediction_instances,predict_probs,key_order = predict_sentences_recurrent(model_file, sentence_file, entity_a, entity_b)
 
         print(predict_probs)
         for key_index in range(len(key_order)):

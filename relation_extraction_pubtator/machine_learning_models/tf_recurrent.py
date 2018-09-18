@@ -42,7 +42,7 @@ def load_bin_vec(fname):
     print('finished loading embeddings')
     return words, word_vecs, word_dict
 
-def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,word2vec_embeddings = None):
+def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, key_order, word2vec_embeddings = None):
     dep_path_list_features = features[0]
     dep_word_features = features[1]
     dep_type_path_length = features[2]
@@ -270,7 +270,7 @@ def lstm_train(features,labels,num_dep_types,num_path_words,model_dir,key_order,
 
     return save_path
 
-def lstm_test(test_features,test_labels,model_file):
+def recurrent_test(test_features, test_labels, model_file):
 
     test_dep_path_list_features = test_features[0]
     test_dep_word_features=test_features[1]
@@ -325,7 +325,7 @@ def lstm_test(test_features,test_labels,model_file):
     return total_predicted_prob, total_labels
 
 
-def lstm_predict(predict_features,predict_labels, model_file):
+def recurrent_predict(predict_features, predict_labels, model_file):
     predict_dep_path_list_features = predict_features[0]
     predict_dep_word_features = predict_features[1]
     predict_dep_type_path_length = predict_features[2]

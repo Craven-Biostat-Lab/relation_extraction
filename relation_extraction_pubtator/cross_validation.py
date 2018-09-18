@@ -6,7 +6,7 @@ import load_data
 import time
 
 from machine_learning_models import tf_feed_forward as snn
-from machine_learning_models import tf_lstm as lstm
+from machine_learning_models import tf_recurrent as rnn
 
 
 def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
@@ -117,7 +117,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
     return total_predicted_prob, total_instances
 
 def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
-                            entity_a_text, entity_b_text,hidden_array,key_order,LSTM):
+                                     entity_a_text, entity_b_text, hidden_array, key_order, recurrent):
 
     pmids = list(pmids)
     #split training sentences for cross validation
@@ -153,7 +153,7 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
 
 
 
-    if LSTM is False:
+    if recurrent is False:
         fold_training_instances, \
         fold_dep_dictionary, \
         fold_dep_word_dictionary,\
@@ -235,7 +235,7 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
                                                                           entity_a_text,
                                                                           entity_b_text, key_order,True)
 
-        dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_lstm_arrays(
+        dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_recurrent_arrays(
             fold_training_instances)
 
         features = [dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length]
@@ -244,9 +244,9 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
 
-        trained_model_path = lstm.lstm_train(features,
-                                             labels, len(fold_dep_path_list_dictionary), len(fold_dep_word_dictionary),
-                                             model_dir + '/', key_order,word2vec_embeddings)
+        trained_model_path = rnn.recurrent_train(features,
+                                                 labels, len(fold_dep_path_list_dictionary), len(fold_dep_word_dictionary),
+                                                 model_dir + '/', key_order, word2vec_embeddings)
 
         fold_test_instances = load_data.build_instances_testing(fold_test_forward_sentences,
                                                                 fold_test_reverse_sentences,
@@ -257,13 +257,13 @@ def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reve
                                                                 entity_a_text, entity_b_text, key_order,fold_dep_path_list_dictionary)
 
         # group instances by pmid and build feature array
-        test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length, test_dep_word_path_length, test_labels = load_data.build_lstm_arrays(
+        test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length, test_dep_word_path_length, test_labels = load_data.build_recurrent_arrays(
             fold_test_instances)
 
         test_features = [test_dep_path_list_features, test_dep_word_features,test_dep_type_path_length,
                                                   test_dep_word_path_length]
         print(trained_model_path)
-        fold_test_predicted_prob, fold_test_labels = lstm.lstm_test(test_features,test_labels,trained_model_path)
+        fold_test_predicted_prob, fold_test_labels = rnn.recurrent_test(test_features, test_labels, trained_model_path)
 
         assert(np.array_equal(fold_test_labels,test_labels))
 
