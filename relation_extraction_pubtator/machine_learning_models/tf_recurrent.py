@@ -10,6 +10,8 @@ seed(10)
 tf.set_random_seed(10)
 tf.contrib.summary
 
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
+
 def load_bin_vec(fname):
     word_vecs = []
     words = []
