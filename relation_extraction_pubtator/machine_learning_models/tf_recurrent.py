@@ -206,9 +206,9 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         tf.summary.scalar('accuracy', accuracy)
 
-        global_step = tf.Variable(0, name="global_step")
+    global_step = tf.Variable(0, name="global_step")
 
-        optimizer = tf.train.AdamOptimizer(0.001).minimize(total_loss, global_step=global_step)
+    optimizer = tf.train.AdamOptimizer(0.001).minimize(total_loss, global_step=global_step)
 
     saver = tf.train.Saver()
     # Run SGD
