@@ -133,16 +133,16 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
 
     dependency_initial_hidden_states = tf.zeros([tf.shape(batch_dependency_ids)[0], dep_state_size], name="dep_hidden_state")
     dependency_initial_cell_states = tf.zeros([tf.shape(batch_dependency_ids)[0], dep_state_size], name="dep_cell_state")
-    dependency_init_states = tf.nn.rnn_cell.LSTMStateTuple(dependency_initial_hidden_states, dependency_initial_cell_states)
+    #dependency_init_states = tf.nn.rnn_cell.LSTMStateTuple(dependency_initial_hidden_states, dependency_initial_cell_states)
 
     word_initial_hidden_state = tf.zeros([tf.shape(batch_word_ids)[0], word_state_size], name='word_hidden_state')
     word_initial_cell_state = tf.zeros([tf.shape(batch_word_ids)[0], word_state_size], name='word_cell_state')
-    word_init_state = tf.nn.rnn_cell.LSTMStateTuple(word_initial_hidden_state, word_initial_cell_state)
+    #word_init_state = tf.nn.rnn_cell.LSTMStateTuple(word_initial_hidden_state, word_initial_cell_state)
 
     with tf.variable_scope("dependency_lstm"):
         cell = tf.contrib.rnn.GRUBlockCellV2(dep_state_size)
         state_series, current_state = tf.nn.dynamic_rnn(cell, embedded_dep, sequence_length=batch_dependency_type_length,
-                                                        initial_state=dependency_init_states)
+                                                        initial_state=dependency_initial_hidden_states)
         state_series_dep = tf.reduce_max(state_series, axis=1)
         '''
         cell = tf.contrib.rnn.LSTMBlockFusedCell(dep_state_size)
@@ -156,7 +156,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
         cell = tf.contrib.rnn.GRUBlockCellV2(word_state_size)
         state_series, current_state = tf.nn.dynamic_rnn(cell, embedded_word_drop,
                                                         sequence_length=batch_dep_word_length,
-                                                        initial_state=word_init_state)
+                                                        initial_state=word_initial_hidden_state)
         state_series_word = tf.reduce_max(state_series, axis=1)
         '''
         cell = tf.contrib.rnn.LSTMBlockFusedCell(word_state_size)
