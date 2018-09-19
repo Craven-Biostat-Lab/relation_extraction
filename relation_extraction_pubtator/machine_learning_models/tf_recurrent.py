@@ -106,12 +106,11 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     train_iter = dataset.make_initializable_iterator()
     train_accuracy_iter = training_accuracy_dataset.make_initializable_iterator()
 
-    #with tf.device("/gpu:1"):
+    #with tf.device("/gpu:0"):
 
     with tf.name_scope("dependency_type_embedding"):
         W = tf.Variable(tf.random_uniform([num_dep_types, dep_embedding_dimension]), name="W")
-        with tf.device("/gpu:1"):
-            embedded_dep = tf.nn.embedding_lookup(W, batch_dependency_ids)
+        embedded_dep = tf.nn.embedding_lookup(W, batch_dependency_ids)
         dep_embedding_saver = tf.train.Saver({"dep_embedding/W": W})
 
 
@@ -120,22 +119,19 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
             print('bionlp_word_embedding')
             W = tf.Variable(tf.constant(0.0, shape=[num_path_words, word_embedding_dimension]), name="W")
             embedding_placeholder = tf.placeholder(tf.float32, [num_path_words, word_embedding_dimension])
-            with tf.device("/gpu:1"):
-                embedding_init = W.assign(embedding_placeholder)
-                embedded_word = tf.nn.embedding_lookup(W, batch_word_ids)
+            embedding_init = W.assign(embedding_placeholder)
+            embedded_word = tf.nn.embedding_lookup(W, batch_word_ids)
             word_embedding_saver = tf.train.Saver({"dependency_word_embedding/W": W})
 
 
     else:
         with tf.name_scope("dependency_word_embedding"):
             W = tf.Variable(tf.random_uniform([num_path_words, word_embedding_dimension]), name="W")
-            with tf.device("/gpu:1"):
-                embedded_word = tf.nn.embedding_lookup(W, batch_word_ids)
+            embedded_word = tf.nn.embedding_lookup(W, batch_word_ids)
             word_embedding_saver = tf.train.Saver({"dependency_word_embedding/W": W})
 
     with tf.name_scope("word_dropout"):
-        with tf.device("/gpu:1"):
-            embedded_word_drop = tf.nn.dropout(embedded_word, keep_prob)
+        embedded_word_drop = tf.nn.dropout(embedded_word, keep_prob)
 
     dependency_initial_hidden_states = tf.zeros([tf.shape(batch_dependency_ids)[0], dep_state_size], name="dep_hidden_state")
     dependency_initial_cell_states = tf.zeros([tf.shape(batch_dependency_ids)[0], dep_state_size], name="dep_cell_state")
@@ -146,11 +142,10 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     #word_init_state = tf.nn.rnn_cell.LSTMStateTuple(word_initial_hidden_state, word_initial_cell_state)
 
     with tf.variable_scope("dependency_lstm"):
-        with tf.device("/gpu:1"):
-            cell = tf.contrib.rnn.GRUBlockCellV2(dep_state_size)
-            state_series, current_state = tf.nn.dynamic_rnn(cell, embedded_dep, sequence_length=batch_dependency_type_length,
-                                                            initial_state=dependency_initial_hidden_states)
-            state_series_dep = tf.reduce_max(state_series, axis=1)
+        cell = tf.contrib.rnn.GRUBlockCellV2(dep_state_size)
+        state_series, current_state = tf.nn.dynamic_rnn(cell, embedded_dep, sequence_length=batch_dependency_type_length,
+                                                        initial_state=dependency_initial_hidden_states)
+        state_series_dep = tf.reduce_max(state_series, axis=1)
         '''
         cell = tf.contrib.rnn.LSTMBlockFusedCell(dep_state_size)
         state_series, current_state = cell(tf.transpose(embedded_dep,[1,0,2]),initial_state=dependency_init_states,
@@ -160,12 +155,11 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
 
 
     with tf.variable_scope("word_lstm"):
-        with tf.device("/gpu:1"):
-            cell = tf.contrib.rnn.GRUBlockCellV2(word_state_size)
-            state_series, current_state = tf.nn.dynamic_rnn(cell, embedded_word_drop,
-                                                            sequence_length=batch_dep_word_length,
-                                                            initial_state=word_initial_hidden_state)
-            state_series_word = tf.reduce_max(state_series, axis=1)
+        cell = tf.contrib.rnn.GRUBlockCellV2(word_state_size)
+        state_series, current_state = tf.nn.dynamic_rnn(cell, embedded_word_drop,
+                                                        sequence_length=batch_dep_word_length,
+                                                        initial_state=word_initial_hidden_state)
+        state_series_word = tf.reduce_max(state_series, axis=1)
         '''
         cell = tf.contrib.rnn.LSTMBlockFusedCell(word_state_size)
         state_series, current_state = cell(tf.transpose(embedded_word_drop,[1,0,2]), initial_state=word_init_state,
@@ -178,20 +172,17 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     with tf.name_scope("hidden_layer"):
         W = tf.Variable(tf.truncated_normal([dep_state_size + word_state_size, 100], -0.1, 0.1), name="W")
         b = tf.Variable(tf.zeros([100]), name="b")
-        with tf.device("/gpu:1"):
-            y_hidden_layer = tf.matmul(state_series, W) + b
+        y_hidden_layer = tf.matmul(state_series, W) + b
 
 
     with tf.name_scope("dropout"):
-        with tf.device("/gpu:1"):
-            y_hidden_layer_drop = tf.nn.dropout(y_hidden_layer, keep_prob)
+        y_hidden_layer_drop = tf.nn.dropout(y_hidden_layer, keep_prob)
 
 
     with tf.name_scope("sigmoid_layer"):
         W = tf.Variable(tf.truncated_normal([100, num_labels], -0.1, 0.1), name="W")
         b = tf.Variable(tf.zeros([num_labels]), name="b")
-        with tf.device("/gpu:1"):
-            logits = tf.matmul(y_hidden_layer_drop, W) + b
+        logits = tf.matmul(y_hidden_layer_drop, W) + b
     prob_yhat = tf.nn.sigmoid(logits, name='predict_prob')
     class_yhat = tf.to_int32(prob_yhat > 0.5,name='class_predict')
 
@@ -206,10 +197,9 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
                 tv_regu.append(t)
 
     with tf.name_scope("loss"):
-        with tf.device("/gpu:1"):
-            l2_loss = lambda_l2 * tf.reduce_sum([tf.nn.l2_loss(v) for v in tv_regu])
-            loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=batch_labels))
-            total_loss = loss + l2_loss
+        l2_loss = lambda_l2 * tf.reduce_sum([tf.nn.l2_loss(v) for v in tv_regu])
+        loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=batch_labels))
+        total_loss = loss + l2_loss
         tf.summary.scalar('total_loss',total_loss)
 
     correct_prediction = tf.equal(tf.round(prob_yhat), tf.round(batch_labels))
