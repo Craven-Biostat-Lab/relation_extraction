@@ -111,7 +111,9 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     save_path = None
 
     merged = tf.summary.merge_all()
-    with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
+    config = tf.ConfigProto(log_device_placement=True)
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config) as sess:
         init = tf.global_variables_initializer()
         sess.run(init)
         saver = tf.train.Saver()
