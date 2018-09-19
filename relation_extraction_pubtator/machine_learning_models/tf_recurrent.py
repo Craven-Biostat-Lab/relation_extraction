@@ -106,7 +106,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     train_iter = dataset.make_initializable_iterator()
     train_accuracy_iter = training_accuracy_dataset.make_initializable_iterator()
 
-    with tf.device("/gpu:1"):
+    with tf.device("/device:GPU:1"):
 
         with tf.name_scope("dependency_type_embedding"):
             W = tf.Variable(tf.random_uniform([num_dep_types, dep_embedding_dimension]), name="W")
