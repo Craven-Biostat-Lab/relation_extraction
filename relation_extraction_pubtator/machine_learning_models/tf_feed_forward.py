@@ -1,3 +1,4 @@
+import os
 import tensorflow as tf
 import numpy as np
 from random import shuffle, seed
@@ -6,6 +7,8 @@ from sklearn import metrics
 seed(10)
 tf.set_random_seed(10)
 tf.contrib.summary
+
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
     """Performs feed forward portion of neural network training"""
@@ -111,7 +114,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     save_path = None
 
     merged = tf.summary.merge_all()
-    config = tf.ConfigProto(log_device_placement=True)
+    config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         init = tf.global_variables_initializer()

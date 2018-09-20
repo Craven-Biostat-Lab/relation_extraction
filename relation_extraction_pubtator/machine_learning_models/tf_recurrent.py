@@ -217,7 +217,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     saver = tf.train.Saver()
     # Run SGD
     save_path = None
-    config = tf.ConfigProto(log_device_placement=True)
+    config = tf.ConfigProto(allow_soft_placement=True,log_device_placement=True)
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         init = tf.global_variables_initializer()
