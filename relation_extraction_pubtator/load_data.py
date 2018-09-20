@@ -243,7 +243,6 @@ def build_instances_labelled_and_distant(training_forward_sentences,training_rev
     for key in training_forward_sentences:
         splitkey = key.split('|')
         reverse_key = splitkey[0] + '|' +splitkey[1] +'|' +splitkey[3] + '|' + splitkey[2]
-        print(reverse_key)
         if reverse_key in training_reverse_sentences:
             forward_train_instance = Instance(training_forward_sentences[key],[0]*len(key_order))
             forward_train_instance.fix_word_lists(entity_a_text,entity_b_text)
