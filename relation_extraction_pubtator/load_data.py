@@ -118,7 +118,213 @@ def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_d
             instance.build_features_recurrent(dep_path_type_list_dictionary, dep_path_word_dictionary)
     return test_instances
 
+def get_label_data(label_data):
+    file = open(label_data,'rU')
+    lines = file.readlines()
+    file.close()
 
+    label_dict = {}
+    for l in lines:
+        label_dict[l.split('\t')[0]] = int(l.split('\t')[1])
+
+    return label_dict
+
+
+def build_instances_labelled(training_forward_sentences,training_reverse_sentences, label_data, label, entity_a_text, entity_b_text,key_order,recurrent=False):
+
+    path_word_vocabulary = []
+    words_between_entities_vocabulary = []
+    dep_type_vocabulary = []
+    dep_type_list_vocabulary = []
+    dep_type_word_elements_vocabulary = []
+    print(key_order)
+
+    label_dict = get_label_data(label_data)
+
+    candidate_instances = []
+    print(len(training_forward_sentences))
+    print(len(training_reverse_sentences))
+    for key in training_forward_sentences:
+        print(key)
+        splitkey = key.split('|')
+        reverse_key = splitkey[0] + '|' +splitkey[1] +'|' +splitkey[3] + '|' + splitkey[2]
+        print(reverse_key)
+        if reverse_key in training_reverse_sentences:
+            print('yes')
+            forward_train_instance = Instance(training_forward_sentences[key],[0]*len(key_order))
+            forward_train_instance.fix_word_lists(entity_a_text,entity_b_text)
+            reverse_train_instance = Instance(training_reverse_sentences[reverse_key],[0]*len(key_order))
+            reverse_train_instance.fix_word_lists(entity_a_text, entity_b_text)
+
+
+            for i in range(len(key_order)):
+                distant_key = key_order[i]
+                if label in distant_key:
+                    if key in label_dict:
+                        print('forward')
+                        print(label_dict[key])
+                        forward_train_instance.set_label_i(label_dict[key], i)
+                    if reverse_key in label_dict:
+                        print('reverse')
+                        print(label_dict[reverse_key])
+                        reverse_train_instance.set_label_i(label_dict[reverse_key],i)
+
+            path_word_vocabulary += forward_train_instance.dependency_words
+            path_word_vocabulary += reverse_train_instance.dependency_words
+            words_between_entities_vocabulary += forward_train_instance.between_words
+            words_between_entities_vocabulary += reverse_train_instance.between_words
+            dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
+            dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
+            dep_type_vocabulary.append(forward_train_instance.dependency_path_string)
+            dep_type_vocabulary.append(reverse_train_instance.dependency_path_string)
+            dep_type_list_vocabulary += forward_train_instance.dependency_path_list
+            dep_type_list_vocabulary += reverse_train_instance.dependency_path_list
+            candidate_instances.append(forward_train_instance)
+            candidate_instances.append(reverse_train_instance)
+
+
+        else:
+            continue
+
+    data, count, dep_path_word_dictionary, reversed_dictionary = build_dataset(path_word_vocabulary, 5)
+    dep_data, dep_count, dep_dictionary, dep_reversed_dictionary = build_dataset(dep_type_vocabulary, 5)
+    dep_element_data, dep_element_count, dep_element_dictionary, dep_element_reversed_dictionary = build_dataset(
+        dep_type_word_elements_vocabulary, 5)
+    between_data, between_count, between_word_dictionary, between_reversed_dictionary = build_dataset(
+        words_between_entities_vocabulary, 5)
+    dep_type_list_data, dep_type_list_count, dep_type_list_dictionary, dep_type_list_reversed_dictionary = build_dataset(
+        dep_type_list_vocabulary, 0)
+
+    if recurrent is False:
+        for ci_index in range(len(candidate_instances)):
+            ci = candidate_instances[ci_index]
+            ci.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary,
+                              between_word_dictionary)
+
+        return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary
+    else:
+        unk_pad_dep = len(dep_type_list_dictionary)
+        unk_pad_word = len(dep_path_word_dictionary)
+        dep_type_list_dictionary['UNKNOWN_WORD'] = unk_pad_dep
+        dep_path_word_dictionary['UNKNOWN_WORD'] = unk_pad_word
+        dep_type_list_dictionary['PADDING_WORD'] = unk_pad_dep + 1
+        dep_path_word_dictionary['PADDING_WORD'] = unk_pad_word + 1
+        word2vec_embeddings = None
+        word2vec_path = os.path.dirname(os.path.realpath(__file__)) + '/machine_learning_models/PubMed-w2v.bin'
+        print(word2vec_path)
+        if os.path.exists(word2vec_path):
+            print('embeddings exist')
+            word2vec_words, word2vec_vectors, dep_path_word_dictionary = rnn.load_bin_vec(word2vec_path)
+            # dep_path_word_dictionary = {k: v for v, k in enumerate(word2vec_words)}
+            word2vec_embeddings = np.array(word2vec_vectors)
+            print('finished fetching embeddings and placing in dictionary')
+
+        for ci_index in range(len(candidate_instances)):
+            ci = candidate_instances[ci_index]
+            ci.build_features_recurrent(dep_type_list_dictionary, dep_path_word_dictionary)
+
+        return candidate_instances, dep_type_list_dictionary, dep_path_word_dictionary, word2vec_embeddings
+
+def build_instances_labelled_and_distant(training_forward_sentences,training_reverse_sentences,distant_interactions,
+        reverse_distant_interactions, label_data, label, entity_a_text, entity_b_text,key_order,recurrent=False):
+
+    path_word_vocabulary = []
+    words_between_entities_vocabulary = []
+    dep_type_vocabulary = []
+    dep_type_list_vocabulary = []
+    dep_type_word_elements_vocabulary = []
+    print(key_order)
+
+    label_dict = get_label_data(label_data)
+
+    candidate_instances = []
+    print(len(training_forward_sentences))
+    print(len(training_reverse_sentences))
+    for key in training_forward_sentences:
+        splitkey = key.split('|')
+        reverse_key = splitkey[0] + '|' +splitkey[1] +'|' +splitkey[3] + '|' + splitkey[2]
+        print(reverse_key)
+        if reverse_key in training_reverse_sentences:
+            forward_train_instance = Instance(training_forward_sentences[key],[0]*len(key_order))
+            forward_train_instance.fix_word_lists(entity_a_text,entity_b_text)
+            reverse_train_instance = Instance(training_reverse_sentences[reverse_key],[0]*len(key_order))
+            reverse_train_instance.fix_word_lists(entity_a_text, entity_b_text)
+
+            entity_combo = (forward_train_instance.sentence.start_entity_id,
+                            forward_train_instance.sentence.end_entity_id)
+
+            for i in range(len(key_order)):
+                distant_key = key_order[i]
+                if 'SYMMETRIC' in distant_key:
+                    if entity_combo in distant_interactions[distant_key] or entity_combo in reverse_distant_interactions[distant_key]:
+                        forward_train_instance.set_label_i(1,i)
+                        reverse_train_instance.set_label_i(1,i)
+                else:
+                    if entity_combo in distant_interactions[distant_key]:
+                        forward_train_instance.set_label_i(1, i)
+                    elif entity_combo in reverse_distant_interactions[distant_key]:
+                        reverse_train_instance.set_label_i(1, i)
+                if label in distant_key:
+                    if key in label_dict:
+                        forward_train_instance.set_label_i(label_dict[key], i)
+                    if reverse_key in label_dict:
+                        reverse_train_instance.set_label_i(label_dict[reverse_key],i)
+
+            path_word_vocabulary += forward_train_instance.dependency_words
+            path_word_vocabulary += reverse_train_instance.dependency_words
+            words_between_entities_vocabulary += forward_train_instance.between_words
+            words_between_entities_vocabulary += reverse_train_instance.between_words
+            dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
+            dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
+            dep_type_vocabulary.append(forward_train_instance.dependency_path_string)
+            dep_type_vocabulary.append(reverse_train_instance.dependency_path_string)
+            dep_type_list_vocabulary += forward_train_instance.dependency_path_list
+            dep_type_list_vocabulary += reverse_train_instance.dependency_path_list
+            candidate_instances.append(forward_train_instance)
+            candidate_instances.append(reverse_train_instance)
+
+
+        else:
+            continue
+
+    data, count, dep_path_word_dictionary, reversed_dictionary = build_dataset(path_word_vocabulary, 5)
+    dep_data, dep_count, dep_dictionary, dep_reversed_dictionary = build_dataset(dep_type_vocabulary, 5)
+    dep_element_data, dep_element_count, dep_element_dictionary, dep_element_reversed_dictionary = build_dataset(
+        dep_type_word_elements_vocabulary, 5)
+    between_data, between_count, between_word_dictionary, between_reversed_dictionary = build_dataset(
+        words_between_entities_vocabulary, 5)
+    dep_type_list_data, dep_type_list_count, dep_type_list_dictionary, dep_type_list_reversed_dictionary = build_dataset(
+        dep_type_list_vocabulary, 0)
+
+    if recurrent is False:
+        for ci_index in range(len(candidate_instances)):
+            ci = candidate_instances[ci_index]
+            ci.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary,
+                              between_word_dictionary)
+
+        return candidate_instances, dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary
+    else:
+        unk_pad_dep = len(dep_type_list_dictionary)
+        unk_pad_word = len(dep_path_word_dictionary)
+        dep_type_list_dictionary['UNKNOWN_WORD'] = unk_pad_dep
+        dep_path_word_dictionary['UNKNOWN_WORD'] = unk_pad_word
+        dep_type_list_dictionary['PADDING_WORD'] = unk_pad_dep + 1
+        dep_path_word_dictionary['PADDING_WORD'] = unk_pad_word + 1
+        word2vec_embeddings = None
+        word2vec_path = os.path.dirname(os.path.realpath(__file__)) + '/machine_learning_models/PubMed-w2v.bin'
+        print(word2vec_path)
+        if os.path.exists(word2vec_path):
+            print('embeddings exist')
+            word2vec_words, word2vec_vectors, dep_path_word_dictionary = rnn.load_bin_vec(word2vec_path)
+            # dep_path_word_dictionary = {k: v for v, k in enumerate(word2vec_words)}
+            word2vec_embeddings = np.array(word2vec_vectors)
+            print('finished fetching embeddings and placing in dictionary')
+
+        for ci_index in range(len(candidate_instances)):
+            ci = candidate_instances[ci_index]
+            ci.build_features_recurrent(dep_type_list_dictionary, dep_path_word_dictionary)
+
+        return candidate_instances, dep_type_list_dictionary, dep_path_word_dictionary, word2vec_embeddings
 
 def build_instances_training(
         training_forward_sentences,training_reverse_sentences,distant_interactions,
@@ -213,12 +419,13 @@ def build_instances_training(
 
         return candidate_instances,dep_type_list_dictionary,dep_path_word_dictionary,word2vec_embeddings
 
-def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_species, entity_a_set, entity_b_set):
+def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_species, entity_a_set, entity_b_set,labelled = False):
     entity_a_texts = {}
     entity_b_texts = {}
     pmid_list = set()
     forward_sentences = {}
     reverse_sentences = {}
+
 
 
     with open(pubtator_file) as file:
@@ -264,6 +471,12 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
                 if len(end_entity_norm_split) > 1:
                     end_entity_species = end_entity_norm_split[1][:-1]
 
+            if labelled is True:
+                start_entity_species = 'NONE'
+                end_entity_species = 'NONE'
+                entity_a_species = 'NONE'
+                entity_b_species = 'NONE'
+
 
             if pmid+'|'+sentence_no not in entity_a_texts:
                 entity_a_texts[pmid+'|'+sentence_no] = set()
@@ -285,7 +498,6 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
                                           start_entity_raw_string,end_entity_raw_string,start_entity_full_norm,end_entity_full_norm,start_entity_type,
                                          end_entity_type, start_entity_id,end_entity_id,
                                          start_entity_species, end_entity_species,dep_parse, sentence)
-
 
 
             if start_entity_type.upper() == 'GENE' and end_entity_type.upper() == 'GENE' and entity_a_species != entity_b_species:
@@ -316,11 +528,12 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
             else:
                 continue
 
+
     return pmid_list, forward_sentences, reverse_sentences, entity_a_texts, entity_b_texts
 
 
 
-def load_pubtator_abstract_sentences(pubtator_file, entity_a, entity_b):
+def load_pubtator_abstract_sentences(pubtator_file, entity_a, entity_b, labelled = False):
     entity_a_elements = entity_a.split('_')
     entity_b_elements = entity_b.split('_')
 
@@ -332,7 +545,7 @@ def load_pubtator_abstract_sentences(pubtator_file, entity_a, entity_b):
     if entity_a_type == 'GENE' and entity_b_type == 'GENE':
         entity_a_set = load_entity_set(os.path.dirname(os.path.realpath(__file__)) +'/entity_ids/gene_ids/'+entity_a_specific +'.txt',2)
         entity_b_set = load_entity_set(os.path.dirname(os.path.realpath(__file__)) +'/entity_ids/gene_ids/'+entity_b_specific +'.txt',2)
-        return load_gene_gene_abstract_sentences(pubtator_file, entity_a_specific, entity_b_specific, entity_a_set, entity_b_set)
+        return load_gene_gene_abstract_sentences(pubtator_file, entity_a_specific, entity_b_specific, entity_a_set, entity_b_set,labelled)
 
 
 def load_distant_kb(distant_kb_file, column_a, column_b,distant_rel_col):
