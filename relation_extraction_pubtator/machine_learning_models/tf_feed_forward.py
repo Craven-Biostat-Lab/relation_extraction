@@ -240,9 +240,11 @@ def neural_network_predict(predict_features, predict_labels, model_file):
     total_labels = np.array([])
     total_predicted_prob = np.array([])
     with tf.Session() as sess:
+        print(tf.global_variables())
         restored_model = tf.train.import_meta_graph(model_file + '.meta',clear_devices=True)
         restored_model.restore(sess, model_file)
         graph = tf.get_default_graph()
+        print(tf.global_variables())
 
         input_tensor = graph.get_tensor_by_name("input:0")
         output_tensor=graph.get_tensor_by_name("output:0")
@@ -259,12 +261,21 @@ def neural_network_predict(predict_features, predict_labels, model_file):
         predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
+        gradients = tf.gradients(predict_prob,tf.global_variables())
+        for g in range(len(gradients)):
+            if len(gradients[g].shape) == 1:
+                gradients[g] = tf.reshape(gradients[g], [gradients[g].shape[0], 1])
+        print(gradients)
+
         while True:
             try:
-                predicted_val,labels = sess.run([predict_prob,batch_labels_tensor],
+                predicted_val,labels,grads = sess.run([predict_prob,batch_labels_tensor,gradients],
                                                        feed_dict={iterator_handle: new_handle, keep_prob_tensor: 1.0})
                 total_predicted_prob = np.append(total_predicted_prob, predicted_val)
                 total_labels = np.append(total_labels,labels)
+                for g in grads:
+                    print(g.shape)
+
             except tf.errors.OutOfRangeError:
                 break
 
