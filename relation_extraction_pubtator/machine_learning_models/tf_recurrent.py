@@ -113,7 +113,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     with tf.name_scope("dependency_type_embedding"):
         print(num_dep_types)
         W = tf.Variable(tf.random_uniform([num_dep_types, dep_embedding_dimension]), name="W")
-        word_zeroes = tf.Variable(tf.constant(0.0,shape=[-1,100,word_embedding_dimension]))
+        word_zeroes = tf.Variable(tf.constant(0.0,shape=[tf.shape(batch_word_ids)[0],100,word_embedding_dimension]))
         embedded_dep = tf.concat([word_zeroes,tf.nn.embedding_lookup(W, batch_dependency_ids)],axis = 2)
         print(embedded_dep.shape)
 
@@ -126,7 +126,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
             W = tf.Variable(tf.constant(0.0, shape=[num_path_words, word_embedding_dimension]), name="W")
             embedding_placeholder = tf.placeholder(tf.float32, [num_path_words, word_embedding_dimension])
             embedding_init = W.assign(embedding_placeholder)
-            dep_zeroes = tf.Variable(tf.constant(0.0, shape=[-1,100, dep_embedding_dimension]))
+            dep_zeroes = tf.Variable(tf.constant(0.0, shape=[tf.shape(batch_dependency_ids)[0],100, dep_embedding_dimension]))
             embedded_word = tf.concat([tf.nn.embedding_lookup(W, batch_word_ids),dep_zeroes],axis=2)
 
             word_embedding_saver = tf.train.Saver({"dependency_word_embedding/W": W})
@@ -135,7 +135,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     else:
         with tf.name_scope("dependency_word_embedding"):
             W = tf.Variable(tf.random_uniform([num_path_words, word_embedding_dimension]), name="W")
-            dep_zeroes = tf.Variable(tf.constant(0.0, shape=[-1,100, dep_embedding_dimension]))
+            dep_zeroes = tf.Variable(tf.constant(0.0, shape=[tf.shape(batch_dependency_ids)[0],100, dep_embedding_dimension]))
             embedded_word = tf.concat([tf.nn.embedding_lookup(W, batch_word_ids), dep_zeroes],axis=2)
             word_embedding_saver = tf.train.Saver({"dependency_word_embedding/W": W})
 
