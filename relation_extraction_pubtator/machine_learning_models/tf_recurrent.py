@@ -233,8 +233,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
         while True:
             try:
                 #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
-                ss = sess.run([state_series_final], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
-                print(ss)
+                u, tl = sess.run([optimizer, total_loss], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
                 instance_count += batch_size
                 #print(instance_count)
                 if instance_count > labels.shape[0]:
