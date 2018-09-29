@@ -233,7 +233,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
                 tl = sess.run([total_embedded], feed_dict={iterator_handle: train_handle, keep_prob: 1.0})
                 print(tl[0][0][0])
                 print(tl[0][0][1])
-                print(tl[0][0][-1])
+                print(tl[0][0][-2])
                 instance_count += batch_size
                 #print(instance_count)
                 if instance_count > labels.shape[0]:
