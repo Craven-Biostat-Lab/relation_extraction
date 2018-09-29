@@ -156,9 +156,9 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
 
     with tf.variable_scope('lstm'):
         cell = tf.contrib.rnn.LSTMBlockFusedCell(word_state_size+dep_state_size)
-        state_series, current_state = cell(tf.transpose(total_embedded, [1, 0, 2]), initial_state=init_states,
+        state_series, state_series_final = cell(tf.transpose(total_embedded, [1, 0, 2]), initial_state=init_states,
                                            sequence_length=total_sequence_length)
-        state_series_final = state_series[-1]
+
 
         #state_series = tf.concat([state_series_dep, state_series_word], 1)
 
@@ -232,9 +232,8 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
         while True:
             try:
                 #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
-                ss = sess.run([state_series], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
-                print(ss[0][0])
-                print(ss[0][-1])
+                ss = sess.run([state_series_final], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
+                print(ss)
                 instance_count += batch_size
                 #print(instance_count)
                 if instance_count > labels.shape[0]:
