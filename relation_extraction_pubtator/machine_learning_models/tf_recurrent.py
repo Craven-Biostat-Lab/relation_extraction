@@ -152,13 +152,14 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     initial_hidden_state = tf.zeros([tf.shape(batch_dependency_ids)[0],word_state_size+dep_state_size],name="hidden_state")
     initial_cell_state = tf.zeros([tf.shape(batch_dependency_ids)[0], word_state_size+dep_state_size],
                                     name="cell_state")
-    init_states = tf.nn.rnn_cell.LSTMStateTuple(initial_hidden_state, initial_cell_state)
+    init_states = tf.nn.rnn_cell.LSTMStateTuple(initial_cell_state, initial_hidden_state)
 
     with tf.variable_scope('lstm'):
         cell = tf.contrib.rnn.LSTMBlockFusedCell(word_state_size+dep_state_size)
-        state_series, state_series_final = cell(tf.transpose(total_embedded, [1, 0, 2]), initial_state=init_states,
+        state_series, output_state = cell(tf.transpose(total_embedded, [1, 0, 2]), initial_state=init_states,
                                            sequence_length=total_sequence_length)
 
+        state_series_final = output_state[1]
 
         #state_series = tf.concat([state_series_dep, state_series_word], 1)
 
