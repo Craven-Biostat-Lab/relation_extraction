@@ -143,51 +143,28 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
         embedded_word_drop = tf.nn.dropout(embedded_word, keep_prob)
 
     concattenated = tf.concat([tf.expand_dims(embedded_word_drop,2),tf.expand_dims(embedded_dep,2)],2)
-    result = tf.reshape(concattenated,[-1,200,word_embedding_dimension+dep_embedding_dimension])
-    print(result.shape)
+    total_embedded = tf.reshape(concattenated,[-1,200,word_embedding_dimension+dep_embedding_dimension])
 
-    dependency_initial_hidden_states = tf.zeros([tf.shape(batch_dependency_ids)[0], dep_state_size], name="dep_hidden_state")
-    dependency_initial_cell_states = tf.zeros([tf.shape(batch_dependency_ids)[0], dep_state_size], name="dep_cell_state")
-    dependency_init_states = tf.nn.rnn_cell.LSTMStateTuple(dependency_initial_hidden_states, dependency_initial_cell_states)
+    total_sequence_length = tf.add(batch_dep_word_length,batch_dependency_type_length)
 
-    word_initial_hidden_state = tf.zeros([tf.shape(batch_word_ids)[0], word_state_size], name='word_hidden_state')
-    word_initial_cell_state = tf.zeros([tf.shape(batch_word_ids)[0], word_state_size], name='word_cell_state')
-    word_init_state = tf.nn.rnn_cell.LSTMStateTuple(word_initial_hidden_state, word_initial_cell_state)
+    initial_hidden_state = tf.zeros([tf.shape(batch_dependency_ids)[0],word_state_size+dep_state_size],name="hidden_state")
+    initial_cell_state = tf.zeros([tf.shape(batch_dependency_ids)[0], word_state_size+dep_state_size],
+                                    name="cell_state")
+    init_states = tf.nn.rnn_cell.LSTMStateTuple(initial_hidden_state, initial_cell_state)
 
-    with tf.variable_scope("dependency_lstm"):
-        '''
-        cell = tf.contrib.rnn.GRUBlockCellV2(dep_state_size)
-        state_series, current_state = tf.nn.dynamic_rnn(cell, embedded_dep, sequence_length=batch_dependency_type_length,
-                                                        initial_state=dependency_initial_hidden_states)
-        state_series_dep = tf.reduce_max(state_series, axis=1)
-        '''
-        cell = tf.contrib.rnn.LSTMBlockFusedCell(dep_state_size)
-        state_series, current_state = cell(tf.transpose(embedded_dep,[1,0,2]),initial_state=dependency_init_states,
-                                           sequence_length=batch_dependency_type_length)
-        state_series_dep = tf.reduce_max(state_series, axis=0)
+    with tf.variable_scope('lstm'):
+        cell = tf.contrib.rnn.LSTMBlockFusedCell(word_state_size+dep_state_size)
+        state_series, current_state = cell(tf.transpose(total_embedded, [1, 0, 2]), initial_state=init_states,
+                                           sequence_length=total_sequence_length)
+        state_series_final = state_series[-1]
 
-
-
-    with tf.variable_scope("word_lstm"):
-        '''
-        cell = tf.contrib.rnn.GRUBlockCellV2(word_state_size)
-        state_series, current_state = tf.nn.dynamic_rnn(cell, embedded_word_drop,
-                                                        sequence_length=batch_dep_word_length,
-                                                        initial_state=word_initial_hidden_state)
-        state_series_word = tf.reduce_max(state_series, axis=1)
-        '''
-        cell = tf.contrib.rnn.LSTMBlockFusedCell(word_state_size)
-        state_series, current_state = cell(tf.transpose(embedded_word_drop,[1,0,2]), initial_state=word_init_state,
-                                           sequence_length=batch_dep_word_length)
-        state_series_word = tf.reduce_max(state_series, axis=0)
-
-    state_series = tf.concat([state_series_dep, state_series_word], 1)
+        #state_series = tf.concat([state_series_dep, state_series_word], 1)
 
 
     with tf.name_scope("hidden_layer"):
-        W = tf.Variable(tf.truncated_normal([dep_state_size + word_state_size, 100], -0.1, 0.1), name="W")
+        W = tf.Variable(tf.truncated_normal([word_state_size + dep_state_size, 100], -0.1, 0.1), name="W")
         b = tf.Variable(tf.zeros([100]), name="b")
-        y_hidden_layer = tf.matmul(state_series, W) + b
+        y_hidden_layer = tf.matmul(state_series_final, W) + b
 
 
     with tf.name_scope("dropout"):
@@ -253,8 +230,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
         while True:
             try:
                 #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
-                emb= sess.run([result], feed_dict={iterator_handle: train_handle, keep_prob: 1.0})
-                print(emb[0][0][1])
+                u, tl = sess.run([optimizer, total_loss], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
                 instance_count += batch_size
                 #print(instance_count)
                 if instance_count > labels.shape[0]:
