@@ -112,7 +112,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
 
     with tf.name_scope("dependency_type_embedding"):
         print(num_dep_types)
-        W = tf.Variable(tf.random_uniform([num_dep_types, dep_embedding_dimension]), name="W")
+        W = tf.concat([tf.Variable(tf.random_uniform([num_dep_types-1, dep_embedding_dimension])),tf.Variable(tf.zeros([1,dep_embedding_dimension]))], name="W")
         word_zeroes = tf.fill([tf.shape(batch_word_ids)[0],tf.shape(batch_word_ids)[1],word_embedding_dimension],0.0)
         embedded_dep = tf.concat([word_zeroes,tf.nn.embedding_lookup(W, batch_dependency_ids)],axis = 2)
         print(embedded_dep.shape)
@@ -134,7 +134,8 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
 
     else:
         with tf.name_scope("dependency_word_embedding"):
-            W = tf.Variable(tf.random_uniform([num_path_words, word_embedding_dimension]), name="W")
+            W = tf.concat([tf.Variable(tf.random_uniform([num_path_words - 1, word_embedding_dimension])),
+                           tf.Variable(tf.zeros([1, word_embedding_dimension]))], name="W")
             dep_zeroes = tf.fill([tf.shape(batch_dependency_ids)[0],tf.shape(batch_dependency_ids)[1], dep_embedding_dimension],0.0)
             embedded_word = tf.concat([tf.nn.embedding_lookup(W, batch_word_ids), dep_zeroes],axis=2)
             word_embedding_saver = tf.train.Saver({"dependency_word_embedding/W": W})
