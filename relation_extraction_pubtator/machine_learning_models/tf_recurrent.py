@@ -63,8 +63,8 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     dep_embedding_dimension = 50
     dep_state_size = 50
     num_labels = labels.shape[1]
-    num_epochs = 1000
-    batch_size=32
+    num_epochs = 250
+    batch_size=1
     maximum_length_path = dep_path_list_features.shape[1]
 
     tf.reset_default_graph()
@@ -203,7 +203,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
 
     global_step = tf.Variable(0, name="global_step")
 
-    optimizer = tf.train.AdamOptimizer().minimize(total_loss, global_step=global_step)
+    optimizer = tf.train.GradientDescentOptimizer(0.01).minimize(total_loss, global_step=global_step)
 
     saver = tf.train.Saver()
     # Run SGD
