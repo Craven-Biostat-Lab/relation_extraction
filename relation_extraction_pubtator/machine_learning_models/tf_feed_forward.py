@@ -54,7 +54,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
 
     dataset = tf.data.Dataset.from_tensor_slices((input_tensor, output_tensor))
     dataset = dataset.prefetch(buffer_size=batch_size * 100)
-    dataset = dataset.repeat(num_epochs).prefetch(batch_size * 100)
+    #dataset = dataset.repeat(num_epochs).prefetch(batch_size * 100)
     dataset = dataset.shuffle(batch_size * 50).prefetch(buffer_size=batch_size * 100)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(5)
@@ -109,7 +109,6 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     tf.summary.scalar('accuracy', accuracy)
 
-    saver = tf.train.Saver()
     # Run SGD
     save_path = None
 
@@ -124,75 +123,73 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
         test_writer = tf.summary.FileWriter(model_dir + '/test', graph=tf.get_default_graph())
 
 
-        train_handle = sess.run(train_iter.string_handle())
-        sess.run(train_iter.initializer, feed_dict={input_tensor: train_X, output_tensor: train_y})
+        for epoch in range(num_epochs):
+            train_handle = sess.run(train_iter.string_handle())
+            sess.run(train_iter.initializer, feed_dict={input_tensor: train_X, output_tensor: train_y})
 
-        instance_count = 0
-        epoch = 0
-        while True:
-            try:
-                # print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
-                u,tl = sess.run([updates,cost], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
-                instance_count += batch_size
+
+
+            while True:
+                try:
+                    # print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
+                    u,tl = sess.run([updates,cost], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
+                except tf.errors.OutOfRangeError:
+                    break
+
                 # print(instance_count)
-                if instance_count > train_y.shape[0]:
-                    train_accuracy_handle = sess.run(train_accuracy_iter.string_handle())
-                    sess.run(train_accuracy_iter.initializer, feed_dict={input_tensor: train_X,output_tensor: train_y})
-                    total_predicted_prob = np.array([])
-                    total_labels = np.array([])
-                    print('loss: %f', tl)
-                    while True:
-                        try:
-                            summary,predicted_class, b_labels = sess.run([merged,class_yhat, batch_labels],
-                                                                 feed_dict={iterator_handle: train_accuracy_handle,
-                                                                            keep_prob: 1.0})
-                            # print(predicted_val)
-                            # total_labels = np.append(total_labels, batch_labels)
-                            train_writer.add_summary(summary)
-                            total_predicted_prob = np.append(total_predicted_prob, predicted_class)
-                            total_labels = np.append(total_labels, b_labels)
-                        except tf.errors.OutOfRangeError:
-                            break
-                    total_predicted_prob = total_predicted_prob.reshape(train_y.shape)
-                    total_labels = total_labels.reshape(train_y.shape)
-                    for l in range(len(key_order)):
-                        column_l = total_predicted_prob[:, l]
-                        column_true = total_labels[:, l]
-                        label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
-                        print("Epoch = %d,Label = %s: %.2f%% "
-                              % (epoch, key_order[l], 100. * label_accuracy))
 
-                    if test_y is not None:
-                        test_handle = sess.run(test_iter.string_handle())
-                        sess.run(test_iter.initializer)
-                        test_y_predict_total = np.array([])
-                        test_y_label_total = np.array([])
-                        while True:
-                            try:
-                                summary, batch_test_predict, batch_test_labels = sess.run([merged,class_yhat, batch_labels], feed_dict={
-                                    iterator_handle: test_handle, keep_prob: 1.0})
-                                test_writer.add_summary(summary)
-                                test_y_predict_total = np.append(test_y_predict_total, batch_test_predict)
-                                test_y_label_total = np.append(test_y_label_total, batch_test_labels)
-                            except tf.errors.OutOfRangeError:
-                                break
-                        test_y_predict_total = test_y_predict_total.reshape(test_y.shape)
-                        test_y_label_total = test_y_label_total.reshape(test_y.shape)
-                        for l in range(len(key_order)):
-                            column_l = test_y_predict_total[:, l]
-                            column_true = test_y_label_total[:, l]
-                            label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
-                            print("Epoch = %d,Test Label = %s: %.2f%% "
-                                  % (epoch, key_order[l], 100. * label_accuracy))
+            train_accuracy_handle = sess.run(train_accuracy_iter.string_handle())
+            sess.run(train_accuracy_iter.initializer, feed_dict={input_tensor: train_X,output_tensor: train_y})
+            total_predicted_prob = np.array([])
+            total_labels = np.array([])
 
-                    epoch += 1
-                    instance_count = 0
-                    train_handle = sess.run(train_iter.string_handle())
-                    save_path = saver.save(sess, model_dir)
+            print('loss: %f', tl)
+            while True:
+                try:
+                    summary,predicted_class, b_labels = sess.run([merged,class_yhat, batch_labels],
+                                                         feed_dict={iterator_handle: train_accuracy_handle,
+                                                                    keep_prob: 1.0})
+
+                    train_writer.add_summary(summary)
+                    total_predicted_prob = np.append(total_predicted_prob, predicted_class)
+                    total_labels = np.append(total_labels, b_labels)
+                except tf.errors.OutOfRangeError:
+                    break
+
+            total_predicted_prob = total_predicted_prob.reshape(train_y.shape)
+            total_labels = total_labels.reshape(train_y.shape)
+            for l in range(len(key_order)):
+                column_l = total_predicted_prob[:, l]
+                column_true = total_labels[:, l]
+                label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
+                print("Epoch = %d,Label = %s: %.2f%% "
+                      % (epoch, key_order[l], 100. * label_accuracy))
+
+            if test_y is not None:
+                test_handle = sess.run(test_iter.string_handle())
+                sess.run(test_iter.initializer)
+                test_y_predict_total = np.array([])
+                test_y_label_total = np.array([])
+                while True:
+                    try:
+                        summary, batch_test_predict, batch_test_labels = sess.run([merged,class_yhat, batch_labels], feed_dict={
+                            iterator_handle: test_handle, keep_prob: 1.0})
+                        test_writer.add_summary(summary)
+                        test_y_predict_total = np.append(test_y_predict_total, batch_test_predict)
+                        test_y_label_total = np.append(test_y_label_total, batch_test_labels)
+                    except tf.errors.OutOfRangeError:
+                        break
+                test_y_predict_total = test_y_predict_total.reshape(test_y.shape)
+                test_y_label_total = test_y_label_total.reshape(test_y.shape)
+                for l in range(len(key_order)):
+                    column_l = test_y_predict_total[:, l]
+                    column_true = test_y_label_total[:, l]
+                    label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
+                    print("Epoch = %d,Test Label = %s: %.2f%% "
+                          % (epoch, key_order[l], 100. * label_accuracy))
 
 
-            except tf.errors.OutOfRangeError:
-                break
+
 
         save_path = saver.save(sess, model_dir)
 

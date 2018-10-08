@@ -85,7 +85,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
                                                   dependency_word_sequence_length,output_tensor))
 
     dataset = dataset.prefetch(buffer_size=batch_size * 100)
-    dataset = dataset.repeat(num_epochs).prefetch(batch_size*100)
+    #dataset = dataset.repeat(num_epochs).prefetch(batch_size*100)
     dataset = dataset.shuffle(batch_size*50).prefetch(buffer_size=batch_size * 100)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(5)
@@ -205,9 +205,9 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
 
     optimizer = tf.train.AdamOptimizer().minimize(total_loss, global_step=global_step)
 
-    saver = tf.train.Saver()
     # Run SGD
     save_path = None
+    merged = tf.summary.merge_all()
     config = tf.ConfigProto(allow_soft_placement=True,log_device_placement=True)
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
@@ -219,60 +219,57 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
             print('using word2vec embeddings')
             sess.run(embedding_init, feed_dict={embedding_placeholder: word2vec_embeddings})
 
-        train_handle = sess.run(train_iter.string_handle())
-        sess.run(train_iter.initializer,feed_dict={dependency_ids:dep_path_list_features,
+
+        for epoch in range(num_epochs):
+            train_handle = sess.run(train_iter.string_handle())
+            sess.run(train_iter.initializer,feed_dict={dependency_ids:dep_path_list_features,
                                                        word_ids:dep_word_features,
                                                        dependency_type_sequence_length:dep_type_path_length,
                                                        dependency_word_sequence_length:dep_word_path_length,
                                                        output_tensor:labels})
 
-        instance_count = 0
-        epoch = 0
 
-        merged = tf.summary.merge_all()
-        while True:
-            try:
-                #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
-                u, tl = sess.run([optimizer, total_loss], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
-                instance_count += batch_size
-                #print(instance_count)
-                if instance_count > labels.shape[0]:
-                    train_accuracy_handle = sess.run(train_accuracy_iter.string_handle())
-                    sess.run(train_accuracy_iter.initializer, feed_dict={dependency_ids: dep_path_list_features,
-                                                                word_ids: dep_word_features,
-                                                                dependency_type_sequence_length: dep_type_path_length,
-                                                                dependency_word_sequence_length: dep_word_path_length,
-                                                                output_tensor: labels})
-                    total_predicted_prob = np.array([])
-                    total_labels = np.array([])
-                    print('loss: %f', tl)
-                    while True:
-                        try:
-                            summary,predicted_class, b_labels = sess.run([merged,class_yhat, batch_labels],
-                                                                 feed_dict={iterator_handle: train_accuracy_handle,
-                                                                            keep_prob: 1.0})
-                            # print(predicted_val)
-                            # total_labels = np.append(total_labels, batch_labels)
-                            total_predicted_prob = np.append(total_predicted_prob, predicted_class)
-                            total_labels = np.append(total_labels, b_labels)
-                            train_writer.add_summary(summary)
 
-                        except tf.errors.OutOfRangeError:
-                            break
-                    total_predicted_prob = total_predicted_prob.reshape(labels.shape)
-                    total_labels = total_labels.reshape(labels.shape)
-                    for l in range(len(key_order)):
-                        column_l = total_predicted_prob[:, l]
-                        column_true = total_labels[:, l]
-                        label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
-                        print("Epoch = %d,Label = %s: %.2f%% "
-                              % (epoch, key_order[l], 100. * label_accuracy))
-                    epoch += 1
-                    instance_count = 0
-                    train_handle = sess.run(train_iter.string_handle())
-                    save_path = saver.save(sess, model_dir)
-            except tf.errors.OutOfRangeError:
-                break
+            while True:
+                try:
+                    #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
+                    u, tl = sess.run([optimizer, total_loss], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
+                except tf.errors.OutOfRangeError:
+                    break
+
+            train_accuracy_handle = sess.run(train_accuracy_iter.string_handle())
+            sess.run(train_accuracy_iter.initializer, feed_dict={dependency_ids: dep_path_list_features,
+                                                        word_ids: dep_word_features,
+                                                        dependency_type_sequence_length: dep_type_path_length,
+                                                        dependency_word_sequence_length: dep_word_path_length,
+                                                        output_tensor: labels})
+            total_predicted_prob = np.array([])
+            total_labels = np.array([])
+            print('loss: %f', tl)
+            while True:
+                try:
+                    summary,predicted_class, b_labels = sess.run([merged,class_yhat, batch_labels],
+                                                         feed_dict={iterator_handle: train_accuracy_handle,
+                                                                    keep_prob: 1.0})
+                    # print(predicted_val)
+                    # total_labels = np.append(total_labels, batch_labels)
+                    total_predicted_prob = np.append(total_predicted_prob, predicted_class)
+                    total_labels = np.append(total_labels, b_labels)
+                    train_writer.add_summary(summary)
+                except tf.errors.OutOfRangeError:
+                    break
+
+            total_predicted_prob = total_predicted_prob.reshape(labels.shape)
+            total_labels = total_labels.reshape(labels.shape)
+
+            for l in range(len(key_order)):
+                column_l = total_predicted_prob[:, l]
+                column_true = total_labels[:, l]
+                label_accuracy = metrics.f1_score(y_true=column_true, y_pred=column_l)
+                print("Epoch = %d,Label = %s: %.2f%% "
+                      % (epoch, key_order[l], 100. * label_accuracy))
+
+
 
         save_path = saver.save(sess, model_dir)
 
