@@ -203,7 +203,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
 
     global_step = tf.Variable(0, name="global_step")
 
-    optimizer = tf.train.GradientDescentOptimizer(0.01).minimize(total_loss, global_step=global_step)
+    optimizer = tf.train.AdamOptimizer().minimize(total_loss, global_step=global_step)
 
     saver = tf.train.Saver()
     # Run SGD
