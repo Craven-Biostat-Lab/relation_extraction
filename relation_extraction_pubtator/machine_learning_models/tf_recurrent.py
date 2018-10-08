@@ -181,6 +181,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     prob_yhat = tf.nn.sigmoid(logits, name='predict_prob')
     class_yhat = tf.to_int32(prob_yhat > 0.5,name='class_predict')
 
+    global_step = tf.Variable(0, name="global_step")
 
     tv_all = tf.trainable_variables()
     tv_regu = []
@@ -201,7 +202,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     tf.summary.scalar('accuracy', accuracy)
 
-    global_step = tf.Variable(0, name="global_step")
+
 
     optimizer = tf.train.AdamOptimizer().minimize(total_loss, global_step=global_step)
 
@@ -255,7 +256,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
                     # total_labels = np.append(total_labels, batch_labels)
                     total_predicted_prob = np.append(total_predicted_prob, predicted_class)
                     total_labels = np.append(total_labels, b_labels)
-                    train_writer.add_summary(summary)
+                    train_writer.add_summary(summary,global_step=global_step)
                 except tf.errors.OutOfRangeError:
                     break
 
@@ -271,7 +272,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
 
 
 
-        save_path = saver.save(sess, model_dir)
+            save_path = saver.save(sess, model_dir,global_step=global_step)
 
     return save_path
 

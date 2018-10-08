@@ -100,10 +100,12 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     class_yhat = tf.to_int32(prob_yhat > 0.5,name='class_predict')
     #predict = tf.argmax(prob_yhat, axis=1,name='predict_tensor')
 
+    global_step = tf.Variable(0, name="global_step")
+
     # Backward propagation
     cost = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat))
     tf.summary.scalar('cost', cost)
-    updates = tf.train.AdamOptimizer().minimize(cost)
+    updates = tf.train.AdamOptimizer().minimize(cost,global_step=global_step)
 
     correct_prediction = tf.equal(tf.round(prob_yhat), tf.round(batch_labels))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
@@ -150,7 +152,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
                                                          feed_dict={iterator_handle: train_accuracy_handle,
                                                                     keep_prob: 1.0})
 
-                    train_writer.add_summary(summary)
+                    train_writer.add_summary(summary,global_step=global_step)
                     total_predicted_prob = np.append(total_predicted_prob, predicted_class)
                     total_labels = np.append(total_labels, b_labels)
                 except tf.errors.OutOfRangeError:
@@ -191,7 +193,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
 
 
 
-        save_path = saver.save(sess, model_dir)
+            save_path = saver.save(sess, model_dir,global_step=global_step)
 
     return save_path
 
