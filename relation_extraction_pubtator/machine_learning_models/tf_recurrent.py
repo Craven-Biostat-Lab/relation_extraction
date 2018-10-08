@@ -215,6 +215,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
         sess.run(init)
         saver = tf.train.Saver()
         train_writer = tf.summary.FileWriter(model_dir + '/train', graph=tf.get_default_graph())
+
         if word2vec_embeddings is not None:
             print('using word2vec embeddings')
             sess.run(embedding_init, feed_dict={embedding_placeholder: word2vec_embeddings})
@@ -228,14 +229,13 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
                                                        dependency_word_sequence_length:dep_word_path_length,
                                                        output_tensor:labels})
 
-
-
             while True:
                 try:
                     #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
                     u, tl = sess.run([optimizer, total_loss], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
                 except tf.errors.OutOfRangeError:
                     break
+
 
             train_accuracy_handle = sess.run(train_accuracy_iter.string_handle())
             sess.run(train_accuracy_iter.initializer, feed_dict={dependency_ids: dep_path_list_features,
