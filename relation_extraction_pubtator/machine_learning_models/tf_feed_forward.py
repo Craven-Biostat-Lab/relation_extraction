@@ -103,7 +103,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     global_step = tf.Variable(0, name="global_step")
 
     # Backward propagation
-    cost = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat))
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat))
     tf.summary.scalar('cost', cost)
     updates = tf.train.AdamOptimizer().minimize(cost,global_step=global_step)
 
