@@ -142,24 +142,41 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
 
             train_accuracy_handle = sess.run(train_accuracy_iter.string_handle())
             sess.run(train_accuracy_iter.initializer, feed_dict={input_tensor: train_X,output_tensor: train_y})
+
             total_predicted_prob = np.array([])
             total_labels = np.array([])
-
-            print('loss: %f', tl)
+            step = 0
+            total_loss_value = 0
+            total_accuracy_value = 0
             while True:
                 try:
-                    summary,predicted_class, b_labels = sess.run([merged,class_yhat, batch_labels],
-                                                         feed_dict={iterator_handle: train_accuracy_handle,
-                                                                    keep_prob: 1.0})
-
-                    train_writer.add_summary(summary,global_step=global_step)
+                    step += 1
+                    tl_val, ta_val, predicted_class, b_labels = sess.run(
+                        [cost, accuracy, class_yhat, batch_labels],
+                        feed_dict={iterator_handle: train_accuracy_handle,
+                                   keep_prob: 1.0})
+                    # print(predicted_val)
+                    # total_labels = np.append(total_labels, batch_labels)
                     total_predicted_prob = np.append(total_predicted_prob, predicted_class)
                     total_labels = np.append(total_labels, b_labels)
+                    total_loss_value += tl_val
+                    total_accuracy_value += ta_val
                 except tf.errors.OutOfRangeError:
                     break
 
             total_predicted_prob = total_predicted_prob.reshape(train_y.shape)
             total_labels = total_labels.reshape(train_y.shape)
+
+            total_accuracy_value = total_accuracy_value / step
+            total_loss_value = total_loss_value / step
+            acc_summary = tf.Summary()
+            loss_summary = tf.Summary()
+            acc_summary.value.add(tag='Accuracy', simple_value=total_accuracy_value)
+            loss_summary.value.add(tag='Loss', simple_value=total_loss_value)
+            train_writer.add_summary(acc_summary, epoch)
+            train_writer.add_summary(loss_summary, epoch)
+            train_writer.flush()
+
             for l in range(len(key_order)):
                 column_l = total_predicted_prob[:, l]
                 column_true = total_labels[:, l]
@@ -172,17 +189,34 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
                 sess.run(test_iter.initializer)
                 test_y_predict_total = np.array([])
                 test_y_label_total = np.array([])
+                test_loss_value = 0
+                test_accuracy_value = 0
                 while True:
                     try:
-                        summary, batch_test_predict, batch_test_labels = sess.run([merged,class_yhat, batch_labels], feed_dict={
+                        test_loss,test_accuracy, batch_test_predict, batch_test_labels = sess.run([cost,accuracy,class_yhat, batch_labels], feed_dict={
                             iterator_handle: test_handle, keep_prob: 1.0})
-                        test_writer.add_summary(summary)
                         test_y_predict_total = np.append(test_y_predict_total, batch_test_predict)
                         test_y_label_total = np.append(test_y_label_total, batch_test_labels)
+                        test_loss_value += test_loss
+                        test_accuracy_value += test_accuracy
+
                     except tf.errors.OutOfRangeError:
                         break
+
+
                 test_y_predict_total = test_y_predict_total.reshape(test_y.shape)
                 test_y_label_total = test_y_label_total.reshape(test_y.shape)
+
+                test_accuracy_value = test_accuracy_value / step
+                test_loss_value = test_loss_value / step
+                test_acc_summary = tf.Summary()
+                test_loss_summary = tf.Summary()
+                test_acc_summary.value.add(tag='Accuracy', simple_value=test_accuracy_value)
+                test_loss_summary.value.add(tag='Loss', simple_value=test_loss_value)
+                test_writer.add_summary(test_acc_summary, epoch)
+                test_writer.add_summary(test_loss_summary, epoch)
+                test_writer.flush()
+
                 for l in range(len(key_order)):
                     column_l = test_y_predict_total[:, l]
                     column_true = test_y_label_total[:, l]
@@ -193,7 +227,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
 
 
 
-            save_path = saver.save(sess, model_dir,global_step=global_step)
+        save_path = saver.save(sess, model_dir)
 
     return save_path
 

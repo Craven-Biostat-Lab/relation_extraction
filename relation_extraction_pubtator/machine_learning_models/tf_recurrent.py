@@ -196,11 +196,11 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
         l2_loss = lambda_l2 * tf.reduce_sum([tf.nn.l2_loss(v) for v in tv_regu])
         loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=batch_labels))
         total_loss = loss + l2_loss
-        tf.summary.scalar('total_loss',total_loss)
+
 
     correct_prediction = tf.equal(tf.round(prob_yhat), tf.round(batch_labels))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    tf.summary.scalar('accuracy', accuracy)
+
 
 
 
@@ -208,7 +208,6 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
 
     # Run SGD
     save_path = None
-    merged = tf.summary.merge_all()
     config = tf.ConfigProto(allow_soft_placement=True,log_device_placement=True)
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
@@ -246,22 +245,37 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
                                                         output_tensor: labels})
             total_predicted_prob = np.array([])
             total_labels = np.array([])
-            print('loss: %f', tl)
+            step = 0
+            total_loss_value = 0
+            total_accuracy_value = 0
             while True:
                 try:
-                    summary,predicted_class, b_labels = sess.run([merged,class_yhat, batch_labels],
+                    step+=1
+                    tl_val,ta_val,predicted_class, b_labels = sess.run([total_loss,accuracy,class_yhat, batch_labels],
                                                          feed_dict={iterator_handle: train_accuracy_handle,
                                                                     keep_prob: 1.0})
                     # print(predicted_val)
                     # total_labels = np.append(total_labels, batch_labels)
                     total_predicted_prob = np.append(total_predicted_prob, predicted_class)
                     total_labels = np.append(total_labels, b_labels)
-                    train_writer.add_summary(summary,global_step=global_step)
+                    total_loss_value += tl_val
+                    total_accuracy_value += ta_val
                 except tf.errors.OutOfRangeError:
                     break
 
             total_predicted_prob = total_predicted_prob.reshape(labels.shape)
             total_labels = total_labels.reshape(labels.shape)
+
+            total_accuracy_value = total_accuracy_value/step
+            total_loss_value = total_loss_value/step
+            acc_summary = tf.Summary()
+            loss_summary = tf.Summary()
+            acc_summary.value.add(tag='Accuracy', simple_value=total_accuracy_value)
+            loss_summary.value.add(tag='Loss', simple_value=total_loss_value)
+            train_writer.add_summary(acc_summary, epoch)
+            train_writer.add_summary(loss_summary, epoch)
+            train_writer.flush()
+
 
             for l in range(len(key_order)):
                 column_l = total_predicted_prob[:, l]
@@ -272,7 +286,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
 
 
 
-            save_path = saver.save(sess, model_dir,global_step=global_step)
+        save_path = saver.save(sess, model_dir)
 
     return save_path
 
