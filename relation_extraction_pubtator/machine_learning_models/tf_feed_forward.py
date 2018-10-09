@@ -104,7 +104,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
 
     # Backward propagation
     cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat))
-    updates = tf.train.AdamOptimizer().minimize(cost,global_step=global_step)
+    updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost,global_step=global_step)
 
     correct_prediction = tf.equal(tf.round(prob_yhat), tf.round(batch_labels))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
