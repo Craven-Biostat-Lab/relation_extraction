@@ -60,8 +60,8 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     dataset = dataset.prefetch(5)
 
     training_accuracy_dataset = tf.data.Dataset.from_tensor_slices((input_tensor, output_tensor))
-    training_accuracy_dataset = training_accuracy_dataset.prefetch(batch_size * 100)
-    training_accuracy_dataset = training_accuracy_dataset.batch(batch_size)
+    training_accuracy_dataset = training_accuracy_dataset.prefetch(500 * 100)
+    training_accuracy_dataset = training_accuracy_dataset.batch(500)
     training_accuracy_dataset = training_accuracy_dataset.prefetch(1)
 
     iterator_handle = tf.placeholder(tf.string, shape=[], name='iterator_handle')
