@@ -228,9 +228,11 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
                                                        dependency_type_sequence_length:dep_type_path_length,
                                                        dependency_word_sequence_length:dep_word_path_length,
                                                        output_tensor:labels})
-
+            count =0
             while True:
                 try:
+                    count+=1
+                    print(count)
                     #print(sess.run([y_hidden_layer],feed_dict={iterator_handle:train_handle}))
                     u, tl = sess.run([optimizer, total_loss], feed_dict={iterator_handle: train_handle, keep_prob: 0.5})
                 except tf.errors.OutOfRangeError:
