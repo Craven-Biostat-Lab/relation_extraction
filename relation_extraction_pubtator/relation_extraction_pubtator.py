@@ -175,12 +175,13 @@ def train_recurrent(model_out, pubtator_file, directional_distant_directory, sym
     if os.path.exists(model_out):
         shutil.rmtree(model_out)
 
+    pickle.dump([dep_path_list_dictionary, dep_word_dictionary, key_order], open(model_out + 'a.pickle', 'wb'))
     
     trained_model_path = rnn.recurrent_train(features, labels, len(dep_path_list_dictionary), len(dep_word_dictionary), model_out + '/', key_order, word2vec_embeddings)
     
 
 
-    pickle.dump([dep_path_list_dictionary, dep_word_dictionary,key_order], open(model_out + 'a.pickle','wb'))
+
     print("trained model")
 
 
