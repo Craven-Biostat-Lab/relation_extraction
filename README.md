@@ -8,6 +8,13 @@ database is used for the distant supervision. https://www.ncbi.nlm.nih.gov/genom
 ## Getting Started
 
 Virtual Environment is recommended to be built using requirements.txt
+```
+git clone (Link to this repository)
+virtualenv <VE_PATH_NAME>
+source <VE_PATH_NAME>/bin/activate
+cd <PATH TO THIS REPOSITORY ON LOCAL MACHINE>
+pip install -r requirements.txt
+```
 
 ### Prerequisites
 
