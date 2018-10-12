@@ -19,7 +19,7 @@ NumPy 1.14
 ```
 
 ## Running
-###DISTANT TRAINING
+### DISTANT TRAINING
 ```
 python relation_extraction_pubtator.py <MODE> <PUBTATOR_FILE> <DIRECTIONAL_DIRECTORY> <SYMMETRIC_DIRECTORY> <ENTITY_1_COLUMN> <ENTITY_2_COLUMN> <RELATION_COLUMN> <ENTITY_1> <ENTITY_2>
 ```
@@ -35,7 +35,7 @@ python relation_extraction_pubtator.py <MODE> <PUBTATOR_FILE> <DIRECTIONAL_DIREC
 <li>ENTITY_1: one of the entities you're interested in, in format SPECIES_GENE i.e. 11676_GENE for HIV-1 genes (you can put NONE for species, NONE_GENE)</li>
 <li>ENTITY_2: the other entities you're interested in, in format SPECIES_GENE i.e. 9606_GENE for HUMAN genes (you can put NONE for species, NONE_GENE)</li>
 
-###PREDICTION
+### PREDICTION
 
 ```
 python relation_extraction_pubtator.py PREDICT <MODEL_DIRECTORY> <PUBTATOR_FILE> <ENTITY_1> <ENTITY_2> <RECURRENT_BOOL>
