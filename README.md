@@ -1,87 +1,48 @@
-# Project Title
+# Relation Extraction from PubTator File
 
-One Paragraph of project description goes here
+This program trains a model that identifies biological relations between entities using distant supervision.
+The pubtator annotated files are loaded from https://zenodo.org/record/1243969#.W7_xsRNKiu4 . The HIV-1 Human Interaction
+database is used for the distant supervision. https://www.ncbi.nlm.nih.gov/genome/viruses/retroviruses/hiv-1/interactions/
+
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+Virtual Environment is recommended to be built using requirements.txt
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
 
 ```
-Give examples
+Most important libraries
+TensorFlow 1.5
+NumPy 1.14
 ```
 
-### Installing
-
-A step by step series of examples that tell you how to get a development env running
-
-Say what the step will be
-
+## Running
+###DISTANT TRAINING
 ```
-Give the example
+python relation_extraction_pubtator.py <MODE> <PUBTATOR_FILE> <DIRECTIONAL_DIRECTORY> <SYMMETRIC_DIRECTORY> <ENTITY_1_COLUMN> <ENTITY_2_COLUMN> <RELATION_COLUMN> <ENTITY_1> <ENTITY_2>
 ```
 
-And repeat
+MODE: TRAIN_FEED_FORWARD TRAIN_RECURRENT
+MODEL_DIRECTORY: Path to where to save model once trained
+PUBTATOR_FILE: Pubtator annotated file in format from https://zenodo.org/record/1243969#.W7_xsRNKiu4
+DIRECTIONAL_DIRECTORY: Directory with files for different directional relations (regulates,degrades,etc.) for distant supervision
+SYMMETRIC_DIRECTORY: Directory with files for different symmetric relations (binds,colocalizes,etc.) for distant supervision
+ENTITY_1_COLUMN: Column in distant supervision files (previous 2 commands) for Entity 1
+ENTITY_2_COLUMN: Column in distant supervision files (previous 2 commands) for Entity 2
+RELATION_COLUMN: Column in distant supervision files (previous 2 commands) for Relation of interest
+ENTITY_1: one of the entities you're interested in, in format SPECIES_GENE i.e. 11676_GENE for HIV-1 genes (you can put NONE for species, NONE_GENE)
+ENTITY_2: the other entities you're interested in, in format SPECIES_GENE i.e. 9606_GENE for HUMAN genes (you can put NONE for species, NONE_GENE)
+
+###PREDICTION
 
 ```
-until finished
+python relation_extraction_pubtator.py PREDICT <MODEL_DIRECTORY> <PUBTATOR_FILE> <ENTITY_1> <ENTITY_2> <RECURRENT_BOOL>
 ```
+MODEL_DIRECTORY: Path of where model is trained
+PUBTATOR_FILE: Pubtator annotated file for predictions you want to make in format from https://zenodo.org/record/1243969#.W7_xsRNKiu4
+ENTITY_1: one of the entities you're interested in, in format SPECIES_GENE i.e. 11676_GENE for HIV-1 genes (you can put NONE for species, NONE_GENE)
+ENTITY_2: the other entities you're interested in, in format SPECIES_GENE i.e. 9606_GENE for HUMAN genes (you can put NONE for species, NONE_GENE)
+RECURRENT_BOOL: Boolean if trained model you're predicting from is recurrent or feed forward. True for recurrent. False for Feed Forward
 
-End with an example of getting some data out of the system or using it for a little demo
-
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
-
-## Built With
-
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
-
-## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags).
-
-## Authors
-
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
