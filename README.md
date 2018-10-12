@@ -24,8 +24,8 @@ NumPy 1.14
 python relation_extraction_pubtator.py <MODE> <PUBTATOR_FILE> <DIRECTIONAL_DIRECTORY> <SYMMETRIC_DIRECTORY> <ENTITY_1_COLUMN> <ENTITY_2_COLUMN> <RELATION_COLUMN> <ENTITY_1> <ENTITY_2>
 ```
 
-MODE: TRAIN_FEED_FORWARD TRAIN_RECURRENT__
-MODEL_DIRECTORY: Path to where to save model once trained__
+<li>MODE: TRAIN_FEED_FORWARD TRAIN_RECURRENT</li>
+<li>MODEL_DIRECTORY: Path to where to save model once trained</li>
 PUBTATOR_FILE: Pubtator annotated file in format from https://zenodo.org/record/1243969#.W7_xsRNKiu4__
 DIRECTIONAL_DIRECTORY: Directory with files for different directional relations (regulates,degrades,etc.) for distant supervision__
 SYMMETRIC_DIRECTORY: Directory with files for different symmetric relations (binds,colocalizes,etc.) for distant supervision__
