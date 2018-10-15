@@ -294,7 +294,7 @@ def neural_network_predict(predict_features, predict_labels, model_file):
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
         print(tf.global_variables())
-        
+
         #gradients = tf.gradients(predict_prob,tf.global_variables())
         #for g in range(len(gradients)):
             #if len(gradients[g].shape) == 1:
