@@ -43,7 +43,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     num_labels = train_y.shape[1]
     batch_size = 1
     num_hidden_layers = len(hidden_array)
-    num_epochs = 250
+    num_epochs = 300
 
     tf.reset_default_graph()
 
