@@ -105,6 +105,38 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
 
     return predict_instances,predicted_prob,key_order
 
+def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
+                   distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b,recurrent):
+    # get distant_relations from external knowledge base file
+    distant_interactions, reverse_distant_interactions = load_data.load_distant_directories(
+        directional_distant_directory,
+        symmetric_distant_directory,
+        distant_entity_a_col,
+        distant_entity_b_col,
+        distant_rel_col)
+
+    key_order = sorted(distant_interactions)
+    # get pmids,sentences,
+    training_pmids, training_forward_sentences, training_reverse_sentences, entity_a_text, entity_b_text = load_data.load_pubtator_abstract_sentences(
+        pubtator_file, entity_a, entity_b)
+
+    # hidden layer structure
+    hidden_array = []
+
+    # k-cross val
+    instance_predicts, single_instances = cv.k_fold_cross_validation(10, training_pmids,
+                                                                              training_forward_sentences,
+                                                                              training_reverse_sentences,
+                                                                              distant_interactions,
+                                                                              reverse_distant_interactions,
+                                                                              entity_a_text, entity_b_text,
+                                                                              hidden_array,
+                                                                              key_order, recurrent)
+
+    write_output(model_out + '_cv'  + '_predictions', instance_predicts, single_instances, key_order)
+
+    return True
+
 
 def parallel_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
                    distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b, batch_id, recurrent):
@@ -615,6 +647,25 @@ def main():
 
         trained_model_path = train_recurrent(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
                                              distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b)
+
+    elif mode.upper() == "CV_TRAIN":
+        model_out = sys.argv[2]  # location of where model should be saved after training
+        pubtator_file = sys.argv[3]  # xml file of sentences from Stanford Parser
+        directional_distant_directory = sys.argv[4]  # distant supervision knowledge base to use
+        symmetric_distant_directory = sys.argv[5]
+        distant_entity_a_col = int(sys.argv[6])  # entity 1 column
+        distant_entity_b_col = int(sys.argv[7])  # entity 2 column
+        distant_rel_col = int(sys.argv[8])  # relation column
+        entity_a = sys.argv[9].upper()  # entity_a
+        entity_b = sys.argv[10].upper()  # entity_b
+        recurrent = sys.argv[11]
+        recurrent = recurrent == 'True'
+
+
+        cv_train(model_out, pubtator_file, directional_distant_directory,symmetric_distant_directory,
+                      distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a,entity_b,recurrent)
+
+        print('finished training')
 
     elif mode.upper() == "PARALLEL_TRAIN":
         model_out = sys.argv[2]  # location of where model should be saved after training
