@@ -133,7 +133,7 @@ def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_
                                                                               hidden_array,
                                                                               key_order, recurrent)
 
-    write_output(model_out + '_cv'  + '_predictions', instance_predicts, single_instances, key_order)
+    write_output(model_out + '_cv_predictions', instance_predicts, single_instances, key_order)
 
     return True
 
