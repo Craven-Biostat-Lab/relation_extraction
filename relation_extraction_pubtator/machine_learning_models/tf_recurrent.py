@@ -124,7 +124,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     if word2vec_embeddings is not None:
         with tf.name_scope("dependency_word_embedding"):
             print('bionlp_word_embedding')
-            W = tf.Variable(tf.constant(0.0, shape=[num_path_words, word_embedding_dimension]), name="W")
+            W = tf.Variable(tf.constant(0.0, shape=[num_path_words, word_embedding_dimension]), trainable=False, name="W")
             embedding_placeholder = tf.placeholder(tf.float32, [num_path_words, word_embedding_dimension])
             embedding_init = W.assign(embedding_placeholder)
             dep_zeroes = tf.fill([tf.shape(batch_dependency_ids)[0],tf.shape(batch_dependency_ids)[1], dep_embedding_dimension],0.0)
