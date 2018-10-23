@@ -91,6 +91,8 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
 
             fold_test_X = np.array(fold_test_features)
             fold_test_y = np.array(fold_test_labels)
+            print(fold_test_y.shape)
+            print(fold_test_X.shape)
 
             test_model = snn.feed_forward_train(fold_train_X,
                                                 fold_train_y,

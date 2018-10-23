@@ -185,7 +185,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
 
             if test_y is not None:
                 test_handle = sess.run(test_iter.string_handle())
-                sess.run(test_iter.initializer)
+                sess.run(test_iter.initializer,feed_dict={input_tensor: test_X, output_tensor: test_y})
                 test_y_predict_total = np.array([])
                 test_y_label_total = np.array([])
                 test_loss_value = 0
