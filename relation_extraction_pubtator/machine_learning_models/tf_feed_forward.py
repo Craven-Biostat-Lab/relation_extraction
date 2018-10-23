@@ -266,6 +266,7 @@ def feed_forward_test(test_features, test_labels, model_file):
     print(total_predicted_prob.shape)
     total_predicted_prob = total_predicted_prob.reshape(test_labels.shape)
     total_labels = total_labels.reshape(test_labels.shape)
+    print(total_labels.shape)
     return total_predicted_prob, total_labels
 
 def neural_network_predict(predict_features, predict_labels, model_file):

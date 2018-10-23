@@ -101,9 +101,10 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                                                 hidden_array,
                                                 model_dir + '/', key_order)
 
-            fold_test_predicted_prob = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
+            fold_test_predicted_prob, fold_test_labels = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
+            print(fold_test_predicted_prob)
             total_predicted_prob = total_predicted_prob + fold_test_predicted_prob.tolist()
-            total_test = total_test + fold_test_y.tolist()
+            total_test = total_test + fold_test_labels.tolist()
             total_instances = total_instances + fold_test_instances
 
         else:
