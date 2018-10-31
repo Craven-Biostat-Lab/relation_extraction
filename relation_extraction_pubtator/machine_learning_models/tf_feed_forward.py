@@ -188,10 +188,12 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
                 sess.run(test_iter.initializer,feed_dict={input_tensor: test_X, output_tensor: test_y})
                 test_y_predict_total = np.array([])
                 test_y_label_total = np.array([])
+                test_step = 0
                 test_loss_value = 0
                 test_accuracy_value = 0
                 while True:
                     try:
+                        test_step+=1
                         test_loss,test_accuracy, batch_test_predict, batch_test_labels = sess.run([cost,accuracy,class_yhat, batch_labels], feed_dict={
                             iterator_handle: test_handle, keep_prob: 1.0})
                         test_y_predict_total = np.append(test_y_predict_total, batch_test_predict)
@@ -206,8 +208,8 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
                 test_y_predict_total = test_y_predict_total.reshape(test_y.shape)
                 test_y_label_total = test_y_label_total.reshape(test_y.shape)
 
-                test_accuracy_value = test_accuracy_value / step
-                test_loss_value = test_loss_value / step
+                test_accuracy_value = test_accuracy_value / test_step
+                test_loss_value = test_loss_value / test_step
                 test_acc_summary = tf.Summary()
                 test_loss_summary = tf.Summary()
                 test_acc_summary.value.add(tag='Accuracy', simple_value=test_accuracy_value)
