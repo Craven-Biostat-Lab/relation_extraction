@@ -19,11 +19,14 @@ from sklearn import metrics
 
 
 
-def write_output(filename, predicts, instances, key_order):
+def write_output(filename, predicts, instances, key_order , grads = None):
     for k in range(len(key_order)):
         key = key_order[k]
         labels = []
         file = open(filename+'_'+key,'w')
+        if grads is not None:
+            gradient_file = filename + '_grad_'+key
+            np.savetxt(gradient_file,grads[:,:,k],delimiter='\t')
         #file.write(key_order[k]+'\n')
         file.write('PMID\tE1\tE2\tClASS_LABEL\tPROBABILITY\n')
         for q in range(predicts[:,k].size):
@@ -68,9 +71,9 @@ def predict_sentences_recurrent(model_file, pubtator_file, entity_a, entity_b):
     dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_recurrent_arrays(predict_instances)
     predict_features = [dep_path_list_features,dep_word_features,dep_type_path_length,dep_word_path_length]
 
-    predicted_prob = rnn.recurrent_predict(predict_features, labels, model_file + '/')
+    predicted_prob,predict_grad = rnn.recurrent_predict(predict_features, labels, model_file + '/')
 
-    return predict_instances,predicted_prob,key_order
+    return predict_instances,predicted_prob,predict_grad,key_order
 
 def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
 
@@ -101,9 +104,9 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
     predict_features = np.array(predict_features)
     predict_labels = np.array(predict_labels)
 
-    predicted_prob = ffnn.neural_network_predict(predict_features, predict_labels,model_file + '/')
+    predicted_prob,predicted_grad = ffnn.neural_network_predict(predict_features, predict_labels,model_file + '/')
 
-    return predict_instances,predicted_prob,key_order
+    return predict_instances,predicted_prob,predicted_grad,key_order
 
 def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
                    distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b,recurrent):
@@ -697,30 +700,16 @@ def main():
         recurrent = recurrent == 'True'
         print(recurrent)
         if recurrent is False:
-            prediction_instances, predict_probs,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)
+            prediction_instances, predict_probs,predict_grad,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)
             #print(total_group_instance_results)
 
         else:
-            prediction_instances,predict_probs,key_order = predict_sentences_recurrent(model_file, sentence_file, entity_a, entity_b)
+            prediction_instances,predict_probs,predict_grad,key_order = predict_sentences_recurrent(model_file, sentence_file, entity_a, entity_b)
 
         print(predict_probs)
-        for key_index in range(len(key_order)):
-            key = key_order[key_index]
-            outfile = open(out_pairs_file + '_' + key, 'w')
-            outfile.write('PMID\tENTITY_1\tENTITY_2\tCLASS_LABEL\tPROBABILITY\tSENTENCE\n')
-            for i in range(len(prediction_instances)):
-                pi = prediction_instances[i]
-                #print(i)
-                #print(' '.join(pi.sentence.sentence_words))
+        print(predict_grad)
 
-                outfile.write(str(pi.sentence.pmid) + '\t'
-                              + str(pi.sentence.start_entity_id) + '\t'
-                              + str(pi.sentence.end_entity_id) + '\t'
-                              + str(pi.label[key_index]) + '\t'
-                              + str(predict_probs[i,key_index])+'\t'
-                              + ' '.join(pi.sentence.sentence_words))
-
-            outfile.close()
+        write_output(out_pairs_file,predict_probs,prediction_instances,key_order,predict_grad)
 
     else:
         print("usage error")

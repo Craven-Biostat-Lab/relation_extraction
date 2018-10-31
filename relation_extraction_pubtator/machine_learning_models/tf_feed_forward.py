@@ -272,8 +272,9 @@ def feed_forward_test(test_features, test_labels, model_file):
     return total_predicted_prob, total_labels
 
 def neural_network_predict(predict_features, predict_labels, model_file):
-    total_labels = np.array([])
-    total_predicted_prob = np.array([])
+    total_labels = []
+    total_predicted_prob = []
+    total_predicted_grad = []
     with tf.Session() as sess:
         print(tf.global_variables())
         restored_model = tf.train.import_meta_graph(model_file + '.meta',clear_devices=True)
@@ -284,7 +285,7 @@ def neural_network_predict(predict_features, predict_labels, model_file):
         input_tensor = graph.get_tensor_by_name("input:0")
         output_tensor=graph.get_tensor_by_name("output:0")
         dataset = tf.data.Dataset.from_tensor_slices((input_tensor,output_tensor))
-        dataset = dataset.batch(32)
+        dataset = dataset.batch(1)
 
         iterator_handle = graph.get_tensor_by_name('iterator_handle:0')
         test_iterator = dataset.make_initializable_iterator()
@@ -298,25 +299,29 @@ def neural_network_predict(predict_features, predict_labels, model_file):
 
         print(tf.global_variables())
 
-        #gradients = tf.gradients(predict_prob,tf.global_variables())
-        #for g in range(len(gradients)):
-            #if len(gradients[g].shape) == 1:
-                #gradients[g] = tf.reshape(gradients[g], [gradients[g].shape[0], 1])
-        #print(gradients)
+        gradients = tf.gradients(predict_prob,graph.get_tensor_by_name('out_weights:0'))
+        print(gradients)
+
 
         while True:
             try:
                 #predicted_val,labels,grads = sess.run([predict_prob,batch_labels_tensor,gradients],feed_dict={iterator_handle: new_handle, keep_prob_tensor: 1.0})
-                predicted_val, labels = sess.run([predict_prob, batch_labels_tensor],
+                predicted_val, labels,grads = sess.run([predict_prob, batch_labels_tensor,gradients],
                                                         feed_dict={iterator_handle: new_handle, keep_prob_tensor: 1.0})
-                total_predicted_prob = np.append(total_predicted_prob, predicted_val)
-                total_labels = np.append(total_labels,labels)
-                #for g in grads:
-                    #print(g.shape)
+
+                total_predicted_prob.append(predicted_val[0])
+                total_labels.append(labels[0])
+                total_predicted_grad.append(grads[0])
+
 
             except tf.errors.OutOfRangeError:
                 break
 
+    total_labels = np.array(total_labels)
+    total_predicted_prob = np.array(total_predicted_prob)
+    total_predicted_grad = np.array(total_predicted_grad)
+    print(total_predicted_grad.shape)
+    print(total_labels.shape)
     print(total_predicted_prob.shape)
-    total_predicted_prob = total_predicted_prob.reshape(predict_labels.shape)
-    return total_predicted_prob
+
+    return total_predicted_prob,total_predicted_grad
