@@ -384,17 +384,25 @@ def recurrent_predict(predict_features, predict_labels, model_file):
         keep_prob_tensor = graph.get_tensor_by_name('keep_prob:0')
         #predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
-        total_predicted_prob = np.array([])
+        total_predicted_prob = []
+        total_grad = []
+        print(tf.global_variables())
+
+        gradients = tf.gradients(predict_prob, graph.get_tensor_by_name('sigmoid_layer/W:0'))
+        print(gradients)
+
         while True:
             try:
-                predicted_val = sess.run([predict_prob],feed_dict={iterator_handle: new_handle,keep_prob_tensor: 1.0})
+                predicted_val,grads = sess.run([predict_prob,gradients],feed_dict={iterator_handle: new_handle,keep_prob_tensor: 1.0})
                 #print(predicted_val)
                 #total_labels = np.append(total_labels, batch_labels)
-                total_predicted_prob = np.append(total_predicted_prob,predicted_val)
+                total_predicted_prob.append(predicted_val[0])
+                total_grad.append(grads[0])
             except tf.errors.OutOfRangeError:
                 break
 
     print(predict_labels.shape)
-    total_predicted_prob = total_predicted_prob.reshape(predict_labels.shape)
+    total_predicted_prob = np.array(total_predicted_prob)
+    total_grad = np.array(total_grad)
     print(total_predicted_prob)
-    return total_predicted_prob
+    return total_predicted_prob,total_grad
