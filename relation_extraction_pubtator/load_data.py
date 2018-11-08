@@ -76,6 +76,22 @@ def build_instances_predict(predict_forward_sentences, predict_reverse_sentences
 def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary,
                             distant_interactions,reverse_distant_interactions, entity_a_text, entity_b_text,key_order,dep_path_type_list_dictionary=None):
 
+    """
+    Builds instances for the test function
+    :param test_forward_sentences: sentences going from entity 1 to entity 2
+    :param test_reverse_sentences: sentences going from entity 2 to entity 1
+    :param dep_dictionary: dictionary of dependency paths
+    :param dep_path_word_dictionary: dictionary of words in dependency paths
+    :param dep_element_dictionary: dictionary of dependency elements
+    :param between_word_dictionary: dictionary of words bettwen entities
+    :param distant_interactions:
+    :param reverse_distant_interactions:
+    :param entity_a_text:
+    :param entity_b_text:
+    :param key_order:
+    :param dep_path_type_list_dictionary: optional argument that depends on if doing LSTM or feed forward
+    :return:
+    """
     test_instances = []
 
     for key in test_forward_sentences:
@@ -90,6 +106,7 @@ def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_d
             entity_combo = (forward_test_instance.sentence.start_entity_id,
                                 forward_test_instance.sentence.end_entity_id)
 
+            #performs distant supervision
             for i in range(len(key_order)):
                 distant_key = key_order[i]
                 if 'SYMMETRIC' in distant_key:
@@ -110,6 +127,7 @@ def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_d
         else:
             continue
 
+    #dep path type list dictionary is for LSTM
     if dep_path_type_list_dictionary is None:
         for instance in test_instances:
             instance.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary,  between_word_dictionary)

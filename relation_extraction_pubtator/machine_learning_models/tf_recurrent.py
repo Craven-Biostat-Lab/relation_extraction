@@ -366,7 +366,7 @@ def recurrent_predict(predict_features, predict_labels, model_file):
         output_tensor = graph.get_tensor_by_name('output:0')
         dataset = tf.data.Dataset.from_tensor_slices((dependency_ids, word_ids, dependency_type_sequence_length,
                                                       dependency_word_sequence_length, output_tensor))
-        dataset = dataset.batch(32)
+        dataset = dataset.batch(1)
 
         iterator_handle = graph.get_tensor_by_name('iterator_handle:0')
         test_iterator = dataset.make_initializable_iterator()
@@ -404,5 +404,6 @@ def recurrent_predict(predict_features, predict_labels, model_file):
     print(predict_labels.shape)
     total_predicted_prob = np.array(total_predicted_prob)
     total_grad = np.array(total_grad)
-    print(total_predicted_prob)
+    print(total_grad.shape)
+    #print(total_predicted_prob)
     return total_predicted_prob,total_grad

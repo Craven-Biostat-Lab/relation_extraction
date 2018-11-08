@@ -20,6 +20,15 @@ from sklearn import metrics
 
 
 def write_output(filename, predicts, instances, key_order , grads = None):
+    '''
+    Writes predictions to outfile
+    :param filename: file to write predictions too
+    :param predicts: prediction probabilities
+    :param instances: instance structures
+    :param key_order: order of relations
+    :param grads: gradients of relations
+    :return:
+    '''
     for k in range(len(key_order)):
         key = key_order[k]
         labels = []
@@ -27,17 +36,12 @@ def write_output(filename, predicts, instances, key_order , grads = None):
         if grads is not None:
             gradient_file = filename + '_grad_'+key
             np.savetxt(gradient_file,grads[:,:,k],delimiter='\t')
-        #file.write(key_order[k]+'\n')
         file.write('PMID\tE1\tE2\tClASS_LABEL\tPROBABILITY\n')
         for q in range(predicts[:,k].size):
             instance_label = instances[q].label[k]
             labels.append(instance_label)
             file.write(str(instances[q].sentence.pmid) + '\t' + str(instances[q].sentence.start_entity_id) + '\t' +str(instances[q].sentence.end_entity_id) + '\t'+str(instance_label) + '\t' + str(predicts[q,k]) + '\n')
-        #labels = np.array(labels)
-        #precision, recall, _ = metrics.precision_recall_curve(y_true=labels,probas_pred=predicts[:, k])
-        #file.write('PRECISION\tRECALL\n')
-        #for z in range(precision.size):
-        #    file.write(str(precision[z]) + '\t' + str(recall[z]) + '\n')
+
 
         file.close()
 
@@ -46,10 +50,10 @@ def write_output(filename, predicts, instances, key_order , grads = None):
 def predict_sentences_recurrent(model_file, pubtator_file, entity_a, entity_b):
     """
     predict instances using recurrent
-    :param model_file:
-    :param pubtator_file:
-    :param entity_a:
-    :param entity_b:
+    :param model_file: path of trained model
+    :param pubtator_file: path of pubtator file to try
+    :param entity_a: first entity value in format ENTITYID_ENTITYTYPE
+    :param entity_b: second entity value
     :return:
     """
 
@@ -76,6 +80,14 @@ def predict_sentences_recurrent(model_file, pubtator_file, entity_a, entity_b):
     return predict_instances,predicted_prob,predict_grad,key_order
 
 def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
+    '''
+    Predict sentences for feed forward neural network
+    :param model_file:  path of trained model
+    :param pubtator_file:  path of pubtator file
+    :param entity_a: first entity value in format ENTITYID_ENTITYTYPE
+    :param entity_b: second entity value
+    :return:
+    '''
 
     predict_pmids, \
     predict_forward_sentences,\
@@ -110,6 +122,20 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
 
 def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
                    distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b,recurrent):
+    '''
+    Train model is cross validated manner
+    :param model_out: model filename
+    :param pubtator_file: pubtator file for training instances
+    :param directional_distant_directory:
+    :param symmetric_distant_directory:
+    :param distant_entity_a_col:
+    :param distant_entity_b_col:
+    :param distant_rel_col:
+    :param entity_a:
+    :param entity_b:
+    :param recurrent:
+    :return:
+    '''
     # get distant_relations from external knowledge base file
     distant_interactions, reverse_distant_interactions = load_data.load_distant_directories(
         directional_distant_directory,
