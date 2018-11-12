@@ -7,8 +7,29 @@ import time
 
 from machine_learning_models import tf_feed_forward as snn
 from machine_learning_models import tf_recurrent as rnn
-from sklearn import metrics
 
+import tensorflow as tf
+
+tf.contrib.summary
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
+
+
+
+def cosine_sim(input_matrix):
+    num_features = input_matrix.shape[1]
+    input_tensor = tf.placeholder(tf.float32, [None, num_features])
+
+    normalized = tf.nn.l2_normalize(input_tensor,dim=1)
+    prod = tf.matmul(normalized,normalized,adjoint_b=True)
+
+    dist = 1 -prod
+
+    config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config) as sess:
+        output = sess.run(dist, feed_dict={input_tensor: input_matrix})
+
+    return output
 
 def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
                             entity_a_text, entity_b_text,hidden_array,key_order,recurrent):
@@ -173,7 +194,9 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
     total_predicted_prob = np.array(total_predicted_prob)
     total_grad = np.array(total_grad)
 
-    cs_grad = metrics.pairwise.cosine_similarity(total_grad)
+    cs_grad = cosine_sim(total_grad)
+
+    #cs_grad = metrics.pairwise.cosine_similarity(total_grad)
 
 
     return total_predicted_prob, total_instances, cs_grad
