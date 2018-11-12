@@ -285,8 +285,7 @@ def feed_forward_test(test_features, test_labels, model_file):
     print(total_labels.shape)
     print(total_predicted_prob.shape)
 
-    cs_grad = metrics.pairwise.cosine_similarity(total_predicted_grad)
-    print(cs_grad.shape)
+    cs_grad = []
 
     return total_predicted_prob, total_labels, total_predicted_grad, cs_grad
 
