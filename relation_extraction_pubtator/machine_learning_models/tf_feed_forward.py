@@ -43,7 +43,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     num_labels = train_y.shape[1]
     batch_size = 1
     num_hidden_layers = len(hidden_array)
-    num_epochs = 300
+    num_epochs = 250
 
     tf.reset_default_graph()
 
@@ -233,8 +233,9 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     return save_path
 
 def feed_forward_test(test_features, test_labels, model_file):
-    total_labels = np.array([])
-    total_predicted_prob = np.array([])
+    total_labels = []
+    total_predicted_prob = []
+    total_predicted_grad = []
     with tf.Session() as sess:
         restored_model = tf.train.import_meta_graph(model_file + '.meta',clear_devices=True)
         restored_model.restore(sess, model_file)
@@ -243,7 +244,7 @@ def feed_forward_test(test_features, test_labels, model_file):
         input_tensor = graph.get_tensor_by_name("input:0")
         output_tensor = graph.get_tensor_by_name('output:0')
         dataset = tf.data.Dataset.from_tensor_slices((input_tensor, output_tensor))
-        dataset = dataset.batch(32)
+        dataset = dataset.batch(1)
 
         iterator_handle = graph.get_tensor_by_name('iterator_handle:0')
         test_iterator = dataset.make_initializable_iterator()
@@ -256,20 +257,38 @@ def feed_forward_test(test_features, test_labels, model_file):
         predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
+        gradients = tf.gradients(predict_prob, tf.trainable_variables())
+        flattened_gradients = []
+        for g in gradients:
+            if g is not None:
+                flattened_gradients.append(tf.reshape(g, [-1]))
+        total_gradients = tf.concat(flattened_gradients, 0)
+
         while True:
             try:
-                predicted_val, batch_labels = sess.run([predict_prob, batch_labels_tensor],
-                                                       feed_dict={iterator_handle: new_handle, keep_prob_tensor: 1.0})
-                total_labels = np.append(total_labels, batch_labels)
-                total_predicted_prob = np.append(total_predicted_prob, predicted_val)
+
+                predicted_val, labels, grads = sess.run([predict_prob, batch_labels_tensor, total_gradients],
+                                                        feed_dict={iterator_handle: new_handle, keep_prob_tensor: 1.0})
+
+                total_predicted_prob.append(predicted_val[0])
+                total_labels.append(labels[0])
+                total_predicted_grad.append(grads)
+
+
             except tf.errors.OutOfRangeError:
                 break
 
-    print(total_predicted_prob.shape)
-    total_predicted_prob = total_predicted_prob.reshape(test_labels.shape)
-    total_labels = total_labels.reshape(test_labels.shape)
+    total_labels = np.array(total_labels)
+    total_predicted_prob = np.array(total_predicted_prob)
+    total_predicted_grad = np.array(total_predicted_grad)
+    print(total_predicted_grad.shape)
     print(total_labels.shape)
-    return total_predicted_prob, total_labels
+    print(total_predicted_prob.shape)
+
+    cs_grad = metrics.pairwise.cosine_similarity(total_predicted_grad)
+    print(cs_grad.shape)
+
+    return total_predicted_prob, total_labels, total_predicted_grad, cs_grad
 
 def neural_network_predict(predict_features, predict_labels, model_file):
     total_labels = []
@@ -297,21 +316,26 @@ def neural_network_predict(predict_features, predict_labels, model_file):
         predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
-        print(tf.global_variables())
+        print(tf.trainable_variables())
 
-        gradients = tf.gradients(predict_prob,graph.get_tensor_by_name('out_weights:0'))
-        print(gradients)
+        gradients = tf.gradients(predict_prob,tf.trainable_variables())
+        flattened_gradients = []
+        for g in gradients:
+            if g is not None:
+                flattened_gradients.append(tf.reshape(g,[-1]))
+        total_gradients = tf.concat(flattened_gradients,0)
+
 
 
         while True:
             try:
-                #predicted_val,labels,grads = sess.run([predict_prob,batch_labels_tensor,gradients],feed_dict={iterator_handle: new_handle, keep_prob_tensor: 1.0})
-                predicted_val, labels,grads = sess.run([predict_prob, batch_labels_tensor,gradients],
+
+                predicted_val, labels,grads = sess.run([predict_prob, batch_labels_tensor,total_gradients],
                                                         feed_dict={iterator_handle: new_handle, keep_prob_tensor: 1.0})
 
                 total_predicted_prob.append(predicted_val[0])
                 total_labels.append(labels[0])
-                total_predicted_grad.append(grads[0])
+                total_predicted_grad.append(grads)
 
 
             except tf.errors.OutOfRangeError:
@@ -324,4 +348,6 @@ def neural_network_predict(predict_features, predict_labels, model_file):
     print(total_labels.shape)
     print(total_predicted_prob.shape)
 
-    return total_predicted_prob,total_predicted_grad
+    cs_grad = metrics.pairwise.cosine_similarity(total_predicted_grad)
+
+    return total_predicted_prob,total_predicted_grad,cs_grad

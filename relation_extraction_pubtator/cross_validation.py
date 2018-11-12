@@ -7,6 +7,7 @@ import time
 
 from machine_learning_models import tf_feed_forward as snn
 from machine_learning_models import tf_recurrent as rnn
+from sklearn import metrics
 
 
 def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
@@ -20,6 +21,19 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
     total_predicted_prob = []
     total_test = []
     total_instances = []
+    total_grad = []
+
+    training_instances, \
+    fold_dep_dictionary, \
+    fold_dep_word_dictionary, \
+    fold_dep_element_dictionary, \
+    fold_between_word_dictionary = load_data.build_instances_training(forward_sentences,
+                                                                      reverse_sentences,
+                                                                      distant_interactions,
+                                                                      reverse_distant_interactions,
+                                                                      entity_a_text,
+                                                                      entity_b_text, key_order)
+
     for i in range(len(all_chunks)):
         fold_chunks = all_chunks[:]
         fold_test_abstracts = set(fold_chunks.pop(i))
@@ -43,16 +57,14 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                 fold_test_reverse_sentences[key] = reverse_sentences[key]
 
         if recurrent is False:
-            fold_training_instances, \
-            fold_dep_dictionary, \
-            fold_dep_word_dictionary, \
-            fold_dep_element_dictionary, \
-            fold_between_word_dictionary = load_data.build_instances_training(fold_training_forward_sentences,
-                                                                              fold_training_reverse_sentences,
-                                                                              distant_interactions,
-                                                                              reverse_distant_interactions,
-                                                                              entity_a_text,
-                                                                              entity_b_text, key_order)
+            fold_training_instances = load_data.build_instances_testing(fold_training_forward_sentences,
+                                                                        fold_training_reverse_sentences,
+                                                                        fold_dep_dictionary, fold_dep_word_dictionary,
+                                                                        fold_dep_element_dictionary,
+                                                                        fold_between_word_dictionary,
+                                                                        distant_interactions,
+                                                                        reverse_distant_interactions,
+                                                                        entity_a_text, entity_b_text, key_order)
 
             # train model
             X = []
@@ -101,9 +113,9 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                                                 hidden_array,
                                                 model_dir + '/', key_order)
 
-            fold_test_predicted_prob, fold_test_labels = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
-            print(fold_test_predicted_prob)
+            fold_test_predicted_prob, fold_test_labels, fold_test_grads,fold_test_cs_grads = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
             total_predicted_prob = total_predicted_prob + fold_test_predicted_prob.tolist()
+            total_grad = total_grad + fold_test_grads.tolist()
             total_test = total_test + fold_test_labels.tolist()
             total_instances = total_instances + fold_test_instances
 
@@ -159,9 +171,12 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
 
     total_test = np.array(total_test)
     total_predicted_prob = np.array(total_predicted_prob)
+    total_grad = np.array(total_grad)
+
+    cs_grad = metrics.pairwise.cosine_similarity(total_grad)
 
 
-    return total_predicted_prob, total_instances
+    return total_predicted_prob, total_instances, cs_grad
 
 def parallel_k_fold_cross_validation(batch_id, k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
                                      entity_a_text, entity_b_text, hidden_array, key_order, recurrent):

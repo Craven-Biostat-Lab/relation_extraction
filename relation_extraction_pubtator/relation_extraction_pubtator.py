@@ -29,13 +29,15 @@ def write_output(filename, predicts, instances, key_order , grads = None):
     :param grads: gradients of relations
     :return:
     '''
+    print(predicts.shape)
+    print(grads.shape)
     for k in range(len(key_order)):
         key = key_order[k]
         labels = []
         file = open(filename+'_'+key,'w')
         if grads is not None:
             gradient_file = filename + '_grad_'+key
-            np.savetxt(gradient_file,grads[:,:,k],delimiter='\t')
+            np.save(gradient_file,grads)
         file.write('PMID\tE1\tE2\tClASS_LABEL\tPROBABILITY\n')
         for q in range(predicts[:,k].size):
             instance_label = instances[q].label[k]
@@ -116,9 +118,9 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
     predict_features = np.array(predict_features)
     predict_labels = np.array(predict_labels)
 
-    predicted_prob,predicted_grad = ffnn.neural_network_predict(predict_features, predict_labels,model_file + '/')
+    predicted_prob,predicted_grad,cs_grad = ffnn.neural_network_predict(predict_features, predict_labels,model_file + '/')
 
-    return predict_instances,predicted_prob,predicted_grad,key_order
+    return predict_instances,predicted_prob,cs_grad,key_order
 
 def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
                    distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b,recurrent):
@@ -150,10 +152,10 @@ def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_
         pubtator_file, entity_a, entity_b)
 
     # hidden layer structure
-    hidden_array = []
+    hidden_array = [256]
 
     # k-cross val
-    instance_predicts, single_instances = cv.k_fold_cross_validation(10, training_pmids,
+    instance_predicts, single_instances,similarities = cv.k_fold_cross_validation(10, training_pmids,
                                                                               training_forward_sentences,
                                                                               training_reverse_sentences,
                                                                               distant_interactions,
@@ -162,7 +164,7 @@ def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_
                                                                               hidden_array,
                                                                               key_order, recurrent)
 
-    write_output(model_out + '_cv_predictions', instance_predicts, single_instances, key_order)
+    write_output(model_out + '_cv_predictions', instance_predicts, single_instances, key_order,similarities)
 
     return True
 
@@ -185,7 +187,7 @@ def parallel_train(model_out, pubtator_file, directional_distant_directory, symm
         pubtator_file,entity_a,entity_b)
 
     #hidden layer structure
-    hidden_array = []
+    hidden_array = [256]
 
     #k-cross val
     instance_predicts,single_instances = cv.parallel_k_fold_cross_validation(batch_id, 10, training_pmids,
