@@ -155,7 +155,7 @@ def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_
     hidden_array = [256]
 
     # k-cross val
-    instance_predicts, single_instances,similarities = cv.k_fold_cross_validation(10, training_pmids,
+    instance_predicts, single_instances,similarities = cv.k_fold_cross_validation(2, training_pmids,
                                                                               training_forward_sentences,
                                                                               training_reverse_sentences,
                                                                               distant_interactions,

@@ -19,7 +19,7 @@ def cosine_sim(input_matrix):
     num_features = input_matrix.shape[1]
     input_tensor = tf.placeholder(tf.float32, [None, num_features])
 
-    normalized = tf.nn.l2_normalize(input_tensor,dim=1)
+    normalized = tf.nn.l2_normalize(input_tensor,axis=1)
     prod = tf.matmul(normalized,normalized,adjoint_b=True)
 
     dist = 1 -prod
@@ -135,10 +135,11 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                                                 model_dir + '/', key_order)
 
             fold_test_predicted_prob, fold_test_labels, fold_test_grads,fold_test_cs_grads = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
-            total_predicted_prob = total_predicted_prob + fold_test_predicted_prob.tolist()
-            total_grad = total_grad + fold_test_grads.tolist()
-            total_test = total_test + fold_test_labels.tolist()
+            total_predicted_prob.append(fold_test_predicted_prob)
+            total_grad.append(fold_test_grads)
+            total_test.append(fold_test_labels)
             total_instances = total_instances + fold_test_instances
+            print('end')
 
         else:
 
@@ -190,9 +191,10 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
             total_test = total_test + fold_test_labels.tolist()
             total_instances = total_instances + fold_test_instances
 
-    total_test = np.array(total_test)
-    total_predicted_prob = np.array(total_predicted_prob)
-    total_grad = np.array(total_grad)
+    total_test = np.vstack(total_test)
+    total_predicted_prob = np.vstack(total_predicted_prob)
+    total_grad = np.vstack(total_grad)
+    print('stacked')
 
     cs_grad = cosine_sim(total_grad)
 

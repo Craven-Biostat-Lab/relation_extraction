@@ -14,7 +14,7 @@ def cosine_sim(input_matrix):
     num_features = input_matrix.shape[1]
     input_tensor = tf.placeholder(tf.float32, [None, num_features])
 
-    normalized = tf.nn.l2_normalize(input_tensor,dim=1)
+    normalized = tf.nn.l2_normalize(input_tensor,axis=1)
     prod = tf.matmul(normalized,normalized,adjoint_b=True)
 
     dist = 1 -prod
@@ -59,7 +59,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     num_labels = train_y.shape[1]
     batch_size = 1
     num_hidden_layers = len(hidden_array)
-    num_epochs = 250
+    num_epochs = 1
 
     tf.reset_default_graph()
 
@@ -252,6 +252,7 @@ def feed_forward_test(test_features, test_labels, model_file):
     total_labels = []
     total_predicted_prob = []
     total_predicted_grad = []
+    tf.reset_default_graph()
     with tf.Session() as sess:
         restored_model = tf.train.import_meta_graph(model_file + '.meta',clear_devices=True)
         restored_model.restore(sess, model_file)
@@ -273,12 +274,15 @@ def feed_forward_test(test_features, test_labels, model_file):
         predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
+        print(set(tf.trainable_variables()))
         gradients = tf.gradients(predict_prob, tf.trainable_variables())
+        print(gradients)
         flattened_gradients = []
         for g in gradients:
             if g is not None:
                 flattened_gradients.append(tf.reshape(g, [-1]))
         total_gradients = tf.concat(flattened_gradients, 0)
+        print(total_gradients)
 
         while True:
             try:
@@ -301,7 +305,7 @@ def feed_forward_test(test_features, test_labels, model_file):
     print(total_labels.shape)
     print(total_predicted_prob.shape)
 
-    cs_grad = cosine_sim(total_predicted_grad)
+    cs_grad = []
 
     return total_predicted_prob, total_labels, total_predicted_grad, cs_grad
 
@@ -309,6 +313,7 @@ def neural_network_predict(predict_features, predict_labels, model_file):
     total_labels = []
     total_predicted_prob = []
     total_predicted_grad = []
+    tf.reset_default_graph()
     with tf.Session() as sess:
         print(tf.global_variables())
         restored_model = tf.train.import_meta_graph(model_file + '.meta',clear_devices=True)
@@ -334,11 +339,13 @@ def neural_network_predict(predict_features, predict_labels, model_file):
         print(tf.trainable_variables())
 
         gradients = tf.gradients(predict_prob,tf.trainable_variables())
+        print(gradients)
         flattened_gradients = []
         for g in gradients:
             if g is not None:
                 flattened_gradients.append(tf.reshape(g,[-1]))
         total_gradients = tf.concat(flattened_gradients,0)
+        print(total_gradients)
 
 
 
