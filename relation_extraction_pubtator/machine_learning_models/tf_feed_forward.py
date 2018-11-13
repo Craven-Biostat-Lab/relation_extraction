@@ -10,6 +10,22 @@ tf.contrib.summary
 
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
+def cosine_sim(input_matrix):
+    num_features = input_matrix.shape[1]
+    input_tensor = tf.placeholder(tf.float32, [None, num_features])
+
+    normalized = tf.nn.l2_normalize(input_tensor,dim=1)
+    prod = tf.matmul(normalized,normalized,adjoint_b=True)
+
+    dist = 1 -prod
+
+    config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config) as sess:
+        output = sess.run(dist, feed_dict={input_tensor: input_matrix})
+
+    return output
+
 def feed_forward(input_tensor, num_hidden_layers, weights, biases,keep_prob):
     """Performs feed forward portion of neural network training"""
     hidden_mult = {}
@@ -285,7 +301,7 @@ def feed_forward_test(test_features, test_labels, model_file):
     print(total_labels.shape)
     print(total_predicted_prob.shape)
 
-    cs_grad = []
+    cs_grad = cosine_sim(total_predicted_grad)
 
     return total_predicted_prob, total_labels, total_predicted_grad, cs_grad
 
@@ -347,6 +363,6 @@ def neural_network_predict(predict_features, predict_labels, model_file):
     print(total_labels.shape)
     print(total_predicted_prob.shape)
 
-    cs_grad = metrics.pairwise.cosine_similarity(total_predicted_grad)
+    cs_grad = cosine_sim(total_predicted_grad)
 
     return total_predicted_prob,total_predicted_grad,cs_grad
