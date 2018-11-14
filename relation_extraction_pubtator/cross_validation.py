@@ -4,6 +4,7 @@ import numpy as np
 import itertools
 import load_data
 import time
+import random
 
 from machine_learning_models import tf_feed_forward as snn
 from machine_learning_models import tf_recurrent as rnn
@@ -55,10 +56,22 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
                                                                       entity_a_text,
                                                                       entity_b_text, key_order)
 
+
+    if k == 1:
+
+        all_chunks = [1]
+
     for i in range(len(all_chunks)):
-        fold_chunks = all_chunks[:]
-        fold_test_abstracts = set(fold_chunks.pop(i))
-        fold_training_abstracts = set(list(itertools.chain.from_iterable(fold_chunks)))
+        if k == 1:
+            testlength = int(len(pmids) * 0.2)
+            random.shuffle(pmids)
+            fold_test_abstracts = pmids[:testlength]
+            fold_training_abstracts = pmids[testlength:]
+
+        else:
+            fold_chunks = all_chunks[:]
+            fold_test_abstracts = set(fold_chunks.pop(i))
+            fold_training_abstracts = set(list(itertools.chain.from_iterable(fold_chunks)))
 
         fold_training_forward_sentences = {}
         fold_training_reverse_sentences = {}
