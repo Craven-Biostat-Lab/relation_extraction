@@ -644,3 +644,13 @@ def build_recurrent_arrays(instances):
     labels = np.array(labels)
 
     return dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels
+
+def batch_instances(instances):
+    instance_dict = {}
+    for q in range(len(instances)):
+        entity_pair = (instances[q].sentence.start_entity_id,instances[q].sentence.end_entity_id)
+        if entity_pair not in instance_dict:
+            instance_dict[entity_pair] = []
+        instance_dict[entity_pair].append(q)
+
+    return instance_dict
