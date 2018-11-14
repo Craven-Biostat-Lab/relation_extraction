@@ -8,8 +8,10 @@ import random
 
 from machine_learning_models import tf_feed_forward as snn
 from machine_learning_models import tf_recurrent as rnn
+from sklearn import metrics
 
 import tensorflow as tf
+
 
 tf.contrib.summary
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
@@ -209,9 +211,9 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
     total_grad = np.vstack(total_grad)
     print('stacked')
 
-    cs_grad = cosine_sim(total_grad)
 
-    #cs_grad = metrics.pairwise.cosine_similarity(total_grad)
+
+    cs_grad = metrics.pairwise.cosine_similarity(total_grad)
 
 
     return total_predicted_prob, total_instances, cs_grad
