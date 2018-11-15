@@ -59,7 +59,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     num_labels = train_y.shape[1]
     batch_size = 1
     num_hidden_layers = len(hidden_array)
-    num_epochs = 1
+    num_epochs = 250
 
     tf.reset_default_graph()
 
@@ -370,6 +370,6 @@ def neural_network_predict(predict_features, predict_labels, model_file):
     print(total_labels.shape)
     print(total_predicted_prob.shape)
 
-    cs_grad = cosine_sim(total_predicted_grad)
+    cs_grad = metrics.pairwise.cosine_similarity(total_predicted_grad)
 
     return total_predicted_prob,total_predicted_grad,cs_grad

@@ -44,24 +44,6 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
     fold_test_abstracts = pmids[:testlength]
     fold_training_abstracts = pmids[testlength:]
 
-
-
-    total_predicted_prob = []
-    total_test = []
-    total_instances = []
-    total_grad = []
-
-    training_instances, \
-    fold_dep_dictionary, \
-    fold_dep_word_dictionary, \
-    fold_dep_element_dictionary, \
-    fold_between_word_dictionary = load_data.build_instances_training(forward_sentences,
-                                                                      reverse_sentences,
-                                                                      distant_interactions,
-                                                                      reverse_distant_interactions,
-                                                                      entity_a_text,
-                                                                      entity_b_text, key_order)
-
     fold_training_forward_sentences = {}
     fold_training_reverse_sentences = {}
     fold_test_forward_sentences = {}
@@ -80,11 +62,12 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
             fold_test_reverse_sentences[key] = reverse_sentences[key]
 
     if recurrent is False:
-        fold_training_instances = load_data.build_instances_testing(fold_training_forward_sentences,
+        fold_training_instances, \
+        fold_dep_dictionary, \
+        fold_dep_word_dictionary, \
+        fold_dep_element_dictionary, \
+        fold_between_word_dictionary = load_data.build_instances_training(fold_training_forward_sentences,
                                                                     fold_training_reverse_sentences,
-                                                                    fold_dep_dictionary, fold_dep_word_dictionary,
-                                                                    fold_dep_element_dictionary,
-                                                                    fold_between_word_dictionary,
                                                                     distant_interactions,
                                                                     reverse_distant_interactions,
                                                                     entity_a_text, entity_b_text, key_order)
@@ -154,10 +137,13 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
             fold_test_predicted_prob, fold_test_labels, fold_test_cs_grads = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
             probability_dict[g] = fold_test_predicted_prob
             label_dict[g] = fold_test_labels
-            cs_grad_dict[g] = fold_test_cs_grads
+            for i in range(len(fold_test_cs_grads)):
+                print(fold_test_cs_grads[i])
+                print(fold_test_predicted_prob[i])
+                cs_grad_dict[group_instances[g][i]] = [fold_test_predicted_prob[i],fold_test_labels[i],fold_test_cs_grads[i],group_instances[g]]
 
 
-        print(cs_grad_dict)
+    return fold_test_instances, cs_grad_dict
 
 def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
                             entity_a_text, entity_b_text,hidden_array,key_order,recurrent):

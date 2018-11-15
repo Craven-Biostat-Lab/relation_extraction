@@ -19,7 +19,7 @@ from sklearn import metrics
 
 
 
-def write_output(filename, predicts, instances, key_order , grads = None):
+def write_output(filename, instances,grads, key_order):
     '''
     Writes predictions to outfile
     :param filename: file to write predictions too
@@ -29,20 +29,16 @@ def write_output(filename, predicts, instances, key_order , grads = None):
     :param grads: gradients of relations
     :return:
     '''
-    print(predicts.shape)
-    print(grads.shape)
+
     for k in range(len(key_order)):
         key = key_order[k]
         labels = []
         file = open(filename+'_'+key,'w')
-        if grads is not None:
-            gradient_file = filename + '_grad_'+key
-            np.save(gradient_file,grads)
-        file.write('PMID\tE1\tE2\tClASS_LABEL\tPROBABILITY\n')
-        for q in range(predicts[:,k].size):
-            instance_label = instances[q].label[k]
-            labels.append(instance_label)
-            file.write(str(instances[q].sentence.pmid) + '\t' + str(instances[q].sentence.start_entity_id) + '\t' +str(instances[q].sentence.end_entity_id) + '\t'+str(instance_label) + '\t' + str(predicts[q,k]) + '\n')
+        file.write('PMID\tE1\tE2\tClASS_LABEL\tPROBABILITY\tGRADIENTS\tGROUPS\n')
+        for q in range(len(instances)):
+            file.write(str(instances[q].sentence.pmid) + '\t' + str(instances[q].sentence.start_entity_id) + '\t'
+                       +str(instances[q].sentence.end_entity_id) + '\t'+str(grads[q][1][k]) + '\t'
+                       + str(grads[q][0][k]) + '\t'+ '|'.join(map(str,grads[q][2])) + '\t' + '|'.join(map(str,grads[q][3])) + '\n')
 
 
         file.close()
@@ -105,22 +101,33 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
                                                           dep_word_dictionary, dep_element_dictionary,
                                                           between_word_dictionary,entity_a_text,entity_b_text,key_order)
 
+    group_instances = load_data.batch_instances(predict_instances)
+
+    probability_dict = {}
+    label_dict = {}
+    cs_grad_dict = {}
+
+    for g in group_instances:
+        predict_features = []
+        predict_labels = []
+        for ti in group_instances[g]:
+            predict_features.append(predict_instances[ti].features)
+            predict_labels.append(predict_instances[ti].label)
+        predict_X = np.array(predict_features)
+        predict_y = np.array(predict_labels)
+
+        predicted_prob, predict_labels, predicted_grads = ffnn.neural_network_predict(predict_X, predict_y,
+                                                                                               model_file+'/')
+        probability_dict[g] = predicted_prob
+        label_dict[g] = predict_labels
+        for i in range(len(predicted_grads)):
+            print(predicted_grads[i])
+            print(predicted_prob[i])
+            cs_grad_dict[group_instances[g][i]] = [predicted_prob[i], predict_labels[i],
+                                                   predicted_grads[i], group_instances[g]]
 
 
-
-    predict_features = []
-    predict_labels = []
-    for predict_index in range(len(predict_instances)):
-        pi = predict_instances[predict_index]
-        predict_features.append(pi.features)
-        predict_labels.append(pi.label)
-
-    predict_features = np.array(predict_features)
-    predict_labels = np.array(predict_labels)
-
-    predicted_prob,predicted_grad,cs_grad = ffnn.neural_network_predict(predict_features, predict_labels,model_file + '/')
-
-    return predict_instances,predicted_prob,cs_grad,key_order
+    return predict_instances,cs_grad_dict,key_order
 
 def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
                    distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b,recurrent):
@@ -155,7 +162,7 @@ def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_
     hidden_array = [256]
 
     # k-cross val
-    instance_predicts, single_instances,similarities = cv.one_fold_cross_validation(training_pmids,
+    single_instances, similarities = cv.one_fold_cross_validation(training_pmids,
                                                                               training_forward_sentences,
                                                                               training_reverse_sentences,
                                                                               distant_interactions,
@@ -164,7 +171,7 @@ def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_
                                                                               hidden_array,
                                                                               key_order, recurrent)
 
-    write_output(model_out + '_cv_predictions', instance_predicts, single_instances, key_order,similarities)
+    write_output(model_out + '_cv_predictions', single_instances, similarities,key_order)
 
     return True
 
@@ -728,16 +735,14 @@ def main():
         recurrent = recurrent == 'True'
         print(recurrent)
         if recurrent is False:
-            prediction_instances, predict_probs,predict_grad,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)
+            prediction_instances, predict_grad,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)
             #print(total_group_instance_results)
 
         else:
             prediction_instances,predict_probs,predict_grad,key_order = predict_sentences_recurrent(model_file, sentence_file, entity_a, entity_b)
 
-        print(predict_probs)
-        print(predict_grad)
 
-        write_output(out_pairs_file,predict_probs,prediction_instances,key_order,predict_grad)
+        write_output(out_pairs_file,prediction_instances,predict_grad,key_order)
 
     else:
         print("usage error")
