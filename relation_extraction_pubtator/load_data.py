@@ -61,7 +61,9 @@ def build_instances_predict(predict_forward_sentences, predict_reverse_sentences
             predict_instances.append(reverse_predict_instance)
 
         else:
-            continue
+            forward_predict_instance = Instance(predict_forward_sentences[key], [-1] * len(key_order))
+            forward_predict_instance.fix_word_lists(entity_a_text, entity_b_text)
+            predict_instances.append(forward_predict_instance)
 
     if dep_path_list_dictionary is None:
         for instance in predict_instances:
