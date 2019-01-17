@@ -204,7 +204,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                        fold_test_cs_grads[i], group_instances[g]]
 
         # group instances by pmid and build feature array
-            
+
     return fold_test_instances, cs_grad_dict
 
 def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
