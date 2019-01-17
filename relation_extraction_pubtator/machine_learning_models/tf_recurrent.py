@@ -299,8 +299,9 @@ def recurrent_test(test_features, test_labels, model_file):
     test_dep_type_path_length = test_features[2]
     test_dep_word_path_length = test_features[3]
 
-    total_labels = np.array([])
-    total_predicted_prob = np.array([])
+    total_labels = []
+    total_predicted_prob = []
+    total_predicted_grad = []
     with tf.Session() as sess:
         restored_model = tf.train.import_meta_graph(model_file + '.meta',clear_devices=True)
         restored_model.restore(sess, model_file)
@@ -313,7 +314,7 @@ def recurrent_test(test_features, test_labels, model_file):
         output_tensor = graph.get_tensor_by_name('output:0')
         dataset = tf.data.Dataset.from_tensor_slices((dependency_ids, word_ids, dependency_type_sequence_length,
                                                       dependency_word_sequence_length, output_tensor))
-        dataset = dataset.batch(32)
+        dataset = dataset.batch(1)
 
 
         iterator_handle = graph.get_tensor_by_name('iterator_handle:0')
@@ -333,18 +334,35 @@ def recurrent_test(test_features, test_labels, model_file):
         predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
+        print(set(tf.trainable_variables()))
+        gradients = tf.gradients(predict_prob, tf.trainable_variables())
+        print(gradients)
+        flattened_gradients = []
+        for g in gradients:
+            if g is not None:
+                flattened_gradients.append(tf.reshape(g, [-1]))
+        total_gradients = tf.concat(flattened_gradients, 0)
+        print(total_gradients)
+
         while True:
             try:
-                predicted_val,batch_labels= sess.run([predict_prob,batch_labels_tensor],feed_dict={iterator_handle: new_handle,keep_prob_tensor:1.0})
-                total_labels = np.append(total_labels,batch_labels)
-                total_predicted_prob = np.append(total_predicted_prob,predicted_val)
+                predicted_val,batch_labels , grads = sess.run([predict_prob,batch_labels_tensor,total_gradients],feed_dict={iterator_handle: new_handle,keep_prob_tensor:1.0})
+                total_predicted_prob.append(predicted_val[0])
+                total_labels.append(batch_labels[0])
+                total_predicted_grad.append(grads)
             except tf.errors.OutOfRangeError:
                 break
 
+    total_labels = np.array(total_labels)
+    total_predicted_prob = np.array(total_predicted_prob)
+    total_predicted_grad = np.array(total_predicted_grad)
+    print(total_predicted_grad.shape)
+    print(total_labels.shape)
     print(total_predicted_prob.shape)
-    total_predicted_prob = total_predicted_prob.reshape(test_labels.shape)
-    total_labels = total_labels.reshape(test_labels.shape)
-    return total_predicted_prob, total_labels
+
+    cs_grad = metrics.pairwise.cosine_similarity(total_predicted_grad)
+
+    return total_predicted_prob, total_labels, cs_grad
 
 
 def recurrent_predict(predict_features, predict_labels, model_file):

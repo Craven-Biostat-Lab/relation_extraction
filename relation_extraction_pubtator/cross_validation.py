@@ -142,7 +142,69 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                 print(fold_test_predicted_prob[i])
                 cs_grad_dict[group_instances[g][i]] = [fold_test_predicted_prob[i],fold_test_labels[i],fold_test_cs_grads[i],group_instances[g]]
 
+    else:
+        fold_training_instances, \
+        fold_dep_path_list_dictionary, \
+        fold_dep_word_dictionary, word2vec_embeddings = load_data.build_instances_training(fold_training_forward_sentences,
+                                                                                      fold_training_reverse_sentences,
+                                                                                      distant_interactions,
+                                                                                      reverse_distant_interactions,
+                                                                                      entity_a_text,
+                                                                                      entity_b_text,
+                                                                                      key_order, True)
 
+        dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_recurrent_arrays(
+            fold_training_instances)
+
+        features = [dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length]
+
+        model_dir = os.path.dirname(os.path.realpath(__file__)) + '/model_building_meta_data/test' + str(1) + str(time.time()).replace('.', '')
+        if os.path.exists(model_dir):
+            shutil.rmtree(model_dir)
+
+        test_model = rnn.recurrent_train(features,
+                                                 labels, len(fold_dep_path_list_dictionary),
+                                                 len(fold_dep_word_dictionary),
+                                                 model_dir + '/', key_order, word2vec_embeddings)
+
+        fold_test_instances = load_data.build_instances_testing(fold_test_forward_sentences,
+                                                                fold_test_reverse_sentences,
+                                                                None, fold_dep_word_dictionary,
+                                                                None,
+                                                                None,
+                                                                distant_interactions, reverse_distant_interactions,
+                                                                entity_a_text, entity_b_text, key_order,
+                                                                fold_dep_path_list_dictionary)
+
+        group_instances = load_data.batch_instances(fold_test_instances)
+
+        probability_dict = {}
+        label_dict = {}
+        cs_grad_dict = {}
+
+        for g in group_instances:
+            fold_test_instance_batch = []
+            for ti in group_instances[g]:
+                fold_test_instance_batch.append(fold_test_instances[ti])
+            test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length, test_dep_word_path_length, test_labels = load_data.build_recurrent_arrays(
+                fold_test_instance_batch)
+
+            test_features = [test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length,
+                             test_dep_word_path_length]
+
+            fold_test_predicted_prob, fold_test_labels, fold_test_cs_grads = rnn.recurrent_test(test_features,
+                                                                                                   test_labels,
+                                                                                                   test_model)
+            probability_dict[g] = fold_test_predicted_prob
+            label_dict[g] = fold_test_labels
+            for i in range(len(fold_test_cs_grads)):
+                print(fold_test_cs_grads[i])
+                print(fold_test_predicted_prob[i])
+                cs_grad_dict[group_instances[g][i]] = [fold_test_predicted_prob[i], fold_test_labels[i],
+                                                       fold_test_cs_grads[i], group_instances[g]]
+
+        # group instances by pmid and build feature array
+            
     return fold_test_instances, cs_grad_dict
 
 def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
@@ -253,7 +315,7 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
 
 
 
-            fold_test_predicted_prob, fold_test_labels, fold_test_grads,fold_test_cs_grads = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
+            fold_test_predicted_prob, fold_test_labels, fold_test_grads = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
             total_predicted_prob.append(fold_test_predicted_prob)
             total_grad.append(fold_test_grads)
             total_test.append(fold_test_labels)
@@ -303,12 +365,14 @@ def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, dist
             test_features = [test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length,
                              test_dep_word_path_length]
             print(trained_model_path)
-            fold_test_predicted_prob, fold_test_labels = rnn.recurrent_test(test_features, test_labels,
+            fold_test_predicted_prob, fold_test_labels,fold_test_grads = rnn.recurrent_test(test_features, test_labels,
                                                                             trained_model_path)
 
-            total_predicted_prob = total_predicted_prob + fold_test_predicted_prob.tolist()
-            total_test = total_test + fold_test_labels.tolist()
+            total_predicted_prob.append(fold_test_predicted_prob)
+            total_grad.append(fold_test_grads)
+            total_test.append(fold_test_labels)
             total_instances = total_instances + fold_test_instances
+            print('end')
 
     total_test = np.vstack(total_test)
     total_predicted_prob = np.vstack(total_predicted_prob)
