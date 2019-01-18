@@ -63,7 +63,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     dep_embedding_dimension = 50
     dep_state_size = 50
     num_labels = labels.shape[1]
-    num_epochs = 250
+    num_epochs = 2
     batch_size=64
     maximum_length_path = dep_path_list_features.shape[1]
 
