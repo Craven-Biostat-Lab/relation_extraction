@@ -335,7 +335,7 @@ def recurrent_test(test_features, test_labels, model_file):
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
         print(set(tf.trainable_variables()))
-        gradients = tf.gradients(predict_prob, tf.trainable_variables())
+        gradients = tf.gradients(predict_prob, [graph.get_tensor_by_name('hidden_layer/W:0'),graph.get_tensor_by_name('sigmoid_layer/W:0')])
         print(gradients)
         flattened_gradients = []
         for g in gradients:
