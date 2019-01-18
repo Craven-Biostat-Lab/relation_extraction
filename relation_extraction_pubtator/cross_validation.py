@@ -176,6 +176,8 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                                 entity_a_text, entity_b_text, key_order,
                                                                 fold_dep_path_list_dictionary)
 
+        group_instances = load_data.batch_instances(fold_test_instances)
+
         test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length, test_dep_word_path_length, test_labels = load_data.build_recurrent_arrays(
             fold_test_instances)
 
@@ -186,11 +188,11 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                                                             test_labels,
                                                                                             test_model)
         cs_grad_dict = {}
-        for i in range(len(fold_test_predicted_prob)):
-            #print(fold_test_cs_grads[i])
-            print(fold_test_predicted_prob[i])
-            cs_grad_dict[i] = [fold_test_predicted_prob[i], fold_test_labels[i],
-                                                   [], []]
+        for g in group_instances:
+            for ti in group_instances[g]:
+                print(fold_test_predicted_prob[ti])
+                cs_grad_dict[ti] = [fold_test_predicted_prob[ti], fold_test_labels[ti],
+                                                   [], group_instances[g]]
         '''
         group_instances = load_data.batch_instances(fold_test_instances)
 
