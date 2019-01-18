@@ -193,7 +193,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                 print(fold_test_predicted_prob[ti])
                 cs_grad_dict[ti] = [fold_test_predicted_prob[ti], fold_test_labels[ti],
                                                    [], group_instances[g]]
-        '''
+        '''Adjust for gradients later. 
         group_instances = load_data.batch_instances(fold_test_instances)
 
         probability_dict = {}
