@@ -63,8 +63,8 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     dep_embedding_dimension = 50
     dep_state_size = 50
     num_labels = labels.shape[1]
-    num_epochs = 2
-    batch_size=64
+    num_epochs = 250
+    batch_size=32
     maximum_length_path = dep_path_list_features.shape[1]
 
     tf.reset_default_graph()
@@ -345,8 +345,11 @@ def recurrent_test(test_features, test_labels, model_file):
         total_gradients = tf.concat(flattened_gradients, 0)
         print(total_gradients)
         '''
+        count = 0
         while True:
             try:
+                count+=1
+                print(count)
                 predicted_val,batch_labels = sess.run([predict_prob,batch_labels_tensor],feed_dict={iterator_handle: new_handle,keep_prob_tensor:1.0})
                 total_predicted_prob.append(predicted_val[0])
                 total_labels.append(batch_labels[0])
