@@ -176,6 +176,22 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                                 entity_a_text, entity_b_text, key_order,
                                                                 fold_dep_path_list_dictionary)
 
+        test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length, test_dep_word_path_length, test_labels = load_data.build_recurrent_arrays(
+            fold_test_instances)
+
+        test_features = [test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length,
+                         test_dep_word_path_length]
+
+        fold_test_predicted_prob, fold_test_labels, fold_test_cs_grads = rnn.recurrent_test(test_features,
+                                                                                            test_labels,
+                                                                                            test_model)
+        cs_grad_dict = {}
+        for i in range(len(fold_test_predicted_prob)):
+            #print(fold_test_cs_grads[i])
+            print(fold_test_predicted_prob[i])
+            cs_grad_dict[i] = [fold_test_predicted_prob[i], fold_test_labels[i],
+                                                   [], []]
+        '''
         group_instances = load_data.batch_instances(fold_test_instances)
 
         probability_dict = {}
@@ -202,7 +218,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                 print(fold_test_predicted_prob[i])
                 cs_grad_dict[group_instances[g][i]] = [fold_test_predicted_prob[i], fold_test_labels[i],
                                                        fold_test_cs_grads[i], group_instances[g]]
-
+        '''
         # group instances by pmid and build feature array
 
     return fold_test_instances, cs_grad_dict

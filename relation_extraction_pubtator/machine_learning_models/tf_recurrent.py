@@ -63,7 +63,7 @@ def recurrent_train(features, labels, num_dep_types, num_path_words, model_dir, 
     dep_embedding_dimension = 50
     dep_state_size = 50
     num_labels = labels.shape[1]
-    num_epochs = 250
+    num_epochs = 2
     batch_size=64
     maximum_length_path = dep_path_list_features.shape[1]
 
@@ -334,6 +334,7 @@ def recurrent_test(test_features, test_labels, model_file):
         predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
+        '''
         #print(set(tf.trainable_variables()))
         gradients = tf.gradients(predict_prob, [graph.get_tensor_by_name('hidden_layer/W:0'),graph.get_tensor_by_name('sigmoid_layer/W:0')])
         print(gradients)
@@ -343,13 +344,13 @@ def recurrent_test(test_features, test_labels, model_file):
                 flattened_gradients.append(tf.reshape(g, [-1]))
         total_gradients = tf.concat(flattened_gradients, 0)
         print(total_gradients)
-
+        '''
         while True:
             try:
-                predicted_val,batch_labels , grads = sess.run([predict_prob,batch_labels_tensor,total_gradients],feed_dict={iterator_handle: new_handle,keep_prob_tensor:1.0})
+                predicted_val,batch_labels = sess.run([predict_prob,batch_labels_tensor],feed_dict={iterator_handle: new_handle,keep_prob_tensor:1.0})
                 total_predicted_prob.append(predicted_val[0])
                 total_labels.append(batch_labels[0])
-                total_predicted_grad.append(grads)
+                #total_predicted_grad.append(0)
             except tf.errors.OutOfRangeError:
                 break
 
@@ -360,9 +361,9 @@ def recurrent_test(test_features, test_labels, model_file):
     print(total_labels.shape)
     print(total_predicted_prob.shape)
 
-    cs_grad = metrics.pairwise.cosine_similarity(total_predicted_grad)
+    #cs_grad = metrics.pairwise.cosine_similarity(total_predicted_grad)
 
-    return total_predicted_prob, total_labels, cs_grad
+    return total_predicted_prob, total_labels, None
 
 
 def recurrent_predict(predict_features, predict_labels, model_file):
