@@ -276,106 +276,21 @@ def train_labelled(model_out, pubtator_file, pubtator_labels,directional_distant
 
     print(training_forward_sentences)
 
-    if recurrent:
-        # training full model
-        training_instances, \
-        dep_path_list_dictionary, \
-        dep_word_dictionary, word2vec_embeddings = load_data.build_instances_labelled(training_forward_sentences,
-                                                                     training_reverse_sentences,
-                                                                     pubtator_labels,'binds',
-                                                                     entity_a_text,
-                                                                     entity_b_text,
-                                                                     key_order,True)
+    hidden_array = [256]
 
-        dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_recurrent_arrays(
-            training_instances)
-        features = [dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length]
+    # k-cross val
+    single_instances, similarities = cv.one_fold_cross_validation(training_pmids,
+                                                                  training_forward_sentences,
+                                                                  training_reverse_sentences,
+                                                                  distant_interactions,
+                                                                  reverse_distant_interactions,
+                                                                  entity_a_text, entity_b_text,
+                                                                  hidden_array,
+                                                                  key_order, recurrent,pubtator_labels)
 
-        if os.path.exists(model_out):
-            shutil.rmtree(model_out)
+    write_output(model_out + '_cv_predictions', single_instances, similarities, key_order)
 
-        trained_model_path = rnn.recurrent_train(features, labels, len(dep_path_list_dictionary),
-                                                 len(dep_word_dictionary), model_out + '/', key_order,
-                                                 word2vec_embeddings)
-
-        pickle.dump([dep_path_list_dictionary, dep_word_dictionary, key_order], open(model_out + 'a.pickle', 'wb'))
-        print("trained model")
-
-        return trained_model_path
-    else:
-
-        # hidden layer structure
-        hidden_array = [256]
-
-        # k-cross val
-        # instance_predicts, single_instances= cv.k_fold_cross_validation(10,training_pmids,training_forward_sentences,
-        #                                                                training_reverse_sentences,distant_interactions,
-        #                                                                reverse_distant_interactions,entity_a_text,
-        #                                                                entity_b_text,hidden_array,key_order)
-
-        # cv.write_cv_output(model_out+'_predictions',instance_predicts,single_instances,key_order)
-
-        # training full model
-        training_instances, \
-        dep_dictionary, \
-        dep_word_dictionary, \
-        dep_element_dictionary, \
-        between_word_dictionary = load_data.build_instances_labelled(training_forward_sentences,
-                                                                     training_reverse_sentences,
-                                                                     pubtator_labels,'binds',
-                                                                     entity_a_text,
-                                                                     entity_b_text,
-                                                                     key_order)
-
-
-
-
-        X = []
-        y = []
-        instance_sentences = set()
-        for t in training_instances:
-            instance_sentences.add(' '.join(t.sentence.sentence_words))
-            X.append(t.features)
-            y.append(t.label)
-
-        X_train = np.array(X)
-        y_train = np.array(y)
-
-        print(X_train.shape)
-        print(y_train.shape)
-
-
-
-        if os.path.exists(model_out):
-            shutil.rmtree(model_out)
-
-        trained_model_path = ffnn.feed_forward_train(X_train,
-                                                     y_train,
-                                                     None,
-                                                     None,
-                                                     hidden_array,
-                                                     model_out + '/', key_order)
-
-        print('Number of Sentences')
-        print(len(instance_sentences))
-        print('Number of Instances')
-        print(len(training_instances))
-        print('Number of dependency paths ')
-        print(len(dep_dictionary))
-        print('Number of dependency words')
-        print(len(dep_word_dictionary))
-        print('Number of between words')
-        print(len(between_word_dictionary))
-        print('Number of elements')
-        print(len(dep_element_dictionary))
-        print('length of feature space')
-        print(len(dep_dictionary) + len(dep_word_dictionary) + len(dep_element_dictionary) + len(
-            between_word_dictionary))
-        pickle.dump([dep_dictionary, dep_word_dictionary, dep_element_dictionary, between_word_dictionary, key_order],
-                    open(model_out + 'a.pickle', 'wb'))
-        print("trained model")
-
-        return trained_model_path
+    return True
 
 def train_labelled_and_distant(model_out,distant_pubtator_file, labelled_pubtator_file, pubtator_labels, directional_distant_directory, symmetric_distant_directory,
                                distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b, recurrent):

@@ -36,7 +36,7 @@ def cosine_sim(input_matrix):
 
 
 def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
-                            entity_a_text, entity_b_text,hidden_array,key_order,recurrent):
+                            entity_a_text, entity_b_text,hidden_array,key_order,recurrent,pubtator_labels=None):
     pmids = list(pmids)
     #split training sentences for cross validation
     testlength = int(len(pmids) * 0.2)
@@ -72,6 +72,18 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                                     reverse_distant_interactions,
                                                                     entity_a_text, entity_b_text, key_order)
 
+        if pubtator_labels:
+            fold_training_instances, \
+            fold_dep_dictionary, \
+            fold_dep_word_dictionary, \
+            fold_dep_element_dictionary, \
+            fold_between_word_dictionary = load_data.build_instances_labelled(fold_training_forward_sentences,
+                                                                         fold_training_reverse_sentences,
+                                                                         pubtator_labels, 'binds',
+                                                                         entity_a_text,
+                                                                         entity_b_text,
+                                                                         key_order)
+
         # train model
         X = []
         y = []
@@ -92,6 +104,14 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                                 fold_dep_element_dictionary,
                                                                 fold_between_word_dictionary,
                                                                 distant_interactions, reverse_distant_interactions,
+                                                                entity_a_text, entity_b_text, key_order)
+        if pubtator_labels:
+            fold_test_instances = load_data.build_labelled_testing(fold_test_forward_sentences,
+                                                                fold_test_reverse_sentences,
+                                                                fold_dep_dictionary, fold_dep_word_dictionary,
+                                                                fold_dep_element_dictionary,
+                                                                fold_between_word_dictionary,
+                                                                pubtator_labels, 'binds',
                                                                 entity_a_text, entity_b_text, key_order)
 
         # group instances by pmid and build feature array
@@ -153,6 +173,16 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                                                       entity_b_text,
                                                                                       key_order, True)
 
+        if pubtator_labels:
+            fold_training_instances, \
+            fold_dep_path_list_dictionary, \
+            fold_dep_word_dictionary, word2vec_embeddings = load_data.build_instances_labelled(fold_training_forward_sentences,
+                                                                                          fold_training_reverse_sentences,
+                                                                                          pubtator_labels, 'binds',
+                                                                                          entity_a_text,
+                                                                                          entity_b_text,
+                                                                                          key_order, True)
+
         dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_recurrent_arrays(
             fold_training_instances)
 
@@ -176,6 +206,15 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                                 entity_a_text, entity_b_text, key_order,
                                                                 fold_dep_path_list_dictionary)
 
+        if pubtator_labels:
+            fold_test_instances = load_data.build_labelled_testing(fold_test_forward_sentences,
+                                                                   fold_test_reverse_sentences,
+                                                                   None, fold_dep_word_dictionary,
+                                                                   None,
+                                                                   None,
+                                                                   pubtator_labels, 'binds',
+                                                                   entity_a_text, entity_b_text, key_order,fold_dep_path_list_dictionary)
+
         group_instances = load_data.batch_instances(fold_test_instances)
 
         test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length, test_dep_word_path_length, test_labels = load_data.build_recurrent_arrays(
@@ -193,34 +232,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                 print(fold_test_predicted_prob[ti])
                 cs_grad_dict[ti] = [fold_test_predicted_prob[ti], fold_test_labels[ti],
                                                    [], group_instances[g]]
-        '''Adjust for gradients later. 
-        group_instances = load_data.batch_instances(fold_test_instances)
 
-        probability_dict = {}
-        label_dict = {}
-        cs_grad_dict = {}
-
-        for g in group_instances:
-            fold_test_instance_batch = []
-            for ti in group_instances[g]:
-                fold_test_instance_batch.append(fold_test_instances[ti])
-            test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length, test_dep_word_path_length, test_labels = load_data.build_recurrent_arrays(
-                fold_test_instance_batch)
-
-            test_features = [test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length,
-                             test_dep_word_path_length]
-
-            fold_test_predicted_prob, fold_test_labels, fold_test_cs_grads = rnn.recurrent_test(test_features,
-                                                                                                   test_labels,
-                                                                                                   test_model)
-            probability_dict[g] = fold_test_predicted_prob
-            label_dict[g] = fold_test_labels
-            for i in range(len(fold_test_cs_grads)):
-                print(fold_test_cs_grads[i])
-                print(fold_test_predicted_prob[i])
-                cs_grad_dict[group_instances[g][i]] = [fold_test_predicted_prob[i], fold_test_labels[i],
-                                                       fold_test_cs_grads[i], group_instances[g]]
-        '''
         # group instances by pmid and build feature array
 
     return fold_test_instances, cs_grad_dict

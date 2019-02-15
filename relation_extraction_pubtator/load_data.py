@@ -138,6 +138,7 @@ def build_instances_testing(test_forward_sentences, test_reverse_sentences,dep_d
             instance.build_features_recurrent(dep_path_type_list_dictionary, dep_path_word_dictionary)
     return test_instances
 
+
 def get_label_data(label_data):
     file = open(label_data,'rU')
     lines = file.readlines()
@@ -148,6 +149,71 @@ def get_label_data(label_data):
         label_dict[l.split('\t')[0]] = int(l.split('\t')[1])
 
     return label_dict
+
+def build_labelled_testing(test_forward_sentences, test_reverse_sentences,dep_dictionary, dep_path_word_dictionary, dep_element_dictionary, between_word_dictionary,
+                            label_data,label, entity_a_text, entity_b_text,key_order,dep_path_type_list_dictionary=None):
+
+    """
+    Builds instances for the test function
+    :param test_forward_sentences: sentences going from entity 1 to entity 2
+    :param test_reverse_sentences: sentences going from entity 2 to entity 1
+    :param dep_dictionary: dictionary of dependency paths
+    :param dep_path_word_dictionary: dictionary of words in dependency paths
+    :param dep_element_dictionary: dictionary of dependency elements
+    :param between_word_dictionary: dictionary of words bettwen entities
+    :param distant_interactions:
+    :param reverse_distant_interactions:
+    :param entity_a_text:
+    :param entity_b_text:
+    :param key_order:
+    :param dep_path_type_list_dictionary: optional argument that depends on if doing LSTM or feed forward
+    :return:
+    """
+    test_instances = []
+    label_dict = get_label_data(label_data)
+
+    for key in test_forward_sentences:
+        splitkey = key.split('|')
+        reverse_key = splitkey[0] + '|' + splitkey[1] + '|' + splitkey[3] + '|' + splitkey[2]
+        if reverse_key in test_reverse_sentences:
+            forward_test_instance = Instance(test_forward_sentences[key], [0]*len(key_order))
+            forward_test_instance.fix_word_lists(entity_a_text, entity_b_text)
+            reverse_test_instance = Instance(test_reverse_sentences[reverse_key], [0]*len(key_order))
+            reverse_test_instance.fix_word_lists(entity_a_text, entity_b_text)
+
+            entity_combo = (forward_test_instance.sentence.start_entity_id,
+                                forward_test_instance.sentence.end_entity_id)
+
+            #performs distant supervision
+            for i in range(len(key_order)):
+                distant_key = key_order[i]
+                if label in distant_key:
+                    if key in label_dict:
+                        print('forward')
+                        print(label_dict[key])
+                        forward_test_instance.set_label_i(label_dict[key], i)
+                    if reverse_key in label_dict:
+                        print('reverse')
+                        print(label_dict[reverse_key])
+                        reverse_test_instance.set_label_i(label_dict[reverse_key],i)
+
+
+            test_instances.append(forward_test_instance)
+            test_instances.append(reverse_test_instance)
+
+        else:
+            continue
+
+    #dep path type list dictionary is for LSTM
+    if dep_path_type_list_dictionary is None:
+        for instance in test_instances:
+            instance.build_features(dep_dictionary, dep_path_word_dictionary, dep_element_dictionary,  between_word_dictionary)
+    else:
+        for instance in test_instances:
+            instance.build_features_recurrent(dep_path_type_list_dictionary, dep_path_word_dictionary)
+    return test_instances
+
+
 
 
 def build_instances_labelled(training_forward_sentences,training_reverse_sentences, label_data, label, entity_a_text, entity_b_text,key_order,recurrent=False):
