@@ -89,7 +89,7 @@ class Instance(object):
             if sentence_words[word_position] not in word_dict:
                 word_dict[sentence_words[word_position]] = []
             word_dict[sentence_words[word_position]].append(word_position)
-
+        print(word_dict)
         pairs = itertools.product(word_dict[start_entity], word_dict[end_entity])
         smallest_distance = float("inf")
         right_pairs = (-1, -1)
