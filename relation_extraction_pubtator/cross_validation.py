@@ -80,7 +80,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
             fold_dep_element_dictionary, \
             fold_between_word_dictionary = load_data.build_instances_labelled(fold_training_forward_sentences,
                                                                          fold_training_reverse_sentences,
-                                                                         pubtator_labels, 'binds',
+                                                                         pubtator_labels, key_order[0],
                                                                          entity_a_text,
                                                                          entity_b_text,
                                                                          key_order)
@@ -179,7 +179,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
             fold_dep_path_list_dictionary, \
             fold_dep_word_dictionary, word2vec_embeddings = load_data.build_instances_labelled(fold_training_forward_sentences,
                                                                                           fold_training_reverse_sentences,
-                                                                                          pubtator_labels, 'binds',
+                                                                                          pubtator_labels, key_order[0],
                                                                                           entity_a_text,
                                                                                           entity_b_text,
                                                                                           key_order, True)
