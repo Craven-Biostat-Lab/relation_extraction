@@ -17,6 +17,7 @@ tf.contrib.summary
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 
+random.seed(10)
 
 def cosine_sim(input_matrix):
     num_features = input_matrix.shape[1]
