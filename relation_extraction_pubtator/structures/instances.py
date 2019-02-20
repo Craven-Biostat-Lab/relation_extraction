@@ -71,8 +71,8 @@ class Instance(object):
         self.dependency_path_list = dep_path
 
     def build_words_between_features(self):
-        start_entity = self.sentence.start_entity_text
-        end_entity = self.sentence.end_entity_text
+        start_entity = self.sentence.start_entity_text.strip()
+        end_entity = self.sentence.end_entity_text.strip()
 
         start_entity_start_position = int(self.sentence.start_entity_loc.split(',')[0])
         start_entity_end_position = int(self.sentence.start_entity_loc.split(',')[1])
@@ -123,6 +123,8 @@ class Instance(object):
                     if difference < smallest_distance:
                         smallest_distance = difference
                         right_pairs = (p[1], p[0])
+        else:
+            print('fail')
 
         self.between_words = sentence_words[right_pairs[0] + 1:right_pairs[1]]
         self.entity_pair = right_pairs
