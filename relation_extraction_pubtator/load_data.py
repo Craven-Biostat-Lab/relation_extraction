@@ -520,14 +520,14 @@ def load_gene_gene_abstract_sentences(pubtator_file, entity_a_species, entity_b_
             # dividing each line elements of pubtator file
             pmid = l[0]
             sentence_no = l[1]
-            start_entity_text = l[2]
+            start_entity_text = l[2].strip()
             start_entity_loc = l[3]
-            end_entity_text = l[4]
+            end_entity_text = l[4].strip()
             end_entity_loc = l[5]
-            start_entity_raw_string = l[6]
-            end_entity_raw_string = l[7]
-            start_entity_full_norm = l[8]
-            end_entity_full_norm = l[9]
+            start_entity_raw_string = l[6].strip()
+            end_entity_raw_string = l[7].strip()
+            start_entity_full_norm = l[8].strip()
+            end_entity_full_norm = l[9].strip()
             start_entity_type = l[10]
             end_entity_type = l[11]
             dep_parse = l[12].split(' ')

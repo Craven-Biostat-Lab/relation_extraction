@@ -71,8 +71,8 @@ class Instance(object):
         self.dependency_path_list = dep_path
 
     def build_words_between_features(self):
-        start_entity = self.sentence.start_entity_text.strip()
-        end_entity = self.sentence.end_entity_text.strip()
+        start_entity = self.sentence.start_entity_text
+        end_entity = self.sentence.end_entity_text
 
         start_entity_start_position = int(self.sentence.start_entity_loc.split(',')[0])
         start_entity_end_position = int(self.sentence.start_entity_loc.split(',')[1])
