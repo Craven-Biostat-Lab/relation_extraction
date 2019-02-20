@@ -89,38 +89,40 @@ class Instance(object):
             if sentence_words[word_position] not in word_dict:
                 word_dict[sentence_words[word_position]] = []
             word_dict[sentence_words[word_position]].append(word_position)
-        pairs = itertools.product(word_dict[start_entity], word_dict[end_entity])
-        smallest_distance = float("inf")
         right_pairs = (-1, -1)
-        for p in pairs:
-            if p[0] < p[1]:
-                between_string = ' '.join(sentence_words[p[0]+1:p[1]])
-                between_string = between_string.replace('-LRB-','')
-                between_string = between_string.replace('-RRB-','')
-                between_string = between_string.replace('-LCB-','')
-                between_string = between_string.replace('-RCB-','')
-                between_string = between_string.replace('-LSB-','')
-                between_string = between_string.replace('-RSB-','')
-                between_string = between_string.translate(None,string.punctuation)
-                between_length = len(between_string)
-                difference = abs(true_char_difference - between_length)
-                if difference < smallest_distance:
-                    smallest_distance = difference
-                    right_pairs = (p[0], p[1])
-            else:
-                between_string = ' '.join(sentence_words[p[1]+1:p[0]])
-                between_string = between_string.replace('-LRB-','')
-                between_string = between_string.replace('-RRB-','')
-                between_string = between_string.replace('-LCB-','')
-                between_string = between_string.replace('-RCB-','')
-                between_string = between_string.replace('-LSB-','')
-                between_string = between_string.replace('-RSB-','')
-                between_string = between_string.translate(None,string.punctuation)
-                between_length = len(between_string)
-                difference = abs(true_char_difference - between_length)
-                if difference < smallest_distance:
-                    smallest_distance = difference
-                    right_pairs = (p[1], p[0])
+        if start_entity in word_dict and end_entity in word_dict:
+            pairs = itertools.product(word_dict[start_entity], word_dict[end_entity])
+            smallest_distance = float("inf")
+
+            for p in pairs:
+                if p[0] < p[1]:
+                    between_string = ' '.join(sentence_words[p[0]+1:p[1]])
+                    between_string = between_string.replace('-LRB-','')
+                    between_string = between_string.replace('-RRB-','')
+                    between_string = between_string.replace('-LCB-','')
+                    between_string = between_string.replace('-RCB-','')
+                    between_string = between_string.replace('-LSB-','')
+                    between_string = between_string.replace('-RSB-','')
+                    between_string = between_string.translate(None,string.punctuation)
+                    between_length = len(between_string)
+                    difference = abs(true_char_difference - between_length)
+                    if difference < smallest_distance:
+                        smallest_distance = difference
+                        right_pairs = (p[0], p[1])
+                else:
+                    between_string = ' '.join(sentence_words[p[1]+1:p[0]])
+                    between_string = between_string.replace('-LRB-','')
+                    between_string = between_string.replace('-RRB-','')
+                    between_string = between_string.replace('-LCB-','')
+                    between_string = between_string.replace('-RCB-','')
+                    between_string = between_string.replace('-LSB-','')
+                    between_string = between_string.replace('-RSB-','')
+                    between_string = between_string.translate(None,string.punctuation)
+                    between_length = len(between_string)
+                    difference = abs(true_char_difference - between_length)
+                    if difference < smallest_distance:
+                        smallest_distance = difference
+                        right_pairs = (p[1], p[0])
 
         self.between_words = sentence_words[right_pairs[0] + 1:right_pairs[1]]
         self.entity_pair = right_pairs
