@@ -252,6 +252,7 @@ def feed_forward_test(test_features, test_labels, model_file):
     total_labels = []
     total_predicted_prob = []
     total_predicted_grad = []
+    total_predicted_activations = []
     tf.reset_default_graph()
     with tf.Session() as sess:
         restored_model = tf.train.import_meta_graph(model_file + '.meta',clear_devices=True)
@@ -288,12 +289,13 @@ def feed_forward_test(test_features, test_labels, model_file):
         while True:
             try:
 
-                predicted_val, labels, grads = sess.run([predict_prob, batch_labels_tensor, hidden_act_tensor],
+                predicted_val, labels, grads,hidden_acts = sess.run([predict_prob, batch_labels_tensor, total_gradients,hidden_act_tensor],
                                                         feed_dict={iterator_handle: new_handle, keep_prob_tensor: 1.0})
 
                 total_predicted_prob.append(predicted_val[0])
                 total_labels.append(labels[0])
-                total_predicted_grad.append(grads[0])
+                total_predicted_grad.append(grads)
+                total_predicted_activations.append(hidden_acts[0])
 
 
             except tf.errors.OutOfRangeError:
@@ -302,14 +304,16 @@ def feed_forward_test(test_features, test_labels, model_file):
     total_labels = np.array(total_labels)
     total_predicted_prob = np.array(total_predicted_prob)
     total_predicted_grad = np.array(total_predicted_grad)
-    print(total_predicted_grad)
+    total_predicted_activations = np.array(total_predicted_activations)
     print(total_predicted_grad.shape)
     print(total_labels.shape)
     print(total_predicted_prob.shape)
+    print(total_predicted_activations.shape)
 
     cs_grad = metrics.pairwise.cosine_similarity(total_predicted_grad)
+    cs_hidden_act = metrics.pairwise.cosine_similarity(total_predicted_activations)
 
-    return total_predicted_prob, total_labels, cs_grad
+    return total_predicted_prob, total_labels, cs_grad, cs_hidden_act
 
 def neural_network_predict(predict_features, predict_labels, model_file):
     total_labels = []

@@ -144,6 +144,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
         probability_dict = {}
         label_dict = {}
         cs_grad_dict = {}
+        cs_hidden_act_dict = {}
 
         for g in group_instances:
             fold_test_features = []
@@ -155,13 +156,15 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
             fold_test_y = np.array(fold_test_labels)
 
 
-            fold_test_predicted_prob, fold_test_labels, fold_test_cs_grads = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
+            fold_test_predicted_prob, fold_test_labels, fold_test_cs_grads,fold_test_cs_hidden_activations = snn.feed_forward_test(fold_test_X, fold_test_y, test_model)
             probability_dict[g] = fold_test_predicted_prob
             label_dict[g] = fold_test_labels
             for i in range(len(fold_test_cs_grads)):
                 print(fold_test_cs_grads[i])
                 print(fold_test_predicted_prob[i])
                 cs_grad_dict[group_instances[g][i]] = [fold_test_predicted_prob[i],fold_test_labels[i],fold_test_cs_grads[i],group_instances[g]]
+                cs_hidden_act_dict[group_instances[g][i]] = [fold_test_predicted_prob[i], fold_test_labels[i],
+                                                       fold_test_cs_hidden_activations[i], group_instances[g]]
 
     else:
         fold_training_instances, \
@@ -213,8 +216,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                                    None, fold_dep_word_dictionary,
                                                                    None,
                                                                    None,
-                                                                   pubtator_labels, key_order[0]
-                                                                   ,
+                                                                   pubtator_labels, key_order[0],
                                                                    entity_a_text, entity_b_text, key_order,fold_dep_path_list_dictionary)
 
         group_instances = load_data.batch_instances(fold_test_instances)
@@ -225,7 +227,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
         test_features = [test_dep_path_list_features, test_dep_word_features, test_dep_type_path_length,
                          test_dep_word_path_length]
 
-        fold_test_predicted_prob, fold_test_labels, fold_test_cs_grads = rnn.recurrent_test(test_features,
+        fold_test_predicted_prob, fold_test_labels, fold_test_cs_grads,fold_test_cs_hidden_activations = rnn.recurrent_test(test_features,
                                                                                             test_labels,
                                                                                             test_model)
         cs_grad_dict = {}
@@ -237,7 +239,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
 
         # group instances by pmid and build feature array
 
-    return fold_test_instances, cs_grad_dict
+    return fold_test_instances, cs_grad_dict, cs_hidden_act_dict
 
 def k_fold_cross_validation(k, pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
                             entity_a_text, entity_b_text,hidden_array,key_order,recurrent):

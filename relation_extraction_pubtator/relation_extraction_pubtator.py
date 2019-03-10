@@ -34,7 +34,7 @@ def write_output(filename, instances,grads, key_order):
         key = key_order[k]
         labels = []
         file = open(filename+'_'+key,'w')
-        file.write('PMID\tE1\tE2\tClASS_LABEL\tPROBABILITY\tGRADIENTS\tGROUPS\n')
+        file.write('PMID\tE1\tE2\tClASS_LABEL\tPROBABILITY\tCOS_SIM\tGROUPS\n')
         for q in range(len(instances)):
             file.write(str(instances[q].sentence.pmid) + '\t' + str(instances[q].sentence.start_entity_id) + '\t'
                        +str(instances[q].sentence.end_entity_id) + '\t'+str(grads[q][1][k]) + '\t'
@@ -279,7 +279,7 @@ def train_labelled(model_out, pubtator_file, pubtator_labels,directional_distant
     hidden_array = [256]
 
     # k-cross val
-    single_instances, similarities = cv.one_fold_cross_validation(training_pmids,
+    single_instances, gradient_similarities,hidden_act_similarities = cv.one_fold_cross_validation(training_pmids,
                                                                   training_forward_sentences,
                                                                   training_reverse_sentences,
                                                                   distant_interactions,
@@ -288,7 +288,8 @@ def train_labelled(model_out, pubtator_file, pubtator_labels,directional_distant
                                                                   hidden_array,
                                                                   key_order, recurrent,pubtator_labels)
 
-    write_output(model_out + '_cv_predictions', single_instances, similarities, key_order)
+    write_output(model_out + '_cv_predictions', single_instances, gradient_similarities, key_order)
+    write_output(model_out + '_cv_predictions_hidden_act_sim', single_instances, hidden_act_similarities, key_order)
 
     return True
 
