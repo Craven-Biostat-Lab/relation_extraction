@@ -231,6 +231,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                                                             test_labels,
                                                                                             test_model)
         cs_grad_dict = {}
+        cs_hidden_act_dict ={}
         for g in group_instances:
             for ti in group_instances[g]:
                 print(fold_test_predicted_prob[ti])

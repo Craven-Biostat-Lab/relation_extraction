@@ -162,7 +162,7 @@ def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_
     hidden_array = [256]
 
     # k-cross val
-    single_instances, similarities = cv.one_fold_cross_validation(training_pmids,
+    single_instances, similarities,hidden_act_similarities = cv.one_fold_cross_validation(training_pmids,
                                                                               training_forward_sentences,
                                                                               training_reverse_sentences,
                                                                               distant_interactions,
@@ -172,6 +172,7 @@ def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_
                                                                               key_order, recurrent)
 
     write_output(model_out + '_cv_predictions', single_instances, similarities,key_order)
+    write_output(model_out + '_hidden_activations_predictions', single_instances, hidden_act_similarities, key_order)
 
     return True
 
