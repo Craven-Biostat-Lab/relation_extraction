@@ -59,7 +59,7 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     num_labels = train_y.shape[1]
     batch_size = 1
     num_hidden_layers = len(hidden_array)
-    num_epochs = 250
+    num_epochs = 1
 
     tf.reset_default_graph()
 
@@ -271,6 +271,7 @@ def feed_forward_test(test_features, test_labels, model_file):
         batch_features_tensor = graph.get_tensor_by_name('IteratorGetNext:0')
         batch_labels_tensor = graph.get_tensor_by_name('IteratorGetNext:1')
         keep_prob_tensor = graph.get_tensor_by_name('keep_prob:0')
+        hidden_act_tensor = graph.get_tensor_by_name('hidden_act0:0')
         predict_tensor = graph.get_tensor_by_name('class_predict:0')
         predict_prob = graph.get_tensor_by_name('predict_prob:0')
 
@@ -287,7 +288,7 @@ def feed_forward_test(test_features, test_labels, model_file):
         while True:
             try:
 
-                predicted_val, labels, grads = sess.run([predict_prob, batch_labels_tensor, total_gradients],
+                predicted_val, labels, grads = sess.run([predict_prob, batch_labels_tensor, hidden_act_tensor],
                                                         feed_dict={iterator_handle: new_handle, keep_prob_tensor: 1.0})
 
                 total_predicted_prob.append(predicted_val[0])
