@@ -302,6 +302,7 @@ def feed_forward_test(test_features, test_labels, model_file):
     total_labels = np.array(total_labels)
     total_predicted_prob = np.array(total_predicted_prob)
     total_predicted_grad = np.array(total_predicted_grad)
+    print(total_predicted_grad)
     print(total_predicted_grad.shape)
     print(total_labels.shape)
     print(total_predicted_prob.shape)
@@ -358,7 +359,7 @@ def neural_network_predict(predict_features, predict_labels, model_file):
 
                 total_predicted_prob.append(predicted_val[0])
                 total_labels.append(labels[0])
-                total_predicted_grad.append(grads)
+                total_predicted_grad.append(grads[0])
 
 
             except tf.errors.OutOfRangeError:
