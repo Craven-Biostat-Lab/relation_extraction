@@ -293,7 +293,7 @@ def feed_forward_test(test_features, test_labels, model_file):
 
                 total_predicted_prob.append(predicted_val[0])
                 total_labels.append(labels[0])
-                total_predicted_grad.append(grads)
+                total_predicted_grad.append(grads[0])
 
 
             except tf.errors.OutOfRangeError:
@@ -359,7 +359,7 @@ def neural_network_predict(predict_features, predict_labels, model_file):
 
                 total_predicted_prob.append(predicted_val[0])
                 total_labels.append(labels[0])
-                total_predicted_grad.append(grads[0])
+                total_predicted_grad.append(grads)
 
 
             except tf.errors.OutOfRangeError:
