@@ -106,6 +106,7 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
     probability_dict = {}
     label_dict = {}
     cs_grad_dict = {}
+    cs_hidden_act_dict = {}
 
     for g in group_instances:
         predict_features = []
@@ -116,8 +117,10 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
         predict_X = np.array(predict_features)
         predict_y = np.array(predict_labels)
 
-        predicted_prob, predict_labels, predicted_grads = ffnn.neural_network_predict(predict_X, predict_y,
+        predicted_prob, predict_labels, predicted_grads,predicted_activations = ffnn.neural_network_predict(predict_X, predict_y,
                                                                                                model_file+'/')
+
+
         probability_dict[g] = predicted_prob
         label_dict[g] = predict_labels
         for i in range(len(predicted_grads)):
@@ -125,9 +128,11 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
             print(predicted_prob[i])
             cs_grad_dict[group_instances[g][i]] = [predicted_prob[i], predict_labels[i],
                                                    predicted_grads[i], group_instances[g]]
+            cs_hidden_act_dict[group_instances[g][i]] = [predicted_prob[i], predict_labels[i],
+                                                         predicted_activations[i], group_instances[g]]
 
 
-    return predict_instances,cs_grad_dict,key_order
+    return predict_instances,cs_grad_dict,cs_hidden_act_dict,key_order
 
 def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_distant_directory,
                    distant_entity_a_col, distant_entity_b_col, distant_rel_col, entity_a, entity_b,recurrent):
@@ -652,7 +657,7 @@ def main():
         recurrent = recurrent == 'True'
         print(recurrent)
         if recurrent is False:
-            prediction_instances, predict_grad,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)
+            prediction_instances, predict_grad,hidden_act,key_order = predict_sentences(model_file, sentence_file, entity_a, entity_b)
             #print(total_group_instance_results)
 
         else:
@@ -660,6 +665,7 @@ def main():
 
 
         write_output(out_pairs_file,prediction_instances,predict_grad,key_order)
+        write_output(out_pairs_file, prediction_instances, hidden_act, key_order)
 
     else:
         print("usage error")
