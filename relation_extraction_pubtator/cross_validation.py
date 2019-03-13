@@ -5,6 +5,7 @@ import itertools
 import load_data
 import time
 import random
+import pickle
 
 from machine_learning_models import tf_feed_forward as snn
 from machine_learning_models import tf_recurrent as rnn
@@ -36,11 +37,11 @@ def cosine_sim(input_matrix):
     return output
 
 
-def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
+def one_fold_cross_validation(model_out,pmids, forward_sentences, reverse_sentences, distant_interactions, reverse_distant_interactions,
                             entity_a_text, entity_b_text,hidden_array,key_order,recurrent,pubtator_labels=None):
     pmids = list(pmids)
     #split training sentences for cross validation
-    testlength = int(len(pmids) * 0.35)
+    testlength = int(len(pmids) * 0.30)
     random.shuffle(pmids)
     fold_test_abstracts = pmids[:testlength]
     fold_training_abstracts = pmids[testlength:]
@@ -85,6 +86,9 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                                          entity_b_text,
                                                                          key_order)
 
+        pickle.dump([fold_dep_dictionary, fold_dep_word_dictionary, fold_dep_element_dictionary, fold_between_word_dictionary, key_order],
+                    open(model_out + 'a.pickle', 'wb'))
+
         # train model
         X = []
         y = []
@@ -95,7 +99,7 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
         fold_train_X = np.array(X)
         fold_train_y = np.array(y)
 
-        model_dir = os.path.dirname(os.path.realpath(__file__)) + '/model_building_meta_data/test' + str(1) + str(time.time()).replace('.', '')
+        model_dir = model_out
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
 
@@ -187,12 +191,14 @@ def one_fold_cross_validation(pmids, forward_sentences, reverse_sentences, dista
                                                                                           entity_b_text,
                                                                                           key_order, True)
 
+        pickle.dump([fold_dep_path_list_dictionary, fold_dep_word_dictionary, key_order], open(model_out + 'a.pickle', 'wb'))
+
         dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length, labels = load_data.build_recurrent_arrays(
             fold_training_instances)
 
         features = [dep_path_list_features, dep_word_features, dep_type_path_length, dep_word_path_length]
 
-        model_dir = os.path.dirname(os.path.realpath(__file__)) + '/model_building_meta_data/test' + str(1) + str(time.time()).replace('.', '')
+        model_dir = model_out
         if os.path.exists(model_dir):
             shutil.rmtree(model_dir)
 
