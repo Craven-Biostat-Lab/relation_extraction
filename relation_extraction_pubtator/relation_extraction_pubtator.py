@@ -162,7 +162,7 @@ def cv_train(model_out, pubtator_file, directional_distant_directory, symmetric_
     hidden_array = [256]
 
     # k-cross val
-    single_instances, similarities,hidden_act_similarities = cv.one_fold_cross_validation(training_pmids,
+    single_instances, similarities,hidden_act_similarities = cv.one_fold_cross_validation(model_out,training_pmids,
                                                                               training_forward_sentences,
                                                                               training_reverse_sentences,
                                                                               distant_interactions,
@@ -280,7 +280,7 @@ def train_labelled(model_out, pubtator_file, pubtator_labels,directional_distant
     hidden_array = [256]
 
     # k-cross val
-    single_instances, gradient_similarities,hidden_act_similarities = cv.one_fold_cross_validation(training_pmids,
+    single_instances, gradient_similarities,hidden_act_similarities = cv.one_fold_cross_validation(model_out,training_pmids,
                                                                   training_forward_sentences,
                                                                   training_reverse_sentences,
                                                                   distant_interactions,
