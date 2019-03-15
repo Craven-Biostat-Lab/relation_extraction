@@ -41,7 +41,7 @@ def one_fold_cross_validation(model_out,pmids, forward_sentences, reverse_senten
                             entity_a_text, entity_b_text,hidden_array,key_order,recurrent,pubtator_labels=None):
     pmids = list(pmids)
     #split training sentences for cross validation
-    testlength = int(len(pmids) * 0.30)
+    testlength = int(len(pmids) * 0.50)
     random.shuffle(pmids)
     fold_test_abstracts = pmids[:testlength]
     fold_training_abstracts = pmids[testlength:]
