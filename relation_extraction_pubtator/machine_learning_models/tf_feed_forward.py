@@ -119,7 +119,13 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     global_step = tf.Variable(0, name="global_step")
 
     # Backward propagation
-    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat))
+    tv_all = tf.trainable_variables()
+    tv_regu = []
+    for t in tv_all:
+        if 'weight' in t.name:
+            tv_regu.append(t)
+
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat)) + 0.0001*tf.nn.l2_loss(tv_regu)
     updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost,global_step=global_step)
 
     correct_prediction = tf.equal(tf.round(prob_yhat), tf.round(batch_labels))
