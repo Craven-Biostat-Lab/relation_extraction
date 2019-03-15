@@ -301,6 +301,7 @@ def feed_forward_test(test_features, test_labels, model_file):
             except tf.errors.OutOfRangeError:
                 break
 
+    print(total_predicted_grad)
     total_labels = np.array(total_labels)
     total_predicted_prob = np.array(total_predicted_prob)
     total_predicted_grad = np.array(total_predicted_grad)
