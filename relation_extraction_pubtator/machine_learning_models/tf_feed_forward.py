@@ -119,7 +119,14 @@ def feed_forward_train(train_X, train_y, test_X, test_y, hidden_array, model_dir
     global_step = tf.Variable(0, name="global_step")
 
     # Backward propagation
-    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat))
+    tv_all = tf.trainable_variables()
+    tv_regu = []
+    for t in tv_all:
+        if 'weight' in t.name:
+            tv_regu.append(t)
+
+    l2_loss = 0.0001 * tf.reduce_sum([tf.nn.l2_loss(v) for v in tv_regu])
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=batch_labels, logits=yhat)) + l2_loss
     updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost,global_step=global_step)
 
     correct_prediction = tf.equal(tf.round(prob_yhat), tf.round(batch_labels))
@@ -301,6 +308,7 @@ def feed_forward_test(test_features, test_labels, model_file):
             except tf.errors.OutOfRangeError:
                 break
 
+    print(total_predicted_grad)
     total_labels = np.array(total_labels)
     total_predicted_prob = np.array(total_predicted_prob)
     total_predicted_grad = np.array(total_predicted_grad)
