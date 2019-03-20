@@ -97,6 +97,8 @@ def predict_sentences(model_file, pubtator_file, entity_a, entity_b):
 
     dep_dictionary, dep_word_dictionary, dep_element_dictionary, between_word_dictionary, key_order = pickle.load(open(model_file + 'a.pickle','rb'))
 
+    print(dep_dictionary)
+
     predict_instances = load_data.build_instances_predict(predict_forward_sentences, predict_reverse_sentences,dep_dictionary,
                                                           dep_word_dictionary, dep_element_dictionary,
                                                           between_word_dictionary,entity_a_text,entity_b_text,key_order)
