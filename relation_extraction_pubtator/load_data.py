@@ -202,7 +202,23 @@ def build_labelled_testing(test_forward_sentences, test_reverse_sentences,dep_di
             test_instances.append(reverse_test_instance)
 
         else:
-            continue
+            forward_test_instance = Instance(test_forward_sentences[key], [0] * len(key_order))
+            forward_test_instance.fix_word_lists(entity_a_text, entity_b_text)
+
+            entity_combo = (forward_test_instance.sentence.start_entity_id,
+                            forward_test_instance.sentence.end_entity_id)
+
+            # performs distant supervision
+            for i in range(len(key_order)):
+                distant_key = key_order[i]
+                if label in distant_key:
+                    if key in label_dict:
+                        print('forward')
+                        print(label_dict[key])
+                        forward_test_instance.set_label_i(label_dict[key], i)
+
+            test_instances.append(forward_test_instance)
+            #test_instances.append(reverse_test_instance)
 
     #dep path type list dictionary is for LSTM
     if dep_path_type_list_dictionary is None:
