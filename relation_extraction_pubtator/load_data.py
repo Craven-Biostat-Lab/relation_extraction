@@ -286,7 +286,29 @@ def build_instances_labelled(training_forward_sentences,training_reverse_sentenc
 
 
         else:
-            continue
+            forward_train_instance = Instance(training_forward_sentences[key], [0] * len(key_order))
+            forward_train_instance.fix_word_lists(entity_a_text, entity_b_text)
+
+            for i in range(len(key_order)):
+                distant_key = key_order[i]
+                if label in distant_key:
+                    if key in label_dict:
+                        print('forward')
+                        print(label_dict[key])
+                        forward_train_instance.set_label_i(label_dict[key], i)
+
+            path_word_vocabulary += forward_train_instance.dependency_words
+            #path_word_vocabulary += reverse_train_instance.dependency_words
+            words_between_entities_vocabulary += forward_train_instance.between_words
+            #words_between_entities_vocabulary += reverse_train_instance.between_words
+            dep_type_word_elements_vocabulary += forward_train_instance.dependency_elements
+            #dep_type_word_elements_vocabulary += reverse_train_instance.dependency_elements
+            dep_type_vocabulary.append(forward_train_instance.dependency_path_string)
+            #dep_type_vocabulary.append(reverse_train_instance.dependency_path_string)
+            dep_type_list_vocabulary += forward_train_instance.dependency_path_list
+            #dep_type_list_vocabulary += reverse_train_instance.dependency_path_list
+            candidate_instances.append(forward_train_instance)
+            #candidate_instances.append(reverse_train_instance)
 
     data, count, dep_path_word_dictionary, reversed_dictionary = build_dataset(path_word_vocabulary, 5)
     dep_data, dep_count, dep_dictionary, dep_reversed_dictionary = build_dataset(dep_type_vocabulary, 5)
